@@ -33,7 +33,14 @@
     "sha:dev": "npm run docker:dev && echo 'SHA system starting...' && sleep 20 && echo 'Access at: http://localhost:3000/sha'",
     "clinical:dev": "npm run docker:dev && npm run seed:clinical && echo 'Clinical autocomplete system ready!' && echo 'Access at: http://localhost:3000'",
     "system:full-setup": "npm run docker:build && npm run docker:dev && sleep 30 && npm run seed:clinical && echo 'Complete system setup finished!'",
-    "health:check": "curl -f http://localhost:5000/health && echo 'Backend OK' && curl -f http://localhost:3000/api/health && echo 'Frontend OK'"
+    "health:check": "curl -f http://localhost:5000/health && echo 'Backend OK' && curl -f http://localhost:3000/api/health && echo 'Frontend OK'",
+    "update:production": "chmod +x scripts/production-update.sh && ./scripts/production-update.sh",
+    "deploy:feature": "chmod +x scripts/feature-deployment.sh && ./scripts/feature-deployment.sh",
+    "migrate:db": "chmod +x scripts/database-migration.sh && ./scripts/database-migration.sh",
+    "system:integrity": "chmod +x scripts/system-integrity-check.sh && ./scripts/system-integrity-check.sh",
+    "backup:db": "./scripts/database-migration.sh backup",
+    "update:rolling": "./scripts/production-update.sh rolling",
+    "update:maintenance": "./scripts/production-update.sh maintenance"
   },
   "dependencies": {
     "@dnd-kit/core": "latest",
@@ -119,7 +126,6 @@
     "use-sync-external-store": "latest",
     "util": "latest",
     "vaul": "^0.9.6",
-    "xlsx": "latest",
     "zod": "^3.24.1",
     "zustand": "latest"
   },

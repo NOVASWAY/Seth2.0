@@ -1,0 +1,4 @@
+[2025-08-23 22:44:02] INFO: Checking prerequisites...
+[2025-08-23 22:44:03] SUCCESS: Docker is running
+[2025-08-23 22:44:03] SUCCESS: In project directory
+[2025-08-23 22:44:03] WARNING: System is not running - starting services first

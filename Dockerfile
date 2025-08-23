@@ -3,7 +3,7 @@ FROM node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat python3 make g++ postgresql-dev
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
@@ -62,11 +62,14 @@ WORKDIR /app
 
 ENV NODE_ENV development
 
+# Install build dependencies for native modules
+RUN apk add --no-cache python3 make g++ postgresql-dev
+
 # Install all dependencies
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
 RUN \
   if [ -f yarn.lock ]; then yarn install; \
-  elif [ -f package-lock.json ]; then npm install; \
+  elif [ -f package-lock.json ]; then npm install --legacy-peer-deps; \
   elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm install; \
   else echo "Lockfile not found." && exit 1; \
   fi
