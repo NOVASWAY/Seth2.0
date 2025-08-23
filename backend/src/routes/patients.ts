@@ -1,0 +1,249 @@
+import express from "express"
+import { body, query, validationResult } from "express-validator"
+import { PatientModel } from "../models/Patient"
+import { VisitModel } from "../models/Visit"
+import { authorize, type AuthenticatedRequest } from "../middleware/auth"
+import { UserRole } from "../../../types"
+
+const router = express.Router()
+
+// Get all patients with pagination and search
+router.get(
+  "/",
+  authorize([UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.NURSE, UserRole.CLINICAL_OFFICER]),
+  [
+    query("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
+    query("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100"),
+    query("search").optional().isString().withMessage("Search must be a string"),
+  ],
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation failed",
+          errors: errors.array(),
+        })
+      }
+
+      const page = Number.parseInt(req.query.page as string) || 1
+      const limit = Number.parseInt(req.query.limit as string) || 20
+      const search = req.query.search as string
+      const offset = (page - 1) * limit
+
+      let result
+      if (search) {
+        const patients = await PatientModel.search(search, limit)
+        result = { patients, total: patients.length }
+      } else {
+        result = await PatientModel.findAll(limit, offset)
+      }
+
+      res.json({
+        success: true,
+        data: {
+          patients: result.patients,
+          pagination: {
+            page,
+            limit,
+            total: result.total,
+            totalPages: Math.ceil(result.total / limit),
+          },
+        },
+      })
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch patients",
+      })
+    }
+  },
+)
+
+// Get patient by ID
+router.get(
+  "/:id",
+  authorize([UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.NURSE, UserRole.CLINICAL_OFFICER]),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params
+      const patient = await PatientModel.findById(id)
+
+      if (!patient) {
+        return res.status(404).json({
+          success: false,
+          message: "Patient not found",
+        })
+      }
+
+      // Get patient's recent visits
+      const visits = await VisitModel.findByPatientId(id, 5)
+
+      res.json({
+        success: true,
+        data: {
+          patient,
+          recentVisits: visits,
+        },
+      })
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch patient",
+      })
+    }
+  },
+)
+
+// Create new patient
+router.post(
+  "/",
+  authorize([UserRole.ADMIN, UserRole.RECEPTIONIST]),
+  [
+    body("firstName").trim().isLength({ min: 1 }).withMessage("First name is required"),
+    body("lastName").trim().isLength({ min: 1 }).withMessage("Last name is required"),
+    body("gender").isIn(["MALE", "FEMALE", "OTHER"]).withMessage("Invalid gender"),
+    body("insuranceType").isIn(["SHA", "PRIVATE", "CASH"]).withMessage("Invalid insurance type"),
+    body("age").optional().isInt({ min: 0, max: 150 }).withMessage("Invalid age"),
+    body("phoneNumber").optional().isMobilePhone("any").withMessage("Invalid phone number"),
+    body("dateOfBirth").optional().isISO8601().withMessage("Invalid date of birth"),
+  ],
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation failed",
+          errors: errors.array(),
+        })
+      }
+
+      const patientData = req.body
+
+      // Convert date string to Date object if provided
+      if (patientData.dateOfBirth) {
+        patientData.dateOfBirth = new Date(patientData.dateOfBirth)
+      }
+
+      const patient = await PatientModel.create(patientData)
+
+      res.status(201).json({
+        success: true,
+        message: "Patient created successfully",
+        data: patient,
+      })
+    } catch (error: any) {
+      if (error.code === "23505") {
+        // Unique constraint violation
+        return res.status(409).json({
+          success: false,
+          message: "Patient with this OP number already exists",
+        })
+      }
+
+      res.status(500).json({
+        success: false,
+        message: "Failed to create patient",
+      })
+    }
+  },
+)
+
+// Update patient
+router.put(
+  "/:id",
+  authorize([UserRole.ADMIN, UserRole.RECEPTIONIST]),
+  [
+    body("firstName").optional().trim().isLength({ min: 1 }).withMessage("First name cannot be empty"),
+    body("lastName").optional().trim().isLength({ min: 1 }).withMessage("Last name cannot be empty"),
+    body("gender").optional().isIn(["MALE", "FEMALE", "OTHER"]).withMessage("Invalid gender"),
+    body("insuranceType").optional().isIn(["SHA", "PRIVATE", "CASH"]).withMessage("Invalid insurance type"),
+    body("age").optional().isInt({ min: 0, max: 150 }).withMessage("Invalid age"),
+    body("phoneNumber").optional().isMobilePhone("any").withMessage("Invalid phone number"),
+    body("dateOfBirth").optional().isISO8601().withMessage("Invalid date of birth"),
+  ],
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation failed",
+          errors: errors.array(),
+        })
+      }
+
+      const { id } = req.params
+      const updateData = req.body
+
+      // Convert date string to Date object if provided
+      if (updateData.dateOfBirth) {
+        updateData.dateOfBirth = new Date(updateData.dateOfBirth)
+      }
+
+      const patient = await PatientModel.update(id, updateData)
+
+      if (!patient) {
+        return res.status(404).json({
+          success: false,
+          message: "Patient not found",
+        })
+      }
+
+      res.json({
+        success: true,
+        message: "Patient updated successfully",
+        data: patient,
+      })
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Failed to update patient",
+      })
+    }
+  },
+)
+
+// Search patients endpoint
+router.get(
+  "/search",
+  authorize([UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.NURSE, UserRole.CLINICAL_OFFICER]),
+  [
+    query("q").trim().isLength({ min: 1 }).withMessage("Search query is required"),
+    query("limit").optional().isInt({ min: 1, max: 50 }).withMessage("Limit must be between 1 and 50"),
+  ],
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation failed",
+          errors: errors.array(),
+        })
+      }
+
+      const query = req.query.q as string
+      const limit = Number.parseInt(req.query.limit as string) || 20
+
+      const patients = await PatientModel.search(query, limit)
+
+      res.json({
+        success: true,
+        data: {
+          patients,
+          total: patients.length,
+        },
+      })
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Failed to search patients",
+      })
+    }
+  },
+)
+
+export default router
