@@ -54,10 +54,25 @@ services:
       JWT_REFRESH_SECRET: your-super-secret-refresh-key-change-in-production
       PORT: 5000
       CORS_ORIGIN: http://localhost:3000
-      # Prescription system specific variables
+      # Enhanced system variables
       LOG_LEVEL: debug
       ENABLE_AUDIT_LOGGING: true
       AUTO_SAVE_INTERVAL: 30000
+      # SHA Insurance Integration
+      SHA_API_URL: https://api.sha.go.ke
+      SHA_PROVIDER_CODE: CLINIC001
+      SHA_PROVIDER_NAME: Seth Medical Clinic
+      SHA_FACILITY_LEVEL: Level2
+      SHA_TIMEOUT: 30000
+      SHA_REQUIRE_INVOICE_BEFORE_SUBMISSION: true
+      SHA_AUTO_SUBMIT_CLAIMS: false
+      SHA_PAYMENT_CHECK_INTERVAL_HOURS: 24
+      SHA_EXPORT_RETENTION_DAYS: 90
+      SHA_DOCUMENT_MAX_SIZE_MB: 10
+      SHA_BATCH_SIZE_LIMIT: 100
+      # File storage
+      STORAGE_TYPE: local
+      STORAGE_PATH: ./uploads
     ports:
       - "5000:5000"
     depends_on:
@@ -68,6 +83,8 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
+      - uploads_data:/app/uploads
+      - exports_data:/app/exports
     networks:
       - seth-clinic-network
     healthcheck:
@@ -89,6 +106,12 @@ services:
       REDIS_URL: redis://redis:6379
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
       LOG_LEVEL: debug
+      # SHA configuration for worker
+      SHA_API_URL: https://api.sha.go.ke
+      SHA_PROVIDER_CODE: CLINIC001
+      SHA_PAYMENT_CHECK_INTERVAL_HOURS: 24
+      STORAGE_TYPE: local
+      STORAGE_PATH: ./uploads
     command: npm run worker
     depends_on:
       postgres:
@@ -98,6 +121,8 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
+      - uploads_data:/app/uploads
+      - exports_data:/app/exports
     networks:
       - seth-clinic-network
 
@@ -132,6 +157,8 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  uploads_data:
+  exports_data:
 
 networks:
   seth-clinic-network:

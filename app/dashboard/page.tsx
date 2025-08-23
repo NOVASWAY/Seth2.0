@@ -5,7 +5,7 @@ import { QueueBoard } from "../../components/queue/QueueBoard"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
 import { UserRole } from "../../types"
-import { FileText, Users, Activity, TrendingUp, Microscope, TestTube } from "lucide-react"
+import { FileText, Users, Activity, TrendingUp, Microscope, TestTube, Shield } from "lucide-react"
 import Link from "next/link"
 
 export default function DashboardPage() {
@@ -38,24 +38,43 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/10 rounded-lg">
-                  <Microscope className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">Diagnostics</h3>
-                  <p className="text-sm text-muted-foreground">Create lab test requests</p>
-                </div>
-              </div>
-              <Link href="/diagnostics" className="mt-4 block">
-                <Button className="w-full" size="sm">
-                  Open Diagnostics
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+                          <Card className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-500/10 rounded-lg">
+                        <Microscope className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Diagnostics</h3>
+                        <p className="text-sm text-muted-foreground">Create lab test requests</p>
+                      </div>
+                    </div>
+                    <Link href="/diagnostics" className="mt-4 block">
+                      <Button className="w-full" size="sm">
+                        Open Diagnostics
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-indigo-500/10 rounded-lg">
+                        <Shield className="h-6 w-6 text-indigo-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">SHA Insurance</h3>
+                        <p className="text-sm text-muted-foreground">Manage SHA claims & invoices</p>
+                      </div>
+                    </div>
+                    <Link href="/sha" className="mt-4 block">
+                      <Button className="w-full" size="sm">
+                        Open SHA Management
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
 
           <Card className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">

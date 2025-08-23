@@ -18,9 +18,15 @@ import auditRoutes from "./routes/audit"
 import prescriptionRoutes from "./routes/prescriptions"
 import labTestRoutes from "./routes/lab-tests"
 import labRequestRoutes from "./routes/lab-requests"
+import shaInvoiceRoutes from "./routes/sha-invoices"
+import shaBatchRoutes from "./routes/sha-batches"
 import financialRoutes from "./routes/financial"
 import adminRoutes from "./routes/admin"
 import visitRoutes from "./routes/visits"
+import patientEncountersRoutes from "./routes/patient-encounters"
+import shaDocumentsRoutes from "./routes/sha-documents"
+import shaExportsRoutes from "./routes/sha-exports"
+import clinicalAutocompleteRoutes from "./routes/clinical-autocomplete"
 
 // Import middleware
 import { errorHandler } from "./middleware/errorHandler"
@@ -104,9 +110,15 @@ app.use("/api/audit", authenticate, auditRoutes)
 app.use("/api/prescriptions", authenticate, prescriptionRoutes)
 app.use("/api/lab-tests", authenticate, labTestRoutes)
 app.use("/api/lab-requests", authenticate, labRequestRoutes)
+app.use("/api/sha-invoices", authenticate, shaInvoiceRoutes)
+app.use("/api/sha-batches", authenticate, shaBatchRoutes)
 app.use("/api/financial", authenticate, financialRoutes)
 app.use("/api/admin", authenticate, adminRoutes)
 app.use("/api/visits", authenticate, visitRoutes)
+app.use("/api/patient-encounters", authenticate, patientEncountersRoutes)
+app.use("/api/sha-documents", authenticate, shaDocumentsRoutes)
+app.use("/api/sha-exports", authenticate, shaExportsRoutes)
+app.use("/api/clinical-autocomplete", authenticate, clinicalAutocompleteRoutes)
 
 // Audit logging middleware (after routes)
 app.use(auditLogger)

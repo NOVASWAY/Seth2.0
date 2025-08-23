@@ -21,6 +21,20 @@ A comprehensive, production-ready Clinic Management System designed specifically
 - **Comprehensive Timestamping**: All records include creation and update timestamps
 - **Smart Medicine Selection**: Search medicines by name, category, or generic name
 
+### 🆕 **NEW: Enhanced SHA Insurance Management**
+
+The system now includes comprehensive SHA insurance integration with automated invoice generation, compliance tracking, and audit trails:
+
+#### Key Features:
+- **Automated Invoice Generation**: Invoices are automatically generated for all SHA patients with proper service codes
+- **Batch Management**: Weekly, monthly, and custom batch creation for organized claim submission
+- **Printable Invoices**: Professional printable invoices meeting SHA requirements with clinic branding
+- **Compliance Tracking**: Full audit trails and compliance monitoring for SHA requirements
+- **Electronic Submission**: Direct API integration with SHA eClaims portal for seamless submission
+- **Financial Reconciliation**: Track payments, reconcile claims, and manage accounts receivable
+- **Audit Support**: Comprehensive record keeping with 7-year retention for SHA audits
+- **Real-time Status**: Live tracking of claim status from submission to payment
+
 ### 🆕 **NEW: Enhanced Diagnostics System**
 - **Real-time Test Catalog**: Laboratory test dropdown shows only active tests with pricing and turnaround times
 - **Enhanced Patient Input**: Search existing patients or register new ones with comprehensive forms

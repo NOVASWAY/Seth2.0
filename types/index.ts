@@ -196,6 +196,83 @@ export interface AvailableTest {
   description?: string
 }
 
+// Enhanced SHA Types for comprehensive invoice management
+export interface SHAInvoice {
+  id: string
+  invoice_number: string
+  claim_id: string
+  patient_id: string
+  op_number: string
+  visit_id: string
+  invoice_date: Date
+  due_date: Date
+  total_amount: number
+  status: "draft" | "generated" | "printed" | "submitted" | "paid"
+  generated_at?: Date
+  generated_by: string
+  printed_at?: Date
+  printed_by?: string
+  submitted_at?: Date
+  submitted_by?: string
+  sha_reference?: string
+  batch_reference?: string
+  compliance_status: "pending" | "verified" | "approved" | "rejected"
+  audit_notes?: string
+  created_at: Date
+  updated_at: Date
+}
+
+export interface SHACompliance {
+  id: string
+  claim_id: string
+  invoice_id: string
+  compliance_type: "invoice_generation" | "submission" | "payment" | "audit"
+  status: "pending" | "verified" | "approved" | "rejected"
+  verification_date?: Date
+  verified_by?: string
+  notes?: string
+  required_actions?: string[]
+  next_review_date?: Date
+  created_at: Date
+  updated_at: Date
+}
+
+export interface SHAAuditTrail {
+  id: string
+  claim_id: string
+  invoice_id?: string
+  action: string
+  performed_by: string
+  performed_at: Date
+  details: Record<string, any>
+  ip_address?: string
+  user_agent?: string
+  compliance_check: boolean
+  audit_notes?: string
+  created_at: Date
+}
+
+export interface SHABatch {
+  id: string
+  batch_number: string
+  batch_date: Date
+  batch_type: "weekly" | "monthly" | "custom"
+  total_claims: number
+  total_amount: number
+  status: "draft" | "submitted" | "processing" | "completed" | "failed"
+  submission_date?: Date
+  completion_date?: Date
+  sha_batch_reference?: string
+  created_by: string
+  invoice_generated: boolean
+  invoice_generated_at?: Date
+  printed_invoices: boolean
+  printed_at?: Date
+  printed_by?: string
+  created_at: Date
+  updated_at: Date
+}
+
 export interface Prescription {
   id: string
   consultationId: string

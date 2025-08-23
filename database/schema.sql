@@ -237,36 +237,337 @@ CREATE TABLE accounts_receivable (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- SHA claims table
+-- SHA claims table (enhanced for comprehensive compliance)
 CREATE TABLE sha_claims (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     claim_number VARCHAR(50) UNIQUE NOT NULL,
     patient_id UUID NOT NULL REFERENCES patients(id),
     op_number VARCHAR(20) NOT NULL,
     visit_id UUID NOT NULL REFERENCES visits(id),
+    
+    -- Patient Information (SHA Requirements)
+    patient_name VARCHAR(200) NOT NULL,
+    sha_beneficiary_id VARCHAR(50) NOT NULL,
+    national_id VARCHAR(20),
+    phone_number VARCHAR(20),
+    visit_date DATE NOT NULL,
+    
+    -- Diagnosis Information (ICD-10/SHA Codes)
+    primary_diagnosis_code VARCHAR(20) NOT NULL,
+    primary_diagnosis_description TEXT NOT NULL,
+    secondary_diagnosis_codes VARCHAR(200)[], -- Array for multiple diagnoses
+    secondary_diagnosis_descriptions TEXT[],
+    
+    -- Provider Information
+    provider_code VARCHAR(50) NOT NULL,
+    provider_name VARCHAR(200) NOT NULL,
+    facility_level VARCHAR(20) CHECK (facility_level IN ('Level1', 'Level2', 'Level3', 'Level4', 'Level5', 'Level6')),
+    
+    -- Financial Information
     claim_amount DECIMAL(10,2) NOT NULL,
-    status VARCHAR(30) DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'READY_TO_SUBMIT', 'SUBMITTED', 'PAID', 'REJECTED', 'PARTIALLY_PAID')),
-    submitted_at TIMESTAMP,
-    paid_at TIMESTAMP,
-    rejection_reason TEXT,
+    approved_amount DECIMAL(10,2),
+    paid_amount DECIMAL(10,2) DEFAULT 0,
+    balance_variance DECIMAL(10,2) DEFAULT 0,
+    
+    -- Status Tracking (Enhanced)
+    status VARCHAR(30) DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'READY_TO_SUBMIT', 'INVOICE_GENERATED', 'SUBMITTED', 'APPROVED', 'REJECTED', 'PARTIALLY_PAID', 'PAID')),
+    submission_date TIMESTAMP,
+    approval_date TIMESTAMP,
+    rejection_date TIMESTAMP,
+    payment_date TIMESTAMP,
+    
+    -- SHA References
     sha_reference VARCHAR(100),
+    sha_transaction_reference VARCHAR(100),
+    sha_payment_reference VARCHAR(100),
     batch_id VARCHAR(100),
+    
+    -- Compliance & Audit
+    rejection_reason TEXT,
+    compliance_notes TEXT,
+    requires_documents BOOLEAN DEFAULT false,
+    documents_attached INTEGER DEFAULT 0,
+    last_reviewed_at TIMESTAMP,
+    reviewed_by UUID REFERENCES users(id),
+    
+    -- System Tracking
     created_by UUID NOT NULL REFERENCES users(id),
+    submitted_by UUID REFERENCES users(id),
+    approved_by UUID REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- SHA claim items table
+-- SHA claim items table (enhanced for comprehensive service tracking)
 CREATE TABLE sha_claim_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     claim_id UUID NOT NULL REFERENCES sha_claims(id),
-    service_type VARCHAR(100) NOT NULL,
-    service_code VARCHAR(50),
-    description TEXT NOT NULL,
-    quantity INTEGER NOT NULL,
+    
+    -- Service Details (SHA Requirements)
+    service_type VARCHAR(100) NOT NULL CHECK (service_type IN ('CONSULTATION', 'DIAGNOSTIC', 'LABORATORY', 'PHARMACY', 'PROCEDURE', 'INPATIENT', 'EMERGENCY', 'DENTAL', 'OPTICAL')),
+    service_code VARCHAR(50) NOT NULL,
+    service_description TEXT NOT NULL,
+    service_date DATE NOT NULL,
+    
+    -- Pricing Information
+    quantity INTEGER NOT NULL DEFAULT 1,
     unit_price DECIMAL(10,2) NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL,
-    approved_amount DECIMAL(10,2)
+    
+    -- SHA Processing
+    sha_service_code VARCHAR(50),
+    sha_service_category VARCHAR(100),
+    sha_tariff_code VARCHAR(50),
+    approved_quantity INTEGER,
+    approved_unit_price DECIMAL(10,2),
+    approved_amount DECIMAL(10,2),
+    rejection_reason TEXT,
+    
+    -- Clinical Information
+    prescription_notes TEXT,
+    treatment_notes TEXT,
+    dosage_instructions TEXT,
+    diagnosis_justification TEXT,
+    
+    -- Provider Information
+    provided_by UUID REFERENCES users(id),
+    department VARCHAR(100),
+    facility_level VARCHAR(20),
+    
+    -- Audit & Compliance
+    is_emergency BOOLEAN DEFAULT false,
+    requires_pre_authorization BOOLEAN DEFAULT false,
+    pre_authorization_number VARCHAR(100),
+    compliance_verified BOOLEAN DEFAULT false,
+    verification_notes TEXT,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- SHA invoices table (enhanced for compliance)
+CREATE TABLE sha_invoices (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    invoice_number VARCHAR(50) UNIQUE NOT NULL,
+    claim_id UUID NOT NULL REFERENCES sha_claims(id),
+    patient_id UUID NOT NULL REFERENCES patients(id),
+    op_number VARCHAR(20) NOT NULL,
+    visit_id UUID REFERENCES visits(id),
+    invoice_date DATE NOT NULL,
+    due_date DATE NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
+    status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'generated', 'printed', 'submitted', 'paid')),
+    generated_at TIMESTAMP,
+    generated_by UUID NOT NULL REFERENCES users(id),
+    printed_at TIMESTAMP,
+    printed_by UUID REFERENCES users(id),
+    submitted_at TIMESTAMP,
+    submitted_by UUID REFERENCES users(id),
+    sha_reference VARCHAR(100),
+    batch_reference VARCHAR(100),
+    compliance_status VARCHAR(20) DEFAULT 'pending' CHECK (compliance_status IN ('pending', 'verified', 'approved', 'rejected')),
+    audit_notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- SHA compliance tracking table
+CREATE TABLE sha_compliance (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    claim_id UUID NOT NULL REFERENCES sha_claims(id),
+    invoice_id UUID NOT NULL REFERENCES sha_invoices(id),
+    compliance_type VARCHAR(30) NOT NULL CHECK (compliance_type IN ('invoice_generation', 'submission', 'payment', 'audit')),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'verified', 'approved', 'rejected')),
+    verification_date TIMESTAMP,
+    verified_by UUID REFERENCES users(id),
+    notes TEXT,
+    required_actions TEXT[],
+    next_review_date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- SHA audit trail table (immutable for compliance)
+CREATE TABLE sha_audit_trail (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    claim_id UUID NOT NULL REFERENCES sha_claims(id),
+    invoice_id UUID REFERENCES sha_invoices(id),
+    action VARCHAR(100) NOT NULL,
+    performed_by UUID NOT NULL REFERENCES users(id),
+    performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    details JSONB NOT NULL,
+    ip_address INET,
+    user_agent TEXT,
+    compliance_check BOOLEAN DEFAULT false,
+    audit_notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- SHA batch management table (enhanced)
+CREATE TABLE sha_claim_batches (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    batch_number VARCHAR(50) UNIQUE NOT NULL,
+    batch_date DATE NOT NULL,
+    batch_type VARCHAR(20) DEFAULT 'custom' CHECK (batch_type IN ('weekly', 'monthly', 'custom')),
+    total_claims INTEGER NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
+    status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'processing', 'completed', 'failed')),
+    submission_date TIMESTAMP,
+    completion_date TIMESTAMP,
+    sha_batch_reference VARCHAR(100),
+    created_by UUID NOT NULL REFERENCES users(id),
+    invoice_generated BOOLEAN DEFAULT false,
+    invoice_generated_at TIMESTAMP,
+    printed_invoices BOOLEAN DEFAULT false,
+    printed_at TIMESTAMP,
+    printed_by UUID REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- SHA submission logs table (enhanced)
+CREATE TABLE sha_submission_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    claim_id UUID REFERENCES sha_claims(id),
+    batch_id UUID REFERENCES sha_claim_batches(id),
+    invoice_id UUID REFERENCES sha_invoices(id),
+    submission_type VARCHAR(20) NOT NULL CHECK (submission_type IN ('single', 'batch')),
+    submission_method VARCHAR(20) DEFAULT 'api' CHECK (submission_method IN ('api', 'portal', 'manual')),
+    request_payload JSONB,
+    response_payload JSONB,
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'success', 'failed', 'retry')),
+    error_message TEXT,
+    retry_count INTEGER DEFAULT 0,
+    next_retry_at TIMESTAMP,
+    compliance_check BOOLEAN DEFAULT false,
+    audit_notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Document attachments table for SHA compliance
+CREATE TABLE sha_document_attachments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    claim_id UUID NOT NULL REFERENCES sha_claims(id),
+    invoice_id UUID REFERENCES sha_invoices(id),
+    
+    -- Document Information
+    document_type VARCHAR(50) NOT NULL CHECK (document_type IN ('LAB_RESULTS', 'DISCHARGE_SUMMARY', 'PRESCRIPTION', 'REFERRAL_LETTER', 'MEDICAL_REPORT', 'IMAGING_REPORT', 'CONSENT_FORM', 'INSURANCE_CARD', 'IDENTIFICATION', 'OTHER')),
+    document_name VARCHAR(255) NOT NULL,
+    document_description TEXT,
+    file_path VARCHAR(500) NOT NULL,
+    file_size BIGINT NOT NULL,
+    mime_type VARCHAR(100) NOT NULL,
+    
+    -- SHA Compliance
+    is_required BOOLEAN DEFAULT false,
+    compliance_verified BOOLEAN DEFAULT false,
+    verification_date TIMESTAMP,
+    verification_notes TEXT,
+    sha_document_reference VARCHAR(100),
+    
+    -- Audit Information
+    uploaded_by UUID NOT NULL REFERENCES users(id),
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    access_count INTEGER DEFAULT 0,
+    last_accessed_at TIMESTAMP,
+    last_accessed_by UUID REFERENCES users(id),
+    
+    -- Security & Retention
+    encryption_status VARCHAR(20) DEFAULT 'encrypted' CHECK (encryption_status IN ('encrypted', 'unencrypted')),
+    retention_period INTEGER DEFAULT 2555, -- 7 years in days
+    deletion_scheduled_date DATE,
+    is_archived BOOLEAN DEFAULT false,
+    archived_at TIMESTAMP,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Patient encounter tracking table (for automatic invoice generation)
+CREATE TABLE patient_encounters (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    patient_id UUID NOT NULL REFERENCES patients(id),
+    visit_id UUID NOT NULL REFERENCES visits(id),
+    
+    -- Encounter Information
+    encounter_type VARCHAR(50) NOT NULL CHECK (encounter_type IN ('CONSULTATION', 'LAB', 'PHARMACY', 'INPATIENT', 'EMERGENCY', 'FOLLOW_UP', 'PROCEDURE')),
+    encounter_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completion_date TIMESTAMP,
+    
+    -- Clinical Information
+    chief_complaint TEXT,
+    diagnosis_codes VARCHAR(20)[],
+    diagnosis_descriptions TEXT[],
+    treatment_summary TEXT,
+    
+    -- Service Information
+    services_provided JSONB, -- Array of service objects
+    medications_prescribed JSONB, -- Array of prescription objects
+    lab_tests_ordered JSONB, -- Array of lab test objects
+    procedures_performed JSONB, -- Array of procedure objects
+    
+    -- Provider Information
+    primary_provider UUID NOT NULL REFERENCES users(id),
+    consulting_providers UUID[] DEFAULT '{}',
+    department VARCHAR(100),
+    location VARCHAR(100),
+    
+    -- Financial Information
+    total_charges DECIMAL(10,2) DEFAULT 0,
+    insurance_eligible BOOLEAN DEFAULT false,
+    sha_eligible BOOLEAN DEFAULT false,
+    private_pay BOOLEAN DEFAULT false,
+    
+    -- Status Tracking
+    status VARCHAR(30) DEFAULT 'IN_PROGRESS' CHECK (status IN ('IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'INVOICE_GENERATED', 'BILLED')),
+    completion_triggered_invoice BOOLEAN DEFAULT false,
+    invoice_id UUID REFERENCES invoices(id),
+    sha_claim_id UUID REFERENCES sha_claims(id),
+    
+    -- Audit Information
+    created_by UUID NOT NULL REFERENCES users(id),
+    completed_by UUID REFERENCES users(id),
+    billed_by UUID REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- SHA export logs table (for PDF/Excel exports)
+CREATE TABLE sha_export_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- Export Information
+    export_type VARCHAR(20) NOT NULL CHECK (export_type IN ('PDF', 'EXCEL', 'CSV', 'JSON')),
+    export_scope VARCHAR(20) NOT NULL CHECK (export_scope IN ('SINGLE_INVOICE', 'BATCH', 'DATE_RANGE', 'CUSTOM_FILTER')),
+    
+    -- Filter Criteria
+    date_from DATE,
+    date_to DATE,
+    patient_ids UUID[],
+    claim_statuses VARCHAR(30)[],
+    invoice_ids UUID[],
+    batch_ids UUID[],
+    
+    -- Export Results
+    total_records INTEGER NOT NULL,
+    file_path VARCHAR(500),
+    file_size BIGINT,
+    download_count INTEGER DEFAULT 0,
+    
+    -- SHA Compliance
+    export_reason VARCHAR(200) NOT NULL,
+    audit_trail_reference VARCHAR(100),
+    compliance_approved BOOLEAN DEFAULT false,
+    approved_by UUID REFERENCES users(id),
+    approval_date TIMESTAMP,
+    
+    -- System Information
+    exported_by UUID NOT NULL REFERENCES users(id),
+    exported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP, -- Auto-delete after X days
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Audit logs table (immutable)
@@ -362,6 +663,33 @@ CREATE INDEX idx_sha_claims_status ON sha_claims(status);
 CREATE INDEX idx_user_sessions_user_id ON user_sessions(user_id);
 CREATE INDEX idx_user_sessions_expires_at ON user_sessions(expires_at);
 
+-- Enhanced SHA indexes for performance
+CREATE INDEX idx_sha_invoices_claim ON sha_invoices(claim_id);
+CREATE INDEX idx_sha_invoices_patient ON sha_invoices(patient_id);
+CREATE INDEX idx_sha_invoices_number ON sha_invoices(invoice_number);
+CREATE INDEX idx_sha_invoices_status ON sha_invoices(status);
+CREATE INDEX idx_sha_invoices_date ON sha_invoices(invoice_date);
+CREATE INDEX idx_sha_invoices_due_date ON sha_invoices(due_date);
+CREATE INDEX idx_sha_invoices_sha_ref ON sha_invoices(sha_reference);
+CREATE INDEX idx_sha_compliance_claim ON sha_compliance(claim_id);
+CREATE INDEX idx_sha_compliance_invoice ON sha_compliance(invoice_id);
+CREATE INDEX idx_sha_compliance_type ON sha_compliance(compliance_type);
+CREATE INDEX idx_sha_compliance_status ON sha_compliance(status);
+CREATE INDEX idx_sha_audit_claim ON sha_audit_trail(claim_id);
+CREATE INDEX idx_sha_audit_invoice ON sha_audit_trail(invoice_id);
+CREATE INDEX idx_sha_audit_action ON sha_audit_trail(action);
+CREATE INDEX idx_sha_audit_user ON sha_audit_trail(performed_by);
+CREATE INDEX idx_sha_audit_date ON sha_audit_trail(performed_at);
+CREATE INDEX idx_sha_batches_number ON sha_claim_batches(batch_number);
+CREATE INDEX idx_sha_batches_type ON sha_claim_batches(batch_type);
+CREATE INDEX idx_sha_batches_status ON sha_claim_batches(status);
+CREATE INDEX idx_sha_batches_date ON sha_claim_batches(batch_date);
+CREATE INDEX idx_sha_submission_claim ON sha_submission_logs(claim_id);
+CREATE INDEX idx_sha_submission_batch ON sha_submission_logs(batch_id);
+CREATE INDEX idx_sha_submission_invoice ON sha_submission_logs(invoice_id);
+CREATE INDEX idx_sha_submission_status ON sha_submission_logs(status);
+CREATE INDEX idx_sha_submission_date ON sha_submission_logs(created_at);
+
 -- Triggers for updated_at timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -381,4 +709,325 @@ CREATE TRIGGER update_inventory_batches_updated_at BEFORE UPDATE ON inventory_ba
 CREATE TRIGGER update_invoices_updated_at BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_accounts_receivable_updated_at BEFORE UPDATE ON accounts_receivable FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_sha_claims_updated_at BEFORE UPDATE ON sha_claims FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_sha_invoices_updated_at BEFORE UPDATE ON sha_invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_sha_compliance_updated_at BEFORE UPDATE ON sha_compliance FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_sha_claim_batches_updated_at BEFORE UPDATE ON sha_claim_batches FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_sha_submission_logs_updated_at BEFORE UPDATE ON sha_submission_logs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_lab_requests_updated_at BEFORE UPDATE ON lab_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Additional indexes for enhanced SHA tables
+CREATE INDEX idx_sha_claims_beneficiary ON sha_claims(sha_beneficiary_id);
+CREATE INDEX idx_sha_claims_national_id ON sha_claims(national_id);
+CREATE INDEX idx_sha_claims_visit_date ON sha_claims(visit_date);
+CREATE INDEX idx_sha_claims_provider_code ON sha_claims(provider_code);
+CREATE INDEX idx_sha_claims_facility_level ON sha_claims(facility_level);
+
+CREATE INDEX idx_sha_claim_items_service_date ON sha_claim_items(service_date);
+CREATE INDEX idx_sha_claim_items_provided_by ON sha_claim_items(provided_by);
+CREATE INDEX idx_sha_claim_items_department ON sha_claim_items(department);
+CREATE INDEX idx_sha_claim_items_emergency ON sha_claim_items(is_emergency);
+
+CREATE INDEX idx_sha_documents_claim_id ON sha_document_attachments(claim_id);
+CREATE INDEX idx_sha_documents_type ON sha_document_attachments(document_type);
+CREATE INDEX idx_sha_documents_uploaded_by ON sha_document_attachments(uploaded_by);
+CREATE INDEX idx_sha_documents_uploaded_at ON sha_document_attachments(uploaded_at);
+CREATE INDEX idx_sha_documents_required ON sha_document_attachments(is_required);
+
+CREATE INDEX idx_patient_encounters_patient ON patient_encounters(patient_id);
+CREATE INDEX idx_patient_encounters_visit ON patient_encounters(visit_id);
+CREATE INDEX idx_patient_encounters_type ON patient_encounters(encounter_type);
+CREATE INDEX idx_patient_encounters_status ON patient_encounters(status);
+CREATE INDEX idx_patient_encounters_date ON patient_encounters(encounter_date);
+CREATE INDEX idx_patient_encounters_completion ON patient_encounters(completion_date);
+CREATE INDEX idx_patient_encounters_provider ON patient_encounters(primary_provider);
+CREATE INDEX idx_patient_encounters_sha_eligible ON patient_encounters(sha_eligible);
+
+CREATE INDEX idx_sha_exports_type ON sha_export_logs(export_type);
+CREATE INDEX idx_sha_exports_scope ON sha_export_logs(export_scope);
+CREATE INDEX idx_sha_exports_exported_by ON sha_export_logs(exported_by);
+CREATE INDEX idx_sha_exports_exported_at ON sha_export_logs(exported_at);
+CREATE INDEX idx_sha_exports_date_from ON sha_export_logs(date_from);
+CREATE INDEX idx_sha_exports_date_to ON sha_export_logs(date_to);
+
+-- Workflow indexes
+CREATE INDEX idx_sha_workflow_instances_claim_id ON sha_workflow_instances(claim_id);
+CREATE INDEX idx_sha_workflow_instances_status ON sha_workflow_instances(overall_status);
+CREATE INDEX idx_sha_workflow_instances_initiated_by ON sha_workflow_instances(initiated_by);
+CREATE INDEX idx_sha_workflow_instances_created_at ON sha_workflow_instances(created_at);
+
+CREATE INDEX idx_sha_workflow_steps_workflow_id ON sha_workflow_steps(workflow_id);
+CREATE INDEX idx_sha_workflow_steps_status ON sha_workflow_steps(status);
+CREATE INDEX idx_sha_workflow_steps_assigned_to ON sha_workflow_steps(assigned_to);
+CREATE INDEX idx_sha_workflow_steps_step_order ON sha_workflow_steps(step_order);
+
+CREATE INDEX idx_sha_workflow_activity_workflow_id ON sha_workflow_activity_log(workflow_id);
+CREATE INDEX idx_sha_workflow_activity_performed_by ON sha_workflow_activity_log(performed_by);
+CREATE INDEX idx_sha_workflow_activity_performed_at ON sha_workflow_activity_log(performed_at);
+
+CREATE INDEX idx_sha_payment_tracking_claim_id ON sha_payment_tracking(claim_id);
+CREATE INDEX idx_sha_payment_tracking_status ON sha_payment_tracking(payment_status);
+CREATE INDEX idx_sha_payment_tracking_next_check ON sha_payment_tracking(next_check_at);
+CREATE INDEX idx_sha_payment_tracking_auto_check ON sha_payment_tracking(auto_check_enabled);
+
+-- SHA workflow management tables
+CREATE TABLE sha_workflow_instances (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    claim_id UUID NOT NULL REFERENCES sha_claims(id),
+    invoice_id UUID REFERENCES sha_invoices(id),
+    workflow_type VARCHAR(50) NOT NULL DEFAULT 'SHA_CLAIM_PROCESSING',
+    current_step VARCHAR(50),
+    overall_status VARCHAR(20) DEFAULT 'not_started' CHECK (overall_status IN ('not_started', 'in_progress', 'completed', 'failed', 'cancelled')),
+    initiated_by UUID NOT NULL REFERENCES users(id),
+    completed_by UUID REFERENCES users(id),
+    completed_at TIMESTAMP,
+    estimated_completion_date DATE,
+    actual_completion_date DATE,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE sha_workflow_steps (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    workflow_id UUID NOT NULL REFERENCES sha_workflow_instances(id),
+    step_name VARCHAR(50) NOT NULL,
+    step_order INTEGER NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'skipped', 'failed')),
+    required BOOLEAN DEFAULT true,
+    automated BOOLEAN DEFAULT false,
+    estimated_duration_minutes INTEGER DEFAULT 0,
+    actual_duration_minutes INTEGER,
+    assigned_to UUID REFERENCES users(id),
+    completed_by UUID REFERENCES users(id),
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    notes TEXT,
+    prerequisites JSONB DEFAULT '[]',
+    next_steps JSONB DEFAULT '[]',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE sha_workflow_activity_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    workflow_id UUID NOT NULL REFERENCES sha_workflow_instances(id),
+    step_name VARCHAR(50),
+    action VARCHAR(100) NOT NULL,
+    performed_by UUID NOT NULL REFERENCES users(id),
+    performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    details JSONB,
+    ip_address INET,
+    user_agent TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE sha_payment_tracking (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    claim_id UUID NOT NULL REFERENCES sha_claims(id),
+    invoice_id UUID REFERENCES sha_invoices(id),
+    tracking_started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_checked_at TIMESTAMP,
+    next_check_at TIMESTAMP,
+    auto_check_enabled BOOLEAN DEFAULT true,
+    payment_status VARCHAR(20) DEFAULT 'pending' CHECK (payment_status IN ('pending', 'partial', 'paid', 'rejected', 'expired')),
+    payment_amount DECIMAL(10,2),
+    payment_date DATE,
+    sha_payment_reference VARCHAR(100),
+    reconciliation_status VARCHAR(20) DEFAULT 'unreconciled' CHECK (reconciliation_status IN ('unreconciled', 'reconciled', 'disputed')),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Clinical reference data tables for autocomplete functionality
+CREATE TABLE clinical_diagnosis_codes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    code VARCHAR(20) NOT NULL UNIQUE,
+    description TEXT NOT NULL,
+    category VARCHAR(100),
+    sub_category VARCHAR(100),
+    icd_version VARCHAR(10) DEFAULT 'ICD-10',
+    is_active BOOLEAN DEFAULT true,
+    search_keywords TEXT[], -- For enhanced search
+    usage_count INTEGER DEFAULT 0, -- Track popularity for sorting
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE clinical_medications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    generic_name VARCHAR(200) NOT NULL,
+    brand_names TEXT[], -- Multiple brand names
+    medication_code VARCHAR(50),
+    dosage_forms TEXT[], -- tablet, capsule, syrup, injection, etc.
+    strengths TEXT[], -- 250mg, 500mg, etc.
+    drug_class VARCHAR(100),
+    therapeutic_category VARCHAR(100),
+    route_of_administration TEXT[], -- oral, IV, IM, topical, etc.
+    contraindications TEXT,
+    side_effects TEXT,
+    drug_interactions TEXT,
+    pregnancy_category VARCHAR(10),
+    is_controlled_substance BOOLEAN DEFAULT false,
+    requires_prescription BOOLEAN DEFAULT true,
+    is_active BOOLEAN DEFAULT true,
+    search_keywords TEXT[],
+    usage_count INTEGER DEFAULT 0,
+    average_adult_dose VARCHAR(200),
+    pediatric_dose VARCHAR(200),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE clinical_lab_test_catalog (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    test_code VARCHAR(50) NOT NULL UNIQUE,
+    test_name VARCHAR(200) NOT NULL,
+    test_category VARCHAR(100) NOT NULL,
+    test_sub_category VARCHAR(100),
+    specimen_type VARCHAR(100) NOT NULL,
+    specimen_volume VARCHAR(50),
+    collection_method VARCHAR(100),
+    fasting_required BOOLEAN DEFAULT false,
+    normal_range_male VARCHAR(200),
+    normal_range_female VARCHAR(200),
+    normal_range_pediatric VARCHAR(200),
+    units VARCHAR(50),
+    turnaround_time_hours INTEGER DEFAULT 24,
+    price DECIMAL(10,2),
+    is_profile BOOLEAN DEFAULT false, -- For test panels
+    profile_tests UUID[], -- Array of test IDs if this is a profile
+    clinical_significance TEXT,
+    preparation_instructions TEXT,
+    is_active BOOLEAN DEFAULT true,
+    search_keywords TEXT[],
+    usage_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE clinical_procedures (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    procedure_code VARCHAR(50) NOT NULL UNIQUE,
+    procedure_name VARCHAR(200) NOT NULL,
+    procedure_category VARCHAR(100) NOT NULL,
+    procedure_type VARCHAR(100), -- diagnostic, therapeutic, surgical
+    description TEXT,
+    duration_minutes INTEGER,
+    anesthesia_required BOOLEAN DEFAULT false,
+    consent_required BOOLEAN DEFAULT false,
+    preparation_instructions TEXT,
+    post_procedure_care TEXT,
+    complications TEXT,
+    contraindications TEXT,
+    price DECIMAL(10,2),
+    facility_level_required VARCHAR(20), -- Level1, Level2, etc.
+    specialized_equipment TEXT[],
+    is_active BOOLEAN DEFAULT true,
+    search_keywords TEXT[],
+    usage_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE clinical_symptoms (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    symptom_name VARCHAR(200) NOT NULL,
+    symptom_code VARCHAR(50),
+    body_system VARCHAR(100),
+    severity_scale VARCHAR(200), -- mild, moderate, severe
+    associated_conditions TEXT[],
+    common_causes TEXT[],
+    red_flags TEXT[], -- Warning signs
+    is_active BOOLEAN DEFAULT true,
+    search_keywords TEXT[],
+    usage_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User-specific clinical favorites for quick access
+CREATE TABLE user_clinical_favorites (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    item_type VARCHAR(50) NOT NULL CHECK (item_type IN ('DIAGNOSIS', 'MEDICATION', 'LAB_TEST', 'PROCEDURE', 'SYMPTOM')),
+    item_id UUID NOT NULL,
+    item_name VARCHAR(200) NOT NULL,
+    usage_frequency INTEGER DEFAULT 1,
+    last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, item_type, item_id)
+);
+
+-- Clinical autocomplete search analytics
+CREATE TABLE clinical_search_analytics (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    search_term VARCHAR(200) NOT NULL,
+    search_type VARCHAR(50) NOT NULL,
+    results_count INTEGER DEFAULT 0,
+    selected_item_id UUID,
+    selected_item_name VARCHAR(200),
+    search_duration_ms INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Triggers for new tables
+CREATE TRIGGER update_sha_claim_items_updated_at BEFORE UPDATE ON sha_claim_items FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_sha_document_attachments_updated_at BEFORE UPDATE ON sha_document_attachments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_patient_encounters_updated_at BEFORE UPDATE ON patient_encounters FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_sha_workflow_instances_updated_at BEFORE UPDATE ON sha_workflow_instances FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_sha_workflow_steps_updated_at BEFORE UPDATE ON sha_workflow_steps FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_sha_payment_tracking_updated_at BEFORE UPDATE ON sha_payment_tracking FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_clinical_diagnosis_codes_updated_at BEFORE UPDATE ON clinical_diagnosis_codes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_clinical_medications_updated_at BEFORE UPDATE ON clinical_medications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_clinical_lab_test_catalog_updated_at BEFORE UPDATE ON clinical_lab_test_catalog FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_clinical_procedures_updated_at BEFORE UPDATE ON clinical_procedures FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_clinical_symptoms_updated_at BEFORE UPDATE ON clinical_symptoms FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_user_clinical_favorites_updated_at BEFORE UPDATE ON user_clinical_favorites FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Clinical data indexes for fast autocomplete search
+CREATE INDEX idx_clinical_diagnosis_codes_code ON clinical_diagnosis_codes(code);
+CREATE INDEX idx_clinical_diagnosis_codes_description ON clinical_diagnosis_codes USING gin(to_tsvector('english', description));
+CREATE INDEX idx_clinical_diagnosis_codes_category ON clinical_diagnosis_codes(category);
+CREATE INDEX idx_clinical_diagnosis_codes_active ON clinical_diagnosis_codes(is_active);
+CREATE INDEX idx_clinical_diagnosis_codes_usage ON clinical_diagnosis_codes(usage_count DESC);
+CREATE INDEX idx_clinical_diagnosis_codes_keywords ON clinical_diagnosis_codes USING gin(search_keywords);
+
+CREATE INDEX idx_clinical_medications_generic ON clinical_medications USING gin(to_tsvector('english', generic_name));
+CREATE INDEX idx_clinical_medications_brands ON clinical_medications USING gin(brand_names);
+CREATE INDEX idx_clinical_medications_class ON clinical_medications(drug_class);
+CREATE INDEX idx_clinical_medications_active ON clinical_medications(is_active);
+CREATE INDEX idx_clinical_medications_usage ON clinical_medications(usage_count DESC);
+CREATE INDEX idx_clinical_medications_keywords ON clinical_medications USING gin(search_keywords);
+
+CREATE INDEX idx_clinical_lab_tests_code ON clinical_lab_test_catalog(test_code);
+CREATE INDEX idx_clinical_lab_tests_name ON clinical_lab_test_catalog USING gin(to_tsvector('english', test_name));
+CREATE INDEX idx_clinical_lab_tests_category ON clinical_lab_test_catalog(test_category);
+CREATE INDEX idx_clinical_lab_tests_active ON clinical_lab_test_catalog(is_active);
+CREATE INDEX idx_clinical_lab_tests_usage ON clinical_lab_test_catalog(usage_count DESC);
+CREATE INDEX idx_clinical_lab_tests_keywords ON clinical_lab_test_catalog USING gin(search_keywords);
+
+CREATE INDEX idx_clinical_procedures_code ON clinical_procedures(procedure_code);
+CREATE INDEX idx_clinical_procedures_name ON clinical_procedures USING gin(to_tsvector('english', procedure_name));
+CREATE INDEX idx_clinical_procedures_category ON clinical_procedures(procedure_category);
+CREATE INDEX idx_clinical_procedures_active ON clinical_procedures(is_active);
+CREATE INDEX idx_clinical_procedures_usage ON clinical_procedures(usage_count DESC);
+CREATE INDEX idx_clinical_procedures_keywords ON clinical_procedures USING gin(search_keywords);
+
+CREATE INDEX idx_clinical_symptoms_name ON clinical_symptoms USING gin(to_tsvector('english', symptom_name));
+CREATE INDEX idx_clinical_symptoms_system ON clinical_symptoms(body_system);
+CREATE INDEX idx_clinical_symptoms_active ON clinical_symptoms(is_active);
+CREATE INDEX idx_clinical_symptoms_usage ON clinical_symptoms(usage_count DESC);
+CREATE INDEX idx_clinical_symptoms_keywords ON clinical_symptoms USING gin(search_keywords);
+
+CREATE INDEX idx_user_clinical_favorites_user ON user_clinical_favorites(user_id);
+CREATE INDEX idx_user_clinical_favorites_type ON user_clinical_favorites(item_type);
+CREATE INDEX idx_user_clinical_favorites_usage ON user_clinical_favorites(usage_frequency DESC);
+CREATE INDEX idx_user_clinical_favorites_last_used ON user_clinical_favorites(last_used_at DESC);
+
+CREATE INDEX idx_clinical_search_analytics_user ON clinical_search_analytics(user_id);
+CREATE INDEX idx_clinical_search_analytics_type ON clinical_search_analytics(search_type);
+CREATE INDEX idx_clinical_search_analytics_term ON clinical_search_analytics(search_term);
+CREATE INDEX idx_clinical_search_analytics_created ON clinical_search_analytics(created_at);
