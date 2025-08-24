@@ -1,4 +1,4 @@
-import { Queue } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
 
 // Initialize Redis connection
@@ -15,30 +15,31 @@ const backupQueue = new Queue('backup', { connection: redis });
 
 console.log('🚀 Seth Clinic CMS Worker started');
 
-// Process email jobs
-emailQueue.process(async (job) => {
+// Create workers to process jobs
+const emailWorker = new Worker('email', async (job) => {
   console.log('Processing email job:', job.id);
   // Add email processing logic here
   return { status: 'completed' };
-});
+}, { connection: redis });
 
-// Process report jobs
-reportQueue.process(async (job) => {
+const reportWorker = new Worker('report', async (job) => {
   console.log('Processing report job:', job.id);
   // Add report generation logic here
   return { status: 'completed' };
-});
+}, { connection: redis });
 
-// Process backup jobs
-backupQueue.process(async (job) => {
+const backupWorker = new Worker('backup', async (job) => {
   console.log('Processing backup job:', job.id);
   // Add backup logic here
   return { status: 'completed' };
-});
+}, { connection: redis });
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('Shutting down worker...');
+  await emailWorker.close();
+  await reportWorker.close();
+  await backupWorker.close();
   await emailQueue.close();
   await reportQueue.close();
   await backupQueue.close();
@@ -48,6 +49,9 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   console.log('Shutting down worker...');
+  await emailWorker.close();
+  await reportWorker.close();
+  await backupWorker.close();
   await emailQueue.close();
   await reportQueue.close();
   await backupQueue.close();
