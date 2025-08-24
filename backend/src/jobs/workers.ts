@@ -25,7 +25,7 @@ claimsQueue.process("submit_single_claim", async (job) => {
     const itemsResult = await pool.query("SELECT * FROM claim_items WHERE claim_id = $1", [claimId])
 
     // Submit to SHA
-    const result = await shaService.submitSingleClaim(claim, itemsResult.rows)
+    const result = await shaService.submitSingleClaim(claim.id, claim.created_by)
 
     if (!result.success) {
       throw new Error(`SHA submission failed: ${result.error}`)

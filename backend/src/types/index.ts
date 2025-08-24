@@ -131,6 +131,12 @@ export interface LabTest {
   testCategory?: string
   description?: string
   specimenType?: string
+  turnaroundTime?: string
+  isActive?: boolean
+  referenceRanges?: any
+  instructions?: string
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 export interface LabRequest {
@@ -149,6 +155,13 @@ export interface LabRequest {
   testType?: string
   testName?: string
   urgency?: string
+  clinicalNotes?: string
+  specimenCollectedAt?: Date
+  collectedBy?: string
+  expectedCompletionAt?: Date
+  requestedAt?: Date
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 export interface LabRequestItem {
@@ -164,6 +177,15 @@ export interface LabRequestItem {
   testCode?: string
   specimenType?: string
   urgency?: string
+  status?: string
+  clinicalNotes?: string
+  resultData?: any
+  referenceRanges?: any
+  abnormalFlags?: any
+  technicianNotes?: string
+  verifiedBy?: string
+  verifiedAt?: Date
+  reportedAt?: Date
 }
 
 // Prescription types

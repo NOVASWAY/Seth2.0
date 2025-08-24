@@ -1,6 +1,6 @@
 import { Router } from "express"
 import { pool } from "../config/database"
-import { authenticateToken, requireRole } from "../middleware/auth"
+import { authenticateToken, requireRole, type AuthenticatedRequest } from "../middleware/auth"
 import { body, validationResult } from "express-validator"
 import multer from "multer"
 import path from "path"
@@ -29,7 +29,7 @@ const upload = multer({
 })
 
 // Get admin dashboard data
-router.get("/dashboard", authenticateToken, requireRole([UserRole.ADMIN]), async (req, res) => {
+router.get("/dashboard", authenticateToken, requireRole([UserRole.ADMIN]), async (req: AuthenticatedRequest, res) => {
   try {
     const today = new Date()
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
@@ -99,7 +99,7 @@ router.get("/dashboard", authenticateToken, requireRole([UserRole.ADMIN]), async
 })
 
 // Get all users
-router.get("/users", authenticateToken, requireRole([UserRole.ADMIN]), async (req, res) => {
+router.get("/users", authenticateToken, requireRole([UserRole.ADMIN]), async (req: AuthenticatedRequest, res) => {
   try {
     const result = await pool.query(`
       SELECT id, username, email, first_name, last_name, role, is_active, 
@@ -135,7 +135,7 @@ router.post(
       .isIn(["admin", "receptionist", "nurse", "clinical_officer", "pharmacist", "inventory_manager", "claims_manager"])
       .withMessage("Invalid role"),
   ],
-  async (req, res) => {
+  async (req: AuthenticatedRequest, res) => {
     try {
       const errors = validationResult(req)
       if (!errors.isEmpty()) {
@@ -232,7 +232,7 @@ router.put(
       .withMessage("Invalid role"),
     body("is_active").optional().isBoolean().withMessage("is_active must be boolean"),
   ],
-  async (req, res) => {
+  async (req: AuthenticatedRequest, res) => {
     try {
       const errors = validationResult(req)
       if (!errors.isEmpty()) {
@@ -326,7 +326,7 @@ router.put(
 )
 
 // Reset user password
-router.post("/users/:id/reset-password", authenticateToken, requireRole([UserRole.ADMIN]), async (req, res) => {
+router.post("/users/:id/reset-password", authenticateToken, requireRole([UserRole.ADMIN]), async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params
 
@@ -386,7 +386,7 @@ router.post("/users/:id/reset-password", authenticateToken, requireRole([UserRol
 })
 
 // Upload patient data
-router.post("/patients/upload", authenticateToken, requireRole([UserRole.ADMIN]), upload.single("file"), async (req, res) => {
+router.post("/patients/upload", authenticateToken, requireRole([UserRole.ADMIN]), upload.single("file"), async (req: AuthenticatedRequest, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -531,7 +531,7 @@ router.post("/patients/upload", authenticateToken, requireRole([UserRole.ADMIN])
 })
 
 // Get audit logs
-router.get("/audit-logs", authenticateToken, requireRole([UserRole.ADMIN]), async (req, res) => {
+router.get("/audit-logs", authenticateToken, requireRole([UserRole.ADMIN]), async (req: AuthenticatedRequest, res) => {
   try {
     const { action, target_type, user_id, limit = 100, offset = 0 } = req.query
 

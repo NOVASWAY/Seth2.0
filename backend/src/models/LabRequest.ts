@@ -365,8 +365,14 @@ export class LabRequestModel {
   private static mapRowToLabRequest(row: any): LabRequest {
     return {
       id: row.id,
-              visit_id: row.visit_id,
-              patient_id: row.patient_id,
+      op_number: row.op_number,
+      request_date: new Date(row.requested_at),
+      priority: row.urgency,
+      created_by: row.requested_by,
+      created_at: new Date(row.created_at),
+      updated_at: new Date(row.updated_at),
+      visit_id: row.visit_id,
+      patient_id: row.patient_id,
       requestedBy: row.requested_by,
       testType: row.test_type,
       testName: row.test_name,
@@ -385,8 +391,12 @@ export class LabRequestModel {
   private static mapRowToLabRequestItem(row: any): LabRequestItem {
     return {
       id: row.id,
-              lab_request_id: row.lab_request_id,
-              test_id: row.test_id,
+      request_id: row.lab_request_id,
+      test_id: row.test_id,
+      quantity: row.quantity || 1,
+      price: parseFloat(row.price) || 0,
+      created_at: new Date(row.created_at),
+      lab_request_id: row.lab_request_id,
       testName: row.test_name,
       testCode: row.test_code,
       specimenType: row.specimen_type,

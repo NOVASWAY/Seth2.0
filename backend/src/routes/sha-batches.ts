@@ -333,7 +333,7 @@ router.patch(
       }
 
       // Submit batch to SHA
-      const result = await shaService.submitClaimBatch(batch, claimsResult.rows, req.user!.id)
+      const result = await shaService.submitClaimBatch(batch, claimsResult.rows)
 
       if (result.success) {
         res.json({

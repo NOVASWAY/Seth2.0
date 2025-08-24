@@ -62,7 +62,7 @@ export const auditLogger = (req: Request, res: Response, next: NextFunction) => 
     }
 
     // Call original end function
-    originalEnd.call(this, chunk, encoding)
+    return originalEnd.call(this, chunk, encoding)
   }
 
   next()

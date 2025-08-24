@@ -1,5 +1,5 @@
 import express from "express"
-import { requireRole } from "../middleware/auth"
+import { requireRole, type AuthenticatedRequest } from "../middleware/auth"
 import { auditLog } from "../middleware/auditLogger"
 import { UserRole } from "../types"
 import { Invoice } from "../models/Invoice"
@@ -7,7 +7,7 @@ import { Invoice } from "../models/Invoice"
 const router = express.Router()
 
 // Get all invoices with pagination and filtering
-router.get("/", requireRole([UserRole.ADMIN, UserRole.PHARMACIST, UserRole.CLAIMS_MANAGER]), async (req, res) => {
+router.get("/", requireRole([UserRole.ADMIN, UserRole.PHARMACIST, UserRole.CLAIMS_MANAGER]), async (req: AuthenticatedRequest, res) => {
   try {
     const { page = 1, limit = 20, status, patientId, opNumber, startDate, endDate } = req.query
 
@@ -100,7 +100,7 @@ router.get("/", requireRole([UserRole.ADMIN, UserRole.PHARMACIST, UserRole.CLAIM
 })
 
 // Get invoice by ID with line items
-router.get("/:id", requireRole([UserRole.ADMIN, UserRole.PHARMACIST, UserRole.CLAIMS_MANAGER]), async (req, res) => {
+router.get("/:id", requireRole([UserRole.ADMIN, UserRole.PHARMACIST, UserRole.CLAIMS_MANAGER]), async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params
 
@@ -172,7 +172,7 @@ router.get("/:id", requireRole([UserRole.ADMIN, UserRole.PHARMACIST, UserRole.CL
 })
 
 // Update invoice status
-router.patch("/:id/status", requireRole([UserRole.ADMIN, UserRole.PHARMACIST]), async (req, res) => {
+router.patch("/:id/status", requireRole([UserRole.ADMIN, UserRole.PHARMACIST]), async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params
     const { status } = req.body
@@ -226,7 +226,7 @@ router.patch("/:id/status", requireRole([UserRole.ADMIN, UserRole.PHARMACIST]), 
 })
 
 // Delete invoice (admin only)
-router.delete("/:id", requireRole([UserRole.ADMIN]), async (req, res) => {
+router.delete("/:id", requireRole([UserRole.ADMIN]), async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params
 

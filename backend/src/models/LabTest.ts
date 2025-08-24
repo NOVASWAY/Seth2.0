@@ -262,8 +262,15 @@ export class LabTestModel {
   private static mapRowToLabTest(row: any): LabTest {
     return {
       id: row.id,
-              test_code: row.test_code,
-              test_name: row.test_name,
+      name: row.test_name,
+      code: row.test_code,
+      category: row.test_category,
+      turnaround_time: row.turnaround_time,
+      is_active: row.is_active,
+      created_at: new Date(row.created_at),
+      updated_at: new Date(row.updated_at),
+      test_code: row.test_code,
+      test_name: row.test_name,
       testCategory: row.test_category,
       description: row.description,
       specimenType: row.specimen_type,
