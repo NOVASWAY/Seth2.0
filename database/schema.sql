@@ -570,6 +570,120 @@ CREATE TABLE sha_export_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- SHA workflow instances table (for tracking claim processing workflows)
+CREATE TABLE sha_workflow_instances (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    claim_id UUID NOT NULL REFERENCES sha_claims(id),
+    workflow_type VARCHAR(50) NOT NULL CHECK (workflow_type IN ('CLAIM_SUBMISSION', 'INVOICE_GENERATION', 'DOCUMENT_ATTACHMENT', 'COMPLIANCE_REVIEW', 'PAYMENT_PROCESSING')),
+    overall_status VARCHAR(30) NOT NULL DEFAULT 'INITIATED' CHECK (overall_status IN ('INITIATED', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'CANCELLED')),
+    current_step VARCHAR(50) NOT NULL,
+    total_steps INTEGER NOT NULL DEFAULT 1,
+    completed_steps INTEGER NOT NULL DEFAULT 0,
+    step_details JSONB NOT NULL DEFAULT '{}',
+    error_message TEXT,
+    retry_count INTEGER DEFAULT 0,
+    max_retries INTEGER DEFAULT 3,
+    initiated_by UUID NOT NULL REFERENCES users(id),
+    completed_by UUID REFERENCES users(id),
+    initiated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    expires_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- SHA workflow steps table (for detailed step tracking within workflows)
+CREATE TABLE sha_workflow_steps (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    workflow_id UUID NOT NULL REFERENCES sha_workflow_instances(id) ON DELETE CASCADE,
+    step_name VARCHAR(100) NOT NULL,
+    step_order INTEGER NOT NULL,
+    step_type VARCHAR(50) NOT NULL CHECK (step_type IN ('VALIDATION', 'PROCESSING', 'NOTIFICATION', 'APPROVAL', 'DOCUMENTATION')),
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'SKIPPED')),
+    input_data JSONB,
+    output_data JSONB,
+    error_message TEXT,
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    duration_ms INTEGER,
+    retry_count INTEGER DEFAULT 0,
+    max_retries INTEGER DEFAULT 3,
+    executed_by UUID REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Clinical diagnosis codes table (ICD-10 codes for autocomplete)
+CREATE TABLE clinical_diagnosis_codes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    code VARCHAR(20) UNIQUE NOT NULL,
+    description TEXT NOT NULL,
+    category VARCHAR(100),
+    subcategory VARCHAR(100),
+    is_active BOOLEAN DEFAULT true,
+    usage_count INTEGER DEFAULT 0,
+    search_keywords TEXT[],
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Clinical medications table (for prescription autocomplete)
+CREATE TABLE clinical_medications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(200) NOT NULL,
+    generic_name VARCHAR(200),
+    dosage_form VARCHAR(50),
+    strength VARCHAR(50),
+    manufacturer VARCHAR(100),
+    is_active BOOLEAN DEFAULT true,
+    usage_count INTEGER DEFAULT 0,
+    search_keywords TEXT[],
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Clinical lab tests table (for diagnostics autocomplete)
+CREATE TABLE clinical_lab_tests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    test_code VARCHAR(50) UNIQUE NOT NULL,
+    test_name VARCHAR(200) NOT NULL,
+    test_category VARCHAR(100),
+    specimen_type VARCHAR(100),
+    turnaround_time VARCHAR(50),
+    is_active BOOLEAN DEFAULT true,
+    usage_count INTEGER DEFAULT 0,
+    search_keywords TEXT[],
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Clinical procedures table (for procedure autocomplete)
+CREATE TABLE clinical_procedures (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    procedure_code VARCHAR(50) UNIQUE NOT NULL,
+    procedure_name VARCHAR(200) NOT NULL,
+    procedure_category VARCHAR(100),
+    complexity VARCHAR(20) CHECK (complexity IN ('SIMPLE', 'MODERATE', 'COMPLEX')),
+    is_active BOOLEAN DEFAULT true,
+    usage_count INTEGER DEFAULT 0,
+    search_keywords TEXT[],
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Clinical symptoms table (for symptom autocomplete)
+CREATE TABLE clinical_symptoms (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    symptom_name VARCHAR(200) NOT NULL,
+    symptom_category VARCHAR(100),
+    severity_level VARCHAR(20) CHECK (severity_level IN ('MILD', 'MODERATE', 'SEVERE')),
+    is_active BOOLEAN DEFAULT true,
+    usage_count INTEGER DEFAULT 0,
+    search_keywords TEXT[],
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Audit logs table (immutable)
 CREATE TABLE audit_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
