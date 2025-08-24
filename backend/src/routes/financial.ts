@@ -3,6 +3,8 @@ import { pool } from "../config/database"
 import { authenticateToken, requireRole } from "../middleware/auth"
 import { MPesaService } from "../services/MPesaService"
 import { body, validationResult } from "express-validator"
+import { UserRole } from "../types"
+import crypto from "crypto"
 
 const router = Router()
 const mpesaService = new MPesaService()
@@ -11,7 +13,7 @@ const mpesaService = new MPesaService()
 router.post(
   "/invoices",
   authenticateToken,
-  requireRole(["pharmacist", "cashier", "admin"]),
+  requireRole([UserRole.PHARMACIST, UserRole.CASHIER, UserRole.ADMIN]),
   [
     body("items").isArray().withMessage("Items must be an array"),
     body("items.*.description").notEmpty().withMessage("Item description is required"),
@@ -161,7 +163,7 @@ router.post(
 router.post(
   "/payments",
   authenticateToken,
-  requireRole(["pharmacist", "cashier", "admin"]),
+  requireRole([UserRole.PHARMACIST, UserRole.CASHIER, UserRole.ADMIN]),
   [
     body("invoice_id").notEmpty().withMessage("Invoice ID is required"),
     body("amount").isNumeric().withMessage("Amount must be a number"),
@@ -290,7 +292,7 @@ router.post(
 router.post(
   "/mpesa/stk-push",
   authenticateToken,
-  requireRole(["pharmacist", "cashier", "admin"]),
+  requireRole([UserRole.PHARMACIST, UserRole.CASHIER, UserRole.ADMIN]),
   [
     body("phone_number").isMobilePhone("any").withMessage("Valid phone number is required"),
     body("amount").isNumeric().withMessage("Amount must be a number"),
@@ -355,7 +357,7 @@ router.post("/mpesa/callback", async (req, res) => {
 })
 
 // Get financial dashboard data
-router.get("/dashboard", authenticateToken, requireRole(["admin", "cashier", "pharmacist"]), async (req, res) => {
+router.get("/dashboard", authenticateToken, requireRole([UserRole.ADMIN, UserRole.CASHIER, UserRole.PHARMACIST]), async (req, res) => {
   try {
     const today = new Date()
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())

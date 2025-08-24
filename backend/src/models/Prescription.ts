@@ -1,5 +1,5 @@
 import pool from "../config/database"
-import type { Prescription, PrescriptionItem } from "../../../types"
+import type { Prescription, PrescriptionItem } from "../types"
 
 export interface CreatePrescriptionData {
   consultationId: string

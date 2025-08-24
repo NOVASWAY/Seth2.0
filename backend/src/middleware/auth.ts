@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express"
 import { AuthService } from "../services/AuthService"
-import type { UserRole } from "../../../types"
+import type { UserRole } from "../types"
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -62,3 +62,10 @@ export const authorize = (roles: UserRole[]) => {
     next()
   }
 }
+
+export const authorizeSingle = (role: UserRole) => {
+  return authorize([role])
+}
+
+export const requireRole = authorize
+export const authenticateToken = authenticate

@@ -1,5 +1,5 @@
 import pool from "../config/database"
-import type { LabTest } from "../../../types"
+import type { LabTest } from "../types"
 
 export interface CreateLabTestData {
   testCode: string
@@ -262,8 +262,8 @@ export class LabTestModel {
   private static mapRowToLabTest(row: any): LabTest {
     return {
       id: row.id,
-      testCode: row.test_code,
-      testName: row.test_name,
+              test_code: row.test_code,
+              test_name: row.test_name,
       testCategory: row.test_category,
       description: row.description,
       specimenType: row.specimen_type,

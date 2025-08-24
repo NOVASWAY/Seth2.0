@@ -1,12 +1,13 @@
 import express from "express"
 import { requireRole } from "../middleware/auth"
-import { Invoice } from "../models/Invoice"
 import { auditLog } from "../middleware/auditLogger"
+import { UserRole } from "../types"
+import { Invoice } from "../models/Invoice"
 
 const router = express.Router()
 
 // Get all invoices with pagination and filtering
-router.get("/", requireRole(["admin", "pharmacist", "claims_manager"]), async (req, res) => {
+router.get("/", requireRole([UserRole.ADMIN, UserRole.PHARMACIST, UserRole.CLAIMS_MANAGER]), async (req, res) => {
   try {
     const { page = 1, limit = 20, status, patientId, opNumber, startDate, endDate } = req.query
 
@@ -99,7 +100,7 @@ router.get("/", requireRole(["admin", "pharmacist", "claims_manager"]), async (r
 })
 
 // Get invoice by ID with line items
-router.get("/:id", requireRole(["admin", "pharmacist", "claims_manager"]), async (req, res) => {
+router.get("/:id", requireRole([UserRole.ADMIN, UserRole.PHARMACIST, UserRole.CLAIMS_MANAGER]), async (req, res) => {
   try {
     const { id } = req.params
 
@@ -171,7 +172,7 @@ router.get("/:id", requireRole(["admin", "pharmacist", "claims_manager"]), async
 })
 
 // Update invoice status
-router.patch("/:id/status", requireRole(["admin", "pharmacist"]), async (req, res) => {
+router.patch("/:id/status", requireRole([UserRole.ADMIN, UserRole.PHARMACIST]), async (req, res) => {
   try {
     const { id } = req.params
     const { status } = req.body
@@ -225,7 +226,7 @@ router.patch("/:id/status", requireRole(["admin", "pharmacist"]), async (req, re
 })
 
 // Delete invoice (admin only)
-router.delete("/:id", requireRole(["admin"]), async (req, res) => {
+router.delete("/:id", requireRole([UserRole.ADMIN]), async (req, res) => {
   try {
     const { id } = req.params
 

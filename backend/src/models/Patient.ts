@@ -1,5 +1,5 @@
 import pool from "../config/database"
-import type { Patient } from "../../../types"
+import type { Patient } from "../types"
 
 export interface CreatePatientData {
   opNumber?: string

@@ -1,7 +1,7 @@
 import express from "express"
 import { body, query, validationResult } from "express-validator"
 import { authorize, type AuthenticatedRequest } from "../middleware/auth"
-import { UserRole } from "../../../types"
+import { UserRole } from "../types"
 import { pool } from "../config/database"
 import { generateBatchNumber } from "../utils/invoiceUtils"
 import { SHAService } from "../services/SHAService"

@@ -1,5 +1,5 @@
 import pool from "../config/database"
-import type { Visit, VisitStatus, QueueItem } from "../../../types"
+import type { Visit, VisitStatus, QueueItem } from "../types"
 
 export interface CreateVisitData {
   patientId: string

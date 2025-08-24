@@ -1,5 +1,5 @@
 import pool from "../config/database"
-import type { LabRequest, LabRequestItem } from "../../../types"
+import type { LabRequest, LabRequestItem } from "../types"
 
 export interface CreateLabRequestData {
   visitId: string
@@ -365,8 +365,8 @@ export class LabRequestModel {
   private static mapRowToLabRequest(row: any): LabRequest {
     return {
       id: row.id,
-      visitId: row.visit_id,
-      patientId: row.patient_id,
+              visit_id: row.visit_id,
+              patient_id: row.patient_id,
       requestedBy: row.requested_by,
       testType: row.test_type,
       testName: row.test_name,
@@ -385,8 +385,8 @@ export class LabRequestModel {
   private static mapRowToLabRequestItem(row: any): LabRequestItem {
     return {
       id: row.id,
-      labRequestId: row.lab_request_id,
-      testId: row.test_id,
+              lab_request_id: row.lab_request_id,
+              test_id: row.test_id,
       testName: row.test_name,
       testCode: row.test_code,
       specimenType: row.specimen_type,

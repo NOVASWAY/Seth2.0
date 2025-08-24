@@ -1,4 +1,4 @@
-import { db } from "../config/database"
+import { pool } from "../config/database"
 
 export interface AuditLogData {
   id?: string
@@ -15,11 +15,11 @@ export interface AuditLogData {
 
 export class AuditLog {
   static async query(text: string, params?: any[]) {
-    return db.query(text, params)
+    return pool.query(text, params)
   }
 
   static async create(data: Omit<AuditLogData, "id" | "createdAt">) {
-    const result = await db.query(
+    const result = await pool.query(
       `
       INSERT INTO audit_logs (
         user_id, action, resource, resource_id, op_number, 
@@ -44,7 +44,7 @@ export class AuditLog {
   }
 
   static async findById(id: string) {
-    const result = await db.query(
+    const result = await pool.query(
       `
       SELECT al.*, u.username, u.full_name
       FROM audit_logs al
@@ -58,7 +58,7 @@ export class AuditLog {
   }
 
   static async findByResource(resource: string, resourceId: string) {
-    const result = await db.query(
+    const result = await pool.query(
       `
       SELECT al.*, u.username, u.full_name
       FROM audit_logs al
@@ -73,7 +73,7 @@ export class AuditLog {
   }
 
   static async findByUser(userId: string, limit = 50) {
-    const result = await db.query(
+    const result = await pool.query(
       `
       SELECT al.*, u.username, u.full_name
       FROM audit_logs al

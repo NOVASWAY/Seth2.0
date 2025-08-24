@@ -1,5 +1,5 @@
 import pool from "../config/database"
-import type { InventoryItem, InventoryBatch, InventoryMovement } from "../../../types"
+import type { InventoryItem, InventoryBatch, InventoryMovement } from "../types"
 
 export interface CreateInventoryItemData {
   name: string

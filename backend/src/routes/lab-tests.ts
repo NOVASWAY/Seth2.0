@@ -2,7 +2,7 @@ import express from "express"
 import { body, validationResult, query } from "express-validator"
 import { LabTestModel } from "../models/LabTest"
 import { authorize, type AuthenticatedRequest } from "../middleware/auth"
-import { UserRole } from "../../../types"
+import { UserRole } from "../types"
 
 const router = express.Router()
 

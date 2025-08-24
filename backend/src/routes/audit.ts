@@ -1,11 +1,12 @@
 import express from "express"
 import { requireRole } from "../middleware/auth"
 import { AuditLog } from "../models/AuditLog"
+import { UserRole } from "../types"
 
 const router = express.Router()
 
 // Get audit logs with filtering and pagination
-router.get("/", requireRole(["admin"]), async (req, res) => {
+router.get("/", requireRole([UserRole.ADMIN]), async (req, res) => {
   try {
     const { page = 1, limit = 50, userId, action, resource, startDate, endDate, opNumber } = req.query
 
@@ -87,7 +88,7 @@ router.get("/", requireRole(["admin"]), async (req, res) => {
 })
 
 // Get audit log by ID
-router.get("/:id", requireRole(["admin"]), async (req, res) => {
+router.get("/:id", requireRole([UserRole.ADMIN]), async (req, res) => {
   try {
     const { id } = req.params
 
@@ -122,7 +123,7 @@ router.get("/:id", requireRole(["admin"]), async (req, res) => {
 })
 
 // Export audit logs to CSV
-router.get("/export/csv", requireRole(["admin"]), async (req, res) => {
+router.get("/export/csv", requireRole([UserRole.ADMIN]), async (req, res) => {
   try {
     const { userId, action, resource, startDate, endDate, opNumber } = req.query
 

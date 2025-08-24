@@ -514,4 +514,101 @@ export class SHAService {
 
     return result.rows
   }
+
+  // Missing methods that are referenced in routes
+  async getInvoiceForPrinting(id: string): Promise<any> {
+    const result = await pool.query(
+      `SELECT 
+        i.*,
+        c.claim_number,
+        c.diagnosis_code,
+        c.diagnosis_description,
+        p.op_number,
+        p.first_name,
+        p.last_name,
+        p.insurance_number,
+        u.username as generated_by_username
+       FROM sha_invoices i
+       JOIN claims c ON i.claim_id = c.id
+       JOIN patients p ON i.patient_id = p.id
+       JOIN users u ON i.generated_by = u.id
+       WHERE i.id = $1`,
+      [id]
+    )
+    return result.rows[0]
+  }
+
+  async generateInvoicesForBatch(batchId: string, userId: string): Promise<any[]> {
+    const result = await pool.query(
+      `SELECT 
+        c.*,
+        p.op_number,
+        p.first_name,
+        p.last_name,
+        p.insurance_number
+       FROM claims c
+       WHERE c.batch_id = $1 AND c.status = 'ready_to_submit'`,
+      [batchId]
+    )
+    return result.rows
+  }
+
+  async markInvoiceAsPrinted(id: string, userId: string): Promise<any> {
+    const result = await pool.query(
+      `UPDATE sha_invoices 
+       SET status = 'printed', printed_at = NOW(), printed_by = $2, updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [id, userId]
+    )
+    return result.rows[0]
+  }
+
+  async submitInvoiceToSHA(id: string, userId: string): Promise<any> {
+    const result = await pool.query(
+      `UPDATE sha_invoices 
+       SET status = 'submitted', submitted_at = NOW(), submitted_by = $2, updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [id, userId]
+    )
+    return result.rows[0]
+  }
+
+  async getInvoicesReadyForPrinting(batchType: "weekly" | "monthly"): Promise<any[]> {
+    const result = await pool.query(
+      `SELECT 
+        i.*,
+        c.claim_number,
+        c.diagnosis_code,
+        c.diagnosis_description,
+        p.op_number,
+        p.first_name,
+        p.last_name,
+        p.insurance_number,
+        u.username as generated_by_username
+       FROM sha_invoices i
+       JOIN claims c ON i.claim_id = c.id
+       JOIN patients p ON i.patient_id = p.id
+       JOIN users u ON i.generated_by = u.id
+       WHERE i.status = 'generated'
+       ORDER BY i.created_at DESC`
+    )
+    return result.rows
+  }
+
+  async getComplianceReport(startDate?: Date, endDate?: Date): Promise<any> {
+    const result = await pool.query(
+      `SELECT 
+        COUNT(*) as total_claims,
+        COUNT(CASE WHEN status = 'submitted' THEN 1 END) as submitted_claims,
+        COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_claims,
+        COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected_claims,
+        AVG(CASE WHEN status = 'approved' THEN EXTRACT(EPOCH FROM (approved_at - submitted_at))/86400 END) as avg_approval_days
+       FROM claims
+       WHERE created_at >= $1 AND created_at <= $2`,
+      [startDate || new Date(0), endDate || new Date()]
+    )
+    return result.rows[0]
+  }
 }

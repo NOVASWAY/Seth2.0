@@ -3,7 +3,7 @@ import { body, validationResult } from "express-validator"
 import { VisitModel } from "../models/Visit"
 import { PatientModel } from "../models/Patient"
 import { authorize, type AuthenticatedRequest } from "../middleware/auth"
-import { UserRole, VisitStatus } from "../../../types"
+import { UserRole, VisitStatus } from "../types"
 
 const router = express.Router()
 

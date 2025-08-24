@@ -3,6 +3,8 @@ import { pool } from "../config/database"
 import { authenticateToken, requireRole } from "../middleware/auth"
 import { SHAService } from "../services/SHAService"
 import { body, validationResult } from "express-validator"
+import { UserRole } from "../types"
+import crypto from "crypto"
 
 const router = Router()
 const shaService = new SHAService()
@@ -11,7 +13,7 @@ const shaService = new SHAService()
 router.post(
   "/claims",
   authenticateToken,
-  requireRole(["claims_manager", "admin"]),
+  requireRole([UserRole.CLAIMS_MANAGER, UserRole.ADMIN]),
   [
     body("op_number").notEmpty().withMessage("OP Number is required"),
     body("diagnosis_code").notEmpty().withMessage("Diagnosis code is required"),
@@ -115,7 +117,7 @@ router.post(
 )
 
 // Get claims with filters
-router.get("/claims", authenticateToken, requireRole(["claims_manager", "admin"]), async (req, res) => {
+router.get("/claims", authenticateToken, requireRole([UserRole.CLAIMS_MANAGER, UserRole.ADMIN]), async (req, res) => {
   try {
     const { status, batch_id, op_number, limit = 50, offset = 0 } = req.query
 
@@ -179,7 +181,7 @@ router.get("/claims", authenticateToken, requireRole(["claims_manager", "admin"]
 router.post(
   "/batches",
   authenticateToken,
-  requireRole(["claims_manager", "admin"]),
+  requireRole([UserRole.CLAIMS_MANAGER, UserRole.ADMIN]),
   [body("claim_ids").isArray().withMessage("Claim IDs must be an array")],
   async (req, res) => {
     try {
@@ -272,7 +274,7 @@ router.post(
 )
 
 // Submit batch to SHA
-router.post("/batches/:id/submit", authenticateToken, requireRole(["claims_manager", "admin"]), async (req, res) => {
+router.post("/batches/:id/submit", authenticateToken, requireRole([UserRole.CLAIMS_MANAGER, UserRole.ADMIN]), async (req, res) => {
   try {
     const { id } = req.params
 
@@ -319,7 +321,7 @@ router.post("/batches/:id/submit", authenticateToken, requireRole(["claims_manag
 })
 
 // Get claim dashboard data
-router.get("/dashboard", authenticateToken, requireRole(["claims_manager", "admin"]), async (req, res) => {
+router.get("/dashboard", authenticateToken, requireRole([UserRole.CLAIMS_MANAGER, UserRole.ADMIN]), async (req, res) => {
   try {
     // Claims by status
     const statusResult = await pool.query(`
