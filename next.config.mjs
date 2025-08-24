@@ -12,7 +12,7 @@ const nextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   // Optimize for production
-  swcMinify: true,
+  // swcMinify: true, // Removed - not needed in Next.js 15
   // Enable compression
   compress: true,
   // Environment variables for prescription system

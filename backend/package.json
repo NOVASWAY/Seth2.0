@@ -7,7 +7,7 @@
     "dev": "nodemon src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "worker": "node dist/worker.js",
+    "worker": "ts-node src/worker.ts",
     "migrate": "node dist/scripts/migrate.js",
     "seed": "node dist/scripts/seed.js",
     "seed:clinical": "ts-node src/scripts/seedClinicalData.ts",

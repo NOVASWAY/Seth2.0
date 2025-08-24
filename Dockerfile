@@ -77,10 +77,17 @@ RUN \
 # Copy source code
 COPY . .
 
-# Create non-root user
+# Create non-root user and set proper permissions
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 RUN chown -R nextjs:nodejs /app
+RUN chmod -R 755 /app
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/.next /app/next-env.d.ts
+RUN chown -R nextjs:nodejs /app/.next /app/next-env.d.ts
+RUN chmod -R 755 /app/.next /app/next-env.d.ts
+
 USER nextjs
 
 EXPOSE 3000
