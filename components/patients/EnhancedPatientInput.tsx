@@ -34,7 +34,7 @@ const patientInputSchema = z.object({
   insuranceNumber: z.string().optional(),
   // Visit information
   chiefComplaint: z.string().optional(),
-  triageCategory: z.enum(["EMERGENCY", "URGENT", "NORMAL"]).default("NORMAL"),
+  triageCategory: z.enum(["EMERGENCY", "URGENT", "NORMAL"]),
 })
 
 type PatientInputData = z.infer<typeof patientInputSchema>
@@ -257,7 +257,7 @@ export function EnhancedPatientInput({
     }
   }
 
-  const handleSubmit = (data: PatientInputData) => {
+  const onSubmit = (data: PatientInputData) => {
     if (data.inputType === "existing") {
       if (data.existingPatientId) {
         const patient = searchResults.patients.find(p => p.id === data.existingPatientId)
@@ -304,7 +304,7 @@ export function EnhancedPatientInput({
       </CardHeader>
 
       <CardContent>
-        <form onSubmit={handleSubmit(handleSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
