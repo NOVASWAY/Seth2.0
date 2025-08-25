@@ -16,19 +16,19 @@ const backupQueue = new Queue('backup', { connection: redis });
 console.log('🚀 Seth Clinic CMS Worker started');
 
 // Create workers to process jobs
-const emailWorker = new Worker('email', async (job) => {
+const emailWorker = new Worker('email', async (job: any) => {
   console.log('Processing email job:', job.id);
   // Add email processing logic here
   return { status: 'completed' };
 }, { connection: redis });
 
-const reportWorker = new Worker('report', async (job) => {
+const reportWorker = new Worker('report', async (job: any) => {
   console.log('Processing report job:', job.id);
   // Add report generation logic here
   return { status: 'completed' };
 }, { connection: redis });
 
-const backupWorker = new Worker('backup', async (job) => {
+const backupWorker = new Worker('backup', async (job: any) => {
   console.log('Processing backup job:', job.id);
   // Add backup logic here
   return { status: 'completed' };

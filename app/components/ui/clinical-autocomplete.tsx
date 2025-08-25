@@ -81,7 +81,7 @@ export function ClinicalAutocomplete({
   const [error, setError] = useState<string>("")
   
   const { toast } = useToast()
-  const debounceRef = useRef<NodeJS.Timeout>()
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
   const searchStartTime = useRef<number>(0)
 
   // Get appropriate icon for item type

@@ -7,7 +7,7 @@ import { Button } from "../ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { GripVertical, Clock } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import type { QueueItem as QueueItemType, VisitStatus } from "../../types"
+import { QueueItem as QueueItemType, VisitStatus } from "../../types"
 
 interface QueueItemProps {
   item: QueueItemType
@@ -33,20 +33,20 @@ export function QueueItem({ item, onStatusUpdate, getStatusColor, getPriorityCol
 
   const getNextStatus = (currentStatus: VisitStatus): VisitStatus | null => {
     switch (currentStatus) {
-      case "REGISTERED":
-        return "TRIAGED"
-      case "TRIAGED":
-        return "WAITING_CONSULTATION"
-      case "WAITING_CONSULTATION":
-        return "IN_CONSULTATION"
-      case "IN_CONSULTATION":
-        return "WAITING_PHARMACY"
-      case "WAITING_LAB":
-        return "LAB_RESULTS_READY"
-      case "LAB_RESULTS_READY":
-        return "WAITING_CONSULTATION"
-      case "WAITING_PHARMACY":
-        return "COMPLETED"
+      case VisitStatus.REGISTERED:
+        return VisitStatus.TRIAGED
+      case VisitStatus.TRIAGED:
+        return VisitStatus.WAITING_CONSULTATION
+      case VisitStatus.WAITING_CONSULTATION:
+        return VisitStatus.IN_CONSULTATION
+      case VisitStatus.IN_CONSULTATION:
+        return VisitStatus.WAITING_PHARMACY
+      case VisitStatus.WAITING_LAB:
+        return VisitStatus.LAB_RESULTS_READY
+      case VisitStatus.LAB_RESULTS_READY:
+        return VisitStatus.WAITING_CONSULTATION
+      case VisitStatus.WAITING_PHARMACY:
+        return VisitStatus.COMPLETED
       default:
         return null
     }
@@ -105,14 +105,14 @@ export function QueueItem({ item, onStatusUpdate, getStatusColor, getPriorityCol
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="REGISTERED">Registered</SelectItem>
-                <SelectItem value="TRIAGED">Triaged</SelectItem>
-                <SelectItem value="WAITING_CONSULTATION">Waiting Consultation</SelectItem>
-                <SelectItem value="IN_CONSULTATION">In Consultation</SelectItem>
-                <SelectItem value="WAITING_LAB">Waiting Lab</SelectItem>
-                <SelectItem value="LAB_RESULTS_READY">Lab Results Ready</SelectItem>
-                <SelectItem value="WAITING_PHARMACY">Waiting Pharmacy</SelectItem>
-                <SelectItem value="COMPLETED">Completed</SelectItem>
+                <SelectItem value={VisitStatus.REGISTERED}>Registered</SelectItem>
+                <SelectItem value={VisitStatus.TRIAGED}>Triaged</SelectItem>
+                <SelectItem value={VisitStatus.WAITING_CONSULTATION}>Waiting Consultation</SelectItem>
+                <SelectItem value={VisitStatus.IN_CONSULTATION}>In Consultation</SelectItem>
+                <SelectItem value={VisitStatus.WAITING_LAB}>Waiting Lab</SelectItem>
+                <SelectItem value={VisitStatus.LAB_RESULTS_READY}>Lab Results Ready</SelectItem>
+                <SelectItem value={VisitStatus.WAITING_PHARMACY}>Waiting Pharmacy</SelectItem>
+                <SelectItem value={VisitStatus.COMPLETED}>Completed</SelectItem>
               </SelectContent>
             </Select>
 

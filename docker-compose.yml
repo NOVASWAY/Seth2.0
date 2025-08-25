@@ -83,7 +83,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    command: nodemon --config nodemon.json
+    command: npm run dev
 
   # Background Worker
   worker:
@@ -104,7 +104,7 @@ services:
       SHA_PAYMENT_CHECK_INTERVAL_HOURS: 24
       STORAGE_TYPE: local
       STORAGE_PATH: ./uploads
-    command: nodemon --config nodemon.worker.json
+    command: npm run worker
     depends_on:
       postgres:
         condition: service_healthy

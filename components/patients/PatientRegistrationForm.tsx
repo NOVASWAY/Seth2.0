@@ -25,7 +25,7 @@ const patientSchema = z.object({
   insuranceType: z.enum(["SHA", "PRIVATE", "CASH"]),
   insuranceNumber: z.string().optional(),
   chiefComplaint: z.string().optional(),
-  triageCategory: z.enum(["EMERGENCY", "URGENT", "NORMAL"]).default("NORMAL"),
+  triageCategory: z.enum(["EMERGENCY", "URGENT", "NORMAL"]),
 })
 
 type PatientFormData = z.infer<typeof patientSchema>

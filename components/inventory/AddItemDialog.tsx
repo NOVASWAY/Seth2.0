@@ -15,8 +15,8 @@ const itemSchema = z.object({
   genericName: z.string().optional(),
   category: z.string().min(1, "Category is required"),
   unit: z.string().min(1, "Unit is required"),
-  reorderLevel: z.number().min(0, "Reorder level must be non-negative").default(0),
-  maxLevel: z.number().min(1, "Max level must be positive").default(1000),
+  reorderLevel: z.number().min(0, "Reorder level must be non-negative"),
+  maxLevel: z.number().min(1, "Max level must be positive"),
 })
 
 type ItemFormData = z.infer<typeof itemSchema>

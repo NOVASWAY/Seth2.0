@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Backend API for Seth Medical Clinic Management System",
   "main": "dist/server.js",
-  "type": "module",
   "scripts": {
     "dev": "nodemon",
     "build": "tsc",
@@ -13,7 +12,7 @@
     "test:esm": "node test-esm.js",
     "migrate": "node dist/scripts/migrate.js",
     "seed": "node dist/scripts/seed.js",
-    "seed:clinical": "ts-node --esm src/scripts/seedClinicalData.ts",
+    "seed:clinical": "ts-node src/scripts/seedClinicalData.ts",
     "setup:dev": "npm install && npm run build && npm run migrate && npm run seed && npm run seed:clinical",
     "setup:prod": "npm ci && npm run build && npm run migrate && npm run seed && npm run seed:clinical",
     "test": "jest",
@@ -88,11 +87,6 @@
     "supertest": "^6.3.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.2.2"
-  },
-  "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node",
-    "transpileOnly": true,
-    "files": true
   }
+
 }

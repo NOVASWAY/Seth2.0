@@ -84,9 +84,9 @@ RUN chown -R nextjs:nodejs /app
 RUN chmod -R 755 /app
 
 # Create necessary directories with proper permissions
-RUN mkdir -p /app/.next /app/next-env.d.ts
-RUN chown -R nextjs:nodejs /app/.next /app/next-env.d.ts
-RUN chmod -R 755 /app/.next /app/next-env.d.ts
+RUN mkdir -p /app/.next
+RUN chown -R nextjs:nodejs /app/.next
+RUN chmod -R 755 /app/.next
 
 USER nextjs
 

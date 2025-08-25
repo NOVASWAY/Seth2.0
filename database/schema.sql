@@ -871,17 +871,17 @@ CREATE INDEX idx_sha_workflow_instances_created_at ON sha_workflow_instances(cre
 
 CREATE INDEX idx_sha_workflow_steps_workflow_id ON sha_workflow_steps(workflow_id);
 CREATE INDEX idx_sha_workflow_steps_status ON sha_workflow_steps(status);
-CREATE INDEX idx_sha_workflow_steps_assigned_to ON sha_workflow_steps(assigned_to);
+-- CREATE INDEX idx_sha_workflow_steps_assigned_to ON sha_workflow_steps(assigned_to);
 CREATE INDEX idx_sha_workflow_steps_step_order ON sha_workflow_steps(step_order);
 
-CREATE INDEX idx_sha_workflow_activity_workflow_id ON sha_workflow_activity_log(workflow_id);
-CREATE INDEX idx_sha_workflow_activity_performed_by ON sha_workflow_activity_log(performed_by);
-CREATE INDEX idx_sha_workflow_activity_performed_at ON sha_workflow_activity_log(performed_at);
+-- CREATE INDEX idx_sha_workflow_activity_workflow_id ON sha_workflow_activity_log(workflow_id);
+-- CREATE INDEX idx_sha_workflow_activity_performed_by ON sha_workflow_activity_log(performed_by);
+-- CREATE INDEX idx_sha_workflow_activity_performed_at ON sha_workflow_activity_log(performed_at);
 
-CREATE INDEX idx_sha_payment_tracking_claim_id ON sha_payment_tracking(claim_id);
-CREATE INDEX idx_sha_payment_tracking_status ON sha_payment_tracking(payment_status);
-CREATE INDEX idx_sha_payment_tracking_next_check ON sha_payment_tracking(next_check_at);
-CREATE INDEX idx_sha_payment_tracking_auto_check ON sha_payment_tracking(auto_check_enabled);
+-- CREATE INDEX idx_sha_payment_tracking_claim_id ON sha_payment_tracking(claim_id);
+-- CREATE INDEX idx_sha_payment_tracking_status ON sha_payment_tracking(payment_status);
+-- CREATE INDEX idx_sha_payment_tracking_next_check ON sha_payment_tracking(next_check_at);
+-- CREATE INDEX idx_sha_payment_tracking_auto_check ON sha_payment_tracking(auto_check_enabled);
 
 -- Triggers for new tables
 CREATE TRIGGER update_sha_claim_items_updated_at BEFORE UPDATE ON sha_claim_items FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -889,13 +889,13 @@ CREATE TRIGGER update_sha_document_attachments_updated_at BEFORE UPDATE ON sha_d
 CREATE TRIGGER update_patient_encounters_updated_at BEFORE UPDATE ON patient_encounters FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_sha_workflow_instances_updated_at BEFORE UPDATE ON sha_workflow_instances FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_sha_workflow_steps_updated_at BEFORE UPDATE ON sha_workflow_steps FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_sha_payment_tracking_updated_at BEFORE UPDATE ON sha_payment_tracking FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- CREATE TRIGGER update_sha_payment_tracking_updated_at BEFORE UPDATE ON sha_payment_tracking FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_clinical_diagnosis_codes_updated_at BEFORE UPDATE ON clinical_diagnosis_codes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_clinical_medications_updated_at BEFORE UPDATE ON clinical_medications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_clinical_lab_test_catalog_updated_at BEFORE UPDATE ON clinical_lab_test_catalog FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_clinical_lab_tests_updated_at BEFORE UPDATE ON clinical_lab_tests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_clinical_procedures_updated_at BEFORE UPDATE ON clinical_procedures FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_clinical_symptoms_updated_at BEFORE UPDATE ON clinical_symptoms FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_user_clinical_favorites_updated_at BEFORE UPDATE ON user_clinical_favorites FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- CREATE TRIGGER update_user_clinical_favorites_updated_at BEFORE UPDATE ON user_clinical_favorites FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Clinical data indexes for fast autocomplete search
 CREATE INDEX idx_clinical_diagnosis_codes_code ON clinical_diagnosis_codes(code);
@@ -906,18 +906,18 @@ CREATE INDEX idx_clinical_diagnosis_codes_usage ON clinical_diagnosis_codes(usag
 CREATE INDEX idx_clinical_diagnosis_codes_keywords ON clinical_diagnosis_codes USING gin(search_keywords);
 
 CREATE INDEX idx_clinical_medications_generic ON clinical_medications USING gin(to_tsvector('english', generic_name));
-CREATE INDEX idx_clinical_medications_brands ON clinical_medications USING gin(brand_names);
-CREATE INDEX idx_clinical_medications_class ON clinical_medications(drug_class);
+-- CREATE INDEX idx_clinical_medications_brands ON clinical_medications USING gin(brand_names);
+-- CREATE INDEX idx_clinical_medications_class ON clinical_medications(drug_class);
 CREATE INDEX idx_clinical_medications_active ON clinical_medications(is_active);
 CREATE INDEX idx_clinical_medications_usage ON clinical_medications(usage_count DESC);
 CREATE INDEX idx_clinical_medications_keywords ON clinical_medications USING gin(search_keywords);
 
-CREATE INDEX idx_clinical_lab_tests_code ON clinical_lab_test_catalog(test_code);
-CREATE INDEX idx_clinical_lab_tests_name ON clinical_lab_test_catalog USING gin(to_tsvector('english', test_name));
-CREATE INDEX idx_clinical_lab_tests_category ON clinical_lab_test_catalog(test_category);
-CREATE INDEX idx_clinical_lab_tests_active ON clinical_lab_test_catalog(is_active);
-CREATE INDEX idx_clinical_lab_tests_usage ON clinical_lab_test_catalog(usage_count DESC);
-CREATE INDEX idx_clinical_lab_tests_keywords ON clinical_lab_test_catalog USING gin(search_keywords);
+CREATE INDEX idx_clinical_lab_tests_code ON clinical_lab_tests(test_code);
+CREATE INDEX idx_clinical_lab_tests_name ON clinical_lab_tests USING gin(to_tsvector('english', test_name));
+CREATE INDEX idx_clinical_lab_tests_category ON clinical_lab_tests(test_category);
+CREATE INDEX idx_clinical_lab_tests_active ON clinical_lab_tests(is_active);
+CREATE INDEX idx_clinical_lab_tests_usage ON clinical_lab_tests(usage_count DESC);
+CREATE INDEX idx_clinical_lab_tests_keywords ON clinical_lab_tests USING gin(search_keywords);
 
 CREATE INDEX idx_clinical_procedures_code ON clinical_procedures(procedure_code);
 CREATE INDEX idx_clinical_procedures_name ON clinical_procedures USING gin(to_tsvector('english', procedure_name));
@@ -927,17 +927,17 @@ CREATE INDEX idx_clinical_procedures_usage ON clinical_procedures(usage_count DE
 CREATE INDEX idx_clinical_procedures_keywords ON clinical_procedures USING gin(search_keywords);
 
 CREATE INDEX idx_clinical_symptoms_name ON clinical_symptoms USING gin(to_tsvector('english', symptom_name));
-CREATE INDEX idx_clinical_symptoms_system ON clinical_symptoms(body_system);
+-- CREATE INDEX idx_clinical_symptoms_system ON clinical_symptoms(body_system);
 CREATE INDEX idx_clinical_symptoms_active ON clinical_symptoms(is_active);
 CREATE INDEX idx_clinical_symptoms_usage ON clinical_symptoms(usage_count DESC);
 CREATE INDEX idx_clinical_symptoms_keywords ON clinical_symptoms USING gin(search_keywords);
 
-CREATE INDEX idx_user_clinical_favorites_user ON user_clinical_favorites(user_id);
-CREATE INDEX idx_user_clinical_favorites_type ON user_clinical_favorites(item_type);
-CREATE INDEX idx_user_clinical_favorites_usage ON user_clinical_favorites(usage_frequency DESC);
-CREATE INDEX idx_user_clinical_favorites_last_used ON user_clinical_favorites(last_used_at DESC);
+-- CREATE INDEX idx_user_clinical_favorites_user ON user_clinical_favorites(user_id);
+-- CREATE INDEX idx_user_clinical_favorites_type ON user_clinical_favorites(item_type);
+-- CREATE INDEX idx_user_clinical_favorites_usage ON user_clinical_favorites(usage_frequency DESC);
+-- CREATE INDEX idx_user_clinical_favorites_last_used ON user_clinical_favorites(last_used_at DESC);
 
-CREATE INDEX idx_clinical_search_analytics_user ON clinical_search_analytics(user_id);
-CREATE INDEX idx_clinical_search_analytics_type ON clinical_search_analytics(search_type);
-CREATE INDEX idx_clinical_search_analytics_term ON clinical_search_analytics(search_term);
-CREATE INDEX idx_clinical_search_analytics_created ON clinical_search_analytics(created_at);
+-- CREATE INDEX idx_clinical_search_analytics_user ON clinical_search_analytics(user_id);
+-- CREATE INDEX idx_clinical_search_analytics_type ON clinical_search_analytics(search_type);
+-- CREATE INDEX idx_clinical_search_analytics_term ON clinical_search_analytics(search_term);
+-- CREATE INDEX idx_clinical_search_analytics_created ON clinical_search_analytics(created_at);

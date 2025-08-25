@@ -227,7 +227,7 @@ export class LabTestModel {
   static async delete(id: string): Promise<boolean> {
     const query = "DELETE FROM lab_tests WHERE id = $1"
     const result = await pool.query(query, [id])
-    return result.rowCount > 0
+    return (result.rowCount ?? 0) > 0
   }
 
   static async getCategories(): Promise<string[]> {

@@ -53,8 +53,9 @@ echo "🐳 Docker is running"
 # Check if Docker Compose is available
 if ! command -v docker-compose &> /dev/null; then
     echo "❌ Error: docker-compose is not installed"
-    echo "Please install Docker Compose and try again"
-    exit 1
+    echo "Installing Docker Compose..."
+    chmod +x scripts/install-docker-compose.sh
+    ./scripts/install-docker-compose.sh
 fi
 
 echo "✅ Docker Compose is available"

@@ -1,5 +1,5 @@
 {
-  "exec": "ts-node --esm src/server.ts",
+  "exec": "ts-node --transpile-only src/server.ts",
   "watch": ["src/**/*"],
   "ext": "ts,js,json",
   "ignore": ["src/**/*.spec.ts", "src/**/*.test.ts"],
