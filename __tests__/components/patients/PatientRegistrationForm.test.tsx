@@ -1,5 +1,6 @@
+import React from "react"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
-import { PatientRegistrationForm } from "@/components/patients/PatientRegistrationForm"
+import { PatientRegistrationForm } from "../../../components/patients/PatientRegistrationForm"
 
 // Mock fetch
 const mockFetch = jest.fn()

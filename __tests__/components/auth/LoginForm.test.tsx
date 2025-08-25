@@ -1,8 +1,9 @@
+import React from "react"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
-import { LoginForm } from "@/components/auth/LoginForm"
+import { LoginForm } from "../../../components/auth/LoginForm"
 
 // Mock the auth store
-jest.mock("@/lib/auth", () => ({
+jest.mock("../../../lib/auth", () => ({
   useAuthStore: () => ({
     login: jest.fn(),
     isLoading: false,
