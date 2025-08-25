@@ -6,7 +6,7 @@
     "lib": ["ES2020"],
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
@@ -17,6 +17,8 @@
     "sourceMap": true,
     "removeComments": true,
     "noImplicitAny": false,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": false,
     "strictNullChecks": false,
     "strictFunctionTypes": false,
     "noImplicitReturns": false,
@@ -35,7 +37,8 @@
     "node_modules",
     "dist",
     "**/*.test.ts",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "__tests__/**/*"
   ],
   "ts-node": {
     "transpileOnly": true

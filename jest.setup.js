@@ -1,7 +1,13 @@
-"use client"
-
-const jest = require("jest")
 import "@testing-library/jest-dom"
+
+// Add Jest types to global scope
+declare global {
+  namespace jest {
+    interface Matchers<R> {
+      toBeInTheDocument(): R
+    }
+  }
+}
 
 // Mock Next.js router
 jest.mock("next/navigation", () => ({

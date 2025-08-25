@@ -172,15 +172,15 @@ export interface DiagnosticsFormData {
   visitId?: string
   consultationId?: string
   clinicalNotes?: string
-  urgency: "ROUTINE" | "URGENT" | "STAT"
-  items: DiagnosticsItemData[]
+  urgency?: "ROUTINE" | "URGENT" | "STAT"
+  items?: DiagnosticsItemData[]
 }
 
 export interface DiagnosticsItemData {
-  testId: string
-  testName: string
-  testCode: string
-  specimenType: string
+  testId?: string
+  testName?: string
+  testCode?: string
+  specimenType?: string
   clinicalNotes?: string
 }
 

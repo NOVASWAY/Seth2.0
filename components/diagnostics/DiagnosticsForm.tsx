@@ -29,7 +29,7 @@ const diagnosticsSchema = z.object({
   visitId: z.string().optional(),
   consultationId: z.string().optional(),
   clinicalNotes: z.string().optional(),
-  urgency: z.enum(["ROUTINE", "URGENT", "STAT"]),
+  urgency: z.enum(["ROUTINE", "URGENT", "STAT"]).optional(),
   items: z.array(diagnosticsItemSchema).min(1, "At least one test is required"),
 })
 

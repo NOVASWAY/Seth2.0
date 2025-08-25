@@ -5,8 +5,7 @@ process.env.REDIS_URL = "redis://localhost:6379"
 process.env.JWT_SECRET = "test-jwt-secret"
 process.env.JWT_REFRESH_SECRET = "test-jwt-refresh-secret"
 
-// Import jest
-const jest = require("jest")
+
 
 // Mock crypto.randomUUID for Node.js < 19
 if (!global.crypto) {
