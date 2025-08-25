@@ -489,14 +489,14 @@ export class SHAExportService {
   }
 
   // PDF helper methods
-  private addPDFHeader(doc: PDFKit.PDFDocument, title: string): void {
+  private addPDFHeader(doc: PDFDocument, title: string): void {
     doc.fontSize(20).text(title, { align: 'center' })
     doc.moveDown()
     doc.fontSize(12).text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' })
     doc.moveDown(2)
   }
 
-  private addInvoiceDetails(doc: PDFKit.PDFDocument, invoice: any): void {
+  private addInvoiceDetails(doc: PDFDocument, invoice: any): void {
     doc.fontSize(14).text('INVOICE DETAILS', { underline: true })
     doc.moveDown()
     doc.fontSize(10)
@@ -508,7 +508,7 @@ export class SHAExportService {
     doc.moveDown()
   }
 
-  private addPatientInfo(doc: PDFKit.PDFDocument, invoice: any): void {
+  private addPatientInfo(doc: PDFDocument, invoice: any): void {
     doc.fontSize(14).text('PATIENT INFORMATION', { underline: true })
     doc.moveDown()
     doc.fontSize(10)
@@ -520,7 +520,7 @@ export class SHAExportService {
     doc.moveDown()
   }
 
-  private addServicesTable(doc: PDFKit.PDFDocument, items: any[]): void {
+  private addServicesTable(doc: PDFDocument, items: any[]): void {
     doc.fontSize(14).text('SERVICES PROVIDED', { underline: true })
     doc.moveDown()
     
@@ -562,14 +562,14 @@ export class SHAExportService {
     doc.y = currentY + 20
   }
 
-  private addPDFFooter(doc: PDFKit.PDFDocument, invoice: any): void {
+  private addPDFFooter(doc: PDFDocument, invoice: any): void {
     doc.moveDown()
     doc.fontSize(8)
     doc.text('This is a computer-generated document. No signature required.', { align: 'center' })
     doc.text(`Provider: ${invoice.provider_code} | Facility Level: ${invoice.facility_level}`, { align: 'center' })
   }
 
-  private addBatchSummary(doc: PDFKit.PDFDocument, batch: any): void {
+  private addBatchSummary(doc: PDFDocument, batch: any): void {
     doc.fontSize(14).text('BATCH SUMMARY', { underline: true })
     doc.moveDown()
     doc.fontSize(10)
@@ -581,7 +581,7 @@ export class SHAExportService {
     doc.moveDown()
   }
 
-  private addBatchClaimsList(doc: PDFKit.PDFDocument, claims: any[]): void {
+  private addBatchClaimsList(doc: PDFDocument, claims: any[]): void {
     doc.fontSize(14).text('CLAIMS IN BATCH', { underline: true })
     doc.moveDown()
     doc.fontSize(9)
@@ -592,7 +592,7 @@ export class SHAExportService {
     doc.moveDown()
   }
 
-  private addBatchComplianceSummary(doc: PDFKit.PDFDocument, batch: any): void {
+  private addBatchComplianceSummary(doc: PDFDocument, batch: any): void {
     doc.fontSize(14).text('COMPLIANCE STATUS', { underline: true })
     doc.moveDown()
     doc.fontSize(10)

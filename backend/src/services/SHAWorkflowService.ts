@@ -521,26 +521,21 @@ export class SHAWorkflowService {
   ): Promise<void> {
     await this.startWorkflowStep(workflowId, step.step_name, triggeredBy, pool)
 
-    try {
-      switch (step.step_name) {
-        case 'compliance_verification':
-          await this.executeComplianceVerification(workflowId)
-          break
-        case 'invoice_generation':
-          await this.executeInvoiceGeneration(workflowId)
-          break
-        case 'payment_tracking':
-          await this.executePaymentTracking(workflowId)
-          break
-        default:
-          throw new Error(`Unknown automated step: ${step.step_name}`)
-      }
-
-      await this.completeWorkflowStep(workflowId, step.step_name, 'system', 'Automated execution completed')
-
-    } catch (error) {
-      throw error
+    switch (step.step_name) {
+      case 'compliance_verification':
+        await this.executeComplianceVerification(workflowId)
+        break
+      case 'invoice_generation':
+        await this.executeInvoiceGeneration(workflowId)
+        break
+      case 'payment_tracking':
+        await this.executePaymentTracking(workflowId)
+        break
+      default:
+        throw new Error(`Unknown automated step: ${step.step_name}`)
     }
+
+    await this.completeWorkflowStep(workflowId, step.step_name, 'system', 'Automated execution completed')
   }
 
   private async executeComplianceVerification(workflowId: string): Promise<void> {
