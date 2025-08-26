@@ -37,6 +37,7 @@ export default defineConfig({
       command: "cd backend && npm start",
       port: 4001,
       reuseExistingServer: true,
+      timeout: 120000,
       env: {
         DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_db",
         REDIS_URL: "redis://localhost:6379",
@@ -46,9 +47,10 @@ export default defineConfig({
       },
     },
     {
-      command: "npm run build && node .next/standalone/server.js",
+      command: "npm run dev",
       port: 4002,
       reuseExistingServer: true,
+      timeout: 120000,
       env: {
         NEXT_PUBLIC_API_URL: "http://localhost:4001",
       },

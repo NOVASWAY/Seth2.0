@@ -177,7 +177,7 @@ jobs:
     - name: Start applications
       run: |
         cd backend && npm start &
-        npm run build && node .next/standalone/server.js &
+        npm run dev &
         sleep 10
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
