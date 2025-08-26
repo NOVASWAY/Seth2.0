@@ -47,7 +47,7 @@ export default defineConfig({
     },
     {
       command: "npm start",
-      port: 3000,
+      port: 3007,
       reuseExistingServer: !process.env.CI,
       env: {
         NEXT_PUBLIC_API_URL: "http://localhost:3001",
