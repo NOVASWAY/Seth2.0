@@ -62,6 +62,7 @@ export function LoginForm() {
               <Label htmlFor="username">Username</Label>
               <Input
                 id="username"
+                data-testid="username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -76,6 +77,7 @@ export function LoginForm() {
               <div className="relative">
                 <Input
                   id="password"
+                  data-testid="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -96,7 +98,7 @@ export function LoginForm() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full h-11" disabled={isLoading}>
+            <Button type="submit" className="w-full h-11" disabled={isLoading} data-testid="login-button">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
