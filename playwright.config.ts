@@ -46,7 +46,7 @@ export default defineConfig({
       },
     },
     {
-      command: "npm start",
+      command: "npm run build && node .next/standalone/server.js",
       port: 4002,
       reuseExistingServer: true,
       env: {
