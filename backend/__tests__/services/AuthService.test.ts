@@ -1,81 +1,192 @@
 import { AuthService } from "../../src/services/AuthService"
-import { pool } from "../../src/config/database"
-import bcrypt from "bcrypt"
+import { UserModel } from "../../src/models/User"
 import jwt from "jsonwebtoken"
-import jest from "jest" // Declare the jest variable
+import redisClient from "../../src/config/redis"
 
 // Mock dependencies
-jest.mock("../../src/config/database")
-jest.mock("bcrypt")
+jest.mock("../../src/models/User")
 jest.mock("jsonwebtoken")
+jest.mock("../../src/config/redis")
 
 describe("AuthService", () => {
-  let authService: AuthService
-
   beforeEach(() => {
-    authService = new AuthService()
     jest.clearAllMocks()
   })
 
-  describe("validateCredentials", () => {
-    it("should validate correct credentials", async () => {
+  describe("login", () => {
+    it("should login with correct credentials", async () => {
       const mockUser = {
         id: "1",
         username: "testuser",
-        password_hash: "hashedpassword",
-        role: "admin",
-        is_active: true,
-        is_locked: false,
-        failed_login_attempts: 0,
+        email: "test@example.com",
+        passwordHash: "hashedpassword",
+        role: "admin" as const,
+        isActive: true,
+        isLocked: false,
+        failedLoginAttempts: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       }
-      ;(pool.query as jest.Mock).mockResolvedValue({ rows: [mockUser] })
-      ;(bcrypt.compare as jest.Mock).mockResolvedValue(true)
 
-      const result = await authService.validateCredentials("testuser", "password123")
+      ;(UserModel.findByUsername as jest.Mock).mockResolvedValue(mockUser)
+      ;(UserModel.verifyPassword as jest.Mock).mockResolvedValue(true)
+      ;(UserModel.updateLastLogin as jest.Mock).mockResolvedValue(undefined)
+      ;(jwt.sign as jest.Mock)
+        .mockReturnValueOnce("access-token")
+        .mockReturnValueOnce("refresh-token")
+      ;(redisClient.setEx as jest.Mock).mockResolvedValue(undefined)
 
-      expect(result.success).toBe(true)
-      expect(result.user).toEqual(mockUser)
+      const result = await AuthService.login({
+        username: "testuser",
+        password: "password123",
+      })
+
+      expect(result).toEqual({
+        user: {
+          id: "1",
+          username: "testuser",
+          email: "test@example.com",
+          role: "admin",
+          isActive: true,
+        },
+        tokens: {
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+        },
+      })
     })
 
-    it("should reject invalid password", async () => {
+    it("should reject invalid credentials", async () => {
+      ;(UserModel.findByUsername as jest.Mock).mockResolvedValue(null)
+
+      const result = await AuthService.login({
+        username: "nonexistent",
+        password: "password123",
+      })
+
+      expect(result).toBeNull()
+    })
+
+    it("should reject locked account", async () => {
       const mockUser = {
         id: "1",
         username: "testuser",
-        password_hash: "hashedpassword",
-        role: "admin",
-        is_active: true,
-        is_locked: false,
-        failed_login_attempts: 0,
+        email: "test@example.com",
+        passwordHash: "hashedpassword",
+        role: "admin" as const,
+        isActive: true,
+        isLocked: true,
+        failedLoginAttempts: 5,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       }
-      ;(pool.query as jest.Mock).mockResolvedValue({ rows: [mockUser] })
-      ;(bcrypt.compare as jest.Mock).mockResolvedValue(false)
 
-      const result = await authService.validateCredentials("testuser", "wrongpassword")
+      ;(UserModel.findByUsername as jest.Mock).mockResolvedValue(mockUser)
 
-      expect(result.success).toBe(false)
-      expect(result.message).toBe("Invalid credentials")
+      await expect(
+        AuthService.login({
+          username: "testuser",
+          password: "password123",
+        })
+      ).rejects.toThrow("Account is locked due to too many failed login attempts")
     })
 
-    it("should reject non-existent user", async () => {
-      ;(pool.query as jest.Mock).mockResolvedValue({ rows: [] })
+    it("should reject deactivated account", async () => {
+      const mockUser = {
+        id: "1",
+        username: "testuser",
+        email: "test@example.com",
+        passwordHash: "hashedpassword",
+        role: "admin" as const,
+        isActive: false,
+        isLocked: false,
+        failedLoginAttempts: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
 
-      const result = await authService.validateCredentials("nonexistent", "password")
+      ;(UserModel.findByUsername as jest.Mock).mockResolvedValue(mockUser)
 
-      expect(result.success).toBe(false)
-      expect(result.message).toBe("Invalid credentials")
+      await expect(
+        AuthService.login({
+          username: "testuser",
+          password: "password123",
+        })
+      ).rejects.toThrow("Account is deactivated")
     })
   })
 
-  describe("generateTokens", () => {
-    it("should generate access and refresh tokens", () => {
-      const mockUser = { id: "1", username: "testuser", role: "admin" }
-      ;(jwt.sign as jest.Mock).mockReturnValueOnce("access-token").mockReturnValueOnce("refresh-token")
+  describe("verifyAccessToken", () => {
+    it("should verify valid access token", async () => {
+      const mockUser = {
+        id: "1",
+        username: "testuser",
+        email: "test@example.com",
+        passwordHash: "hashedpassword",
+        role: "admin" as const,
+        isActive: true,
+        isLocked: false,
+        failedLoginAttempts: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
 
-      const result = authService.generateTokens(mockUser)
+      const mockDecoded = {
+        userId: "1",
+        username: "testuser",
+        role: "admin",
+      }
 
-      expect(result.accessToken).toBe("access-token")
-      expect(result.refreshToken).toBe("refresh-token")
-      expect(jwt.sign).toHaveBeenCalledTimes(2)
+      ;(jwt.verify as jest.Mock).mockReturnValue(mockDecoded)
+      ;(UserModel.findById as jest.Mock).mockResolvedValue(mockUser)
+
+      const result = await AuthService.verifyAccessToken("valid-token")
+
+      expect(result).toEqual({
+        id: "1",
+        username: "testuser",
+        email: "test@example.com",
+        role: "admin",
+        isActive: true,
+      })
+    })
+
+    it("should return null for invalid token", async () => {
+      ;(jwt.verify as jest.Mock).mockImplementation(() => {
+        throw new Error("Invalid token")
+      })
+
+      const result = await AuthService.verifyAccessToken("invalid-token")
+
+      expect(result).toBeNull()
+    })
+
+    it("should return null for inactive user", async () => {
+      const mockUser = {
+        id: "1",
+        username: "testuser",
+        email: "test@example.com",
+        passwordHash: "hashedpassword",
+        role: "admin" as const,
+        isActive: false,
+        isLocked: false,
+        failedLoginAttempts: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+
+      const mockDecoded = {
+        userId: "1",
+        username: "testuser",
+        role: "admin",
+      }
+
+      ;(jwt.verify as jest.Mock).mockReturnValue(mockDecoded)
+      ;(UserModel.findById as jest.Mock).mockResolvedValue(mockUser)
+
+      const result = await AuthService.verifyAccessToken("valid-token")
+
+      expect(result).toBeNull()
     })
   })
 })

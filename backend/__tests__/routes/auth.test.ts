@@ -1,24 +1,27 @@
 import request from "supertest"
 import express from "express"
 import authRoutes from "../../src/routes/auth"
-import { pool } from "../../src/config/database"
-import bcrypt from "bcrypt"
-import jest from "jest" // Declare the jest variable
+import { AuthService } from "../../src/services/AuthService"
+import { authenticate } from "../../src/middleware/auth"
 
-// Mock database
-jest.mock("../../src/config/database", () => ({
-  pool: {
-    query: jest.fn(),
-    connect: jest.fn(),
-  },
-}))
-
-// Mock bcrypt
-jest.mock("bcrypt")
+// Mock AuthService
+jest.mock("../../src/services/AuthService")
+jest.mock("../../src/middleware/auth")
 
 const app = express()
 app.use(express.json())
 app.use("/api/auth", authRoutes)
+
+// Mock the authenticate middleware
+;(authenticate as jest.Mock).mockImplementation((req: any, res: any, next: any) => {
+  req.user = {
+    id: "1",
+    username: "testuser",
+    role: "admin",
+    isActive: true,
+  }
+  next()
+})
 
 describe("Auth Routes", () => {
   beforeEach(() => {
@@ -27,19 +30,21 @@ describe("Auth Routes", () => {
 
   describe("POST /api/auth/login", () => {
     it("should login with valid credentials", async () => {
-      const mockUser = {
-        id: "1",
-        username: "testuser",
-        password_hash: "hashedpassword",
-        role: "admin",
-        is_active: true,
-        is_locked: false,
-        failed_login_attempts: 0,
+      const mockResult = {
+        user: {
+          id: "1",
+          username: "testuser",
+          email: "test@example.com",
+          role: "admin" as const,
+          isActive: true,
+        },
+        tokens: {
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+        },
       }
-      ;(pool.query as jest.Mock)
-        .mockResolvedValueOnce({ rows: [mockUser] }) // Find user
-        .mockResolvedValueOnce({ rows: [] }) // Update last login
-      ;(bcrypt.compare as jest.Mock).mockResolvedValue(true)
+
+      ;(AuthService.login as jest.Mock).mockResolvedValue(mockResult)
 
       const response = await request(app).post("/api/auth/login").send({
         username: "testuser",
@@ -49,11 +54,12 @@ describe("Auth Routes", () => {
       expect(response.status).toBe(200)
       expect(response.body.success).toBe(true)
       expect(response.body.data.user.username).toBe("testuser")
-      expect(response.body.data.token).toBeDefined()
+      expect(response.body.data.accessToken).toBe("access-token")
+      expect(response.body.data.refreshToken).toBe("refresh-token")
     })
 
     it("should reject invalid credentials", async () => {
-      ;(pool.query as jest.Mock).mockResolvedValueOnce({ rows: [] })
+      ;(AuthService.login as jest.Mock).mockResolvedValue(null)
 
       const response = await request(app).post("/api/auth/login").send({
         username: "invaliduser",
@@ -62,46 +68,91 @@ describe("Auth Routes", () => {
 
       expect(response.status).toBe(401)
       expect(response.body.success).toBe(false)
-      expect(response.body.message).toBe("Invalid credentials")
+      expect(response.body.message).toBe("Invalid username or password")
     })
 
-    it("should reject locked account", async () => {
-      const mockUser = {
-        id: "1",
-        username: "testuser",
-        password_hash: "hashedpassword",
-        role: "admin",
-        is_active: true,
-        is_locked: true,
-        failed_login_attempts: 5,
-      }
-      ;(pool.query as jest.Mock).mockResolvedValueOnce({ rows: [mockUser] })
+    it("should handle locked account", async () => {
+      ;(AuthService.login as jest.Mock).mockRejectedValue(
+        new Error("Account is locked due to too many failed login attempts")
+      )
 
       const response = await request(app).post("/api/auth/login").send({
         username: "testuser",
         password: "password123",
       })
 
-      expect(response.status).toBe(401)
+      expect(response.status).toBe(400)
       expect(response.body.success).toBe(false)
-      expect(response.body.message).toBe("Account is locked")
+      expect(response.body.message).toBe("Account is locked due to too many failed login attempts")
+    })
+
+    it("should validate input", async () => {
+      const response = await request(app).post("/api/auth/login").send({
+        username: "ab", // Too short
+        password: "123", // Too short
+      })
+
+      expect(response.status).toBe(400)
+      expect(response.body.success).toBe(false)
+      expect(response.body.message).toBe("Validation failed")
     })
   })
 
   describe("POST /api/auth/refresh", () => {
     it("should refresh token with valid refresh token", async () => {
-      const mockUser = {
+      const mockTokens = {
+        accessToken: "new-access-token",
+        refreshToken: "new-refresh-token",
+      }
+
+      ;(AuthService.refreshToken as jest.Mock).mockResolvedValue(mockTokens)
+
+      const response = await request(app).post("/api/auth/refresh").send({
+        refreshToken: "valid-refresh-token",
+      })
+
+      expect(response.status).toBe(200)
+      expect(response.body.success).toBe(true)
+      expect(response.body.data).toEqual(mockTokens)
+    })
+
+    it("should reject invalid refresh token", async () => {
+      ;(AuthService.refreshToken as jest.Mock).mockResolvedValue(null)
+
+      const response = await request(app).post("/api/auth/refresh").send({
+        refreshToken: "invalid-refresh-token",
+      })
+
+      expect(response.status).toBe(401)
+      expect(response.body.success).toBe(false)
+      expect(response.body.message).toBe("Invalid or expired refresh token")
+    })
+  })
+
+  describe("POST /api/auth/logout", () => {
+    it("should logout successfully", async () => {
+      ;(AuthService.logout as jest.Mock).mockResolvedValue(undefined)
+
+      const response = await request(app).post("/api/auth/logout")
+
+      expect(response.status).toBe(200)
+      expect(response.body.success).toBe(true)
+      expect(response.body.message).toBe("Logout successful")
+    })
+  })
+
+  describe("GET /api/auth/me", () => {
+    it("should return current user", async () => {
+      const response = await request(app).get("/api/auth/me")
+
+      expect(response.status).toBe(200)
+      expect(response.body.success).toBe(true)
+      expect(response.body.data).toEqual({
         id: "1",
         username: "testuser",
         role: "admin",
-      }
-      ;(pool.query as jest.Mock).mockResolvedValueOnce({ rows: [mockUser] })
-
-      // Mock JWT verification (would need to mock jsonwebtoken)
-      const response = await request(app).post("/api/auth/refresh").set("Cookie", "refreshToken=valid-refresh-token")
-
-      // This test would need proper JWT mocking to work fully
-      expect(pool.query).toHaveBeenCalled()
+        isActive: true,
+      })
     })
   })
 })
