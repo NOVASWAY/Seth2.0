@@ -18,8 +18,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint src/**/*.ts --config .eslintrc.json",
-    "lint:fix": "eslint src/**/*.ts --fix --config .eslintrc.json",
+    "lint": "npx eslint src/**/*.ts --config .eslintrc.json",
+    "lint:fix": "npx eslint src/**/*.ts --fix --config .eslintrc.json",
     "deploy:check": "npm run lint && npm run test && npm run build",
     "health:check": "curl -f http://localhost:5000/health || exit 1"
   },
