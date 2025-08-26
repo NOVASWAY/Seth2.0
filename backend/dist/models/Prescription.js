@@ -1,0 +1,221 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PrescriptionModel = void 0;
+const database_1 = __importDefault(require("../config/database"));
+class PrescriptionModel {
+    static async create(data) {
+        const client = await database_1.default.connect();
+        try {
+            await client.query("BEGIN");
+            const prescriptionQuery = `
+        INSERT INTO prescriptions (
+          consultation_id, visit_id, patient_id, prescribed_by, status
+        )
+        VALUES ($1, $2, $3, $4, 'PENDING')
+        RETURNING id, consultation_id as "consultationId", visit_id as "visitId", 
+                  patient_id as "patientId", prescribed_by as "prescribedBy", 
+                  status, created_at as "createdAt", updated_at as "updatedAt"
+      `;
+            const prescriptionResult = await client.query(prescriptionQuery, [
+                data.consultationId,
+                data.visitId,
+                data.patientId,
+                data.prescribedBy,
+            ]);
+            const prescription = prescriptionResult.rows[0];
+            const itemQuery = `
+        INSERT INTO prescription_items (
+          prescription_id, inventory_item_id, item_name, dosage, frequency,
+          duration, quantity_prescribed, instructions
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id, prescription_id as "prescriptionId", inventory_item_id as "inventoryItemId",
+                  item_name as "itemName", dosage, frequency, duration,
+                  quantity_prescribed as "quantityPrescribed", quantity_dispensed as "quantityDispensed",
+                  instructions
+      `;
+            const items = [];
+            for (const item of data.items) {
+                const itemResult = await client.query(itemQuery, [
+                    prescription.id,
+                    item.inventoryItemId,
+                    item.itemName,
+                    item.dosage,
+                    item.frequency,
+                    item.duration,
+                    item.quantityPrescribed,
+                    item.instructions || null,
+                ]);
+                items.push(itemResult.rows[0]);
+            }
+            await client.query("COMMIT");
+            return {
+                ...prescription,
+                items,
+            };
+        }
+        catch (error) {
+            await client.query("ROLLBACK");
+            throw error;
+        }
+        finally {
+            client.release();
+        }
+    }
+    static async findById(id) {
+        const client = await database_1.default.connect();
+        try {
+            const prescriptionQuery = `
+        SELECT id, consultation_id as "consultationId", visit_id as "visitId", 
+               patient_id as "patientId", prescribed_by as "prescribedBy", 
+               status, created_at as "createdAt", updated_at as "updatedAt"
+        FROM prescriptions 
+        WHERE id = $1
+      `;
+            const prescriptionResult = await client.query(prescriptionQuery, [id]);
+            if (prescriptionResult.rows.length === 0) {
+                return null;
+            }
+            const prescription = prescriptionResult.rows[0];
+            const itemsQuery = `
+        SELECT id, prescription_id as "prescriptionId", inventory_item_id as "inventoryItemId",
+               item_name as "itemName", dosage, frequency, duration,
+               quantity_prescribed as "quantityPrescribed", quantity_dispensed as "quantityDispensed",
+               instructions
+        FROM prescription_items 
+        WHERE prescription_id = $1
+      `;
+            const itemsResult = await client.query(itemsQuery, [id]);
+            const items = itemsResult.rows;
+            return {
+                ...prescription,
+                items,
+            };
+        }
+        finally {
+            client.release();
+        }
+    }
+    static async findByPatientId(patientId) {
+        const client = await database_1.default.connect();
+        try {
+            const prescriptionQuery = `
+        SELECT id, consultation_id as "consultationId", visit_id as "visitId", 
+               patient_id as "patientId", prescribed_by as "prescribedBy", 
+               status, created_at as "createdAt", updated_at as "updatedAt"
+        FROM prescriptions 
+        WHERE patient_id = $1
+        ORDER BY created_at DESC
+      `;
+            const prescriptionResult = await client.query(prescriptionQuery, [patientId]);
+            const prescriptions = prescriptionResult.rows;
+            const prescriptionsWithItems = [];
+            for (const prescription of prescriptions) {
+                const itemsQuery = `
+          SELECT id, prescription_id as "prescriptionId", inventory_item_id as "inventoryItemId",
+                 item_name as "itemName", dosage, frequency, duration,
+                 quantity_prescribed as "quantityPrescribed", quantity_dispensed as "quantityDispensed",
+                 instructions
+          FROM prescription_items 
+          WHERE prescription_id = $1
+        `;
+                const itemsResult = await client.query(itemsQuery, [prescription.id]);
+                const items = itemsResult.rows;
+                prescriptionsWithItems.push({
+                    ...prescription,
+                    items,
+                });
+            }
+            return prescriptionsWithItems;
+        }
+        finally {
+            client.release();
+        }
+    }
+    static async updateStatus(id, status) {
+        const query = `
+      UPDATE prescriptions 
+      SET status = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+      RETURNING id, consultation_id as "consultationId", visit_id as "visitId", 
+                patient_id as "patientId", prescribed_by as "prescribedBy", 
+                status, created_at as "createdAt", updated_at as "updatedAt"
+    `;
+        const result = await database_1.default.query(query, [status, id]);
+        if (result.rows.length === 0) {
+            return null;
+        }
+        const prescription = result.rows[0];
+        const itemsQuery = `
+      SELECT id, prescription_id as "prescriptionId", inventory_item_id as "inventoryItemId",
+             item_name as "itemName", dosage, frequency, duration,
+             quantity_prescribed as "quantityPrescribed", quantity_dispensed as "quantityDispensed",
+             instructions
+      FROM prescription_items 
+      WHERE prescription_id = $1
+    `;
+        const itemsResult = await database_1.default.query(itemsQuery, [id]);
+        const items = itemsResult.rows;
+        return {
+            ...prescription,
+            items,
+        };
+    }
+    static async updateDispensedQuantity(itemId, quantityDispensed) {
+        const query = `
+      UPDATE prescription_items 
+      SET quantity_dispensed = $1
+      WHERE id = $2
+      RETURNING id, prescription_id as "prescriptionId", inventory_item_id as "inventoryItemId",
+                item_name as "itemName", dosage, frequency, duration,
+                quantity_prescribed as "quantityPrescribed", quantity_dispensed as "quantityDispensed",
+                instructions
+    `;
+        const result = await database_1.default.query(query, [quantityDispensed, itemId]);
+        if (result.rows.length === 0) {
+            return null;
+        }
+        return result.rows[0];
+    }
+    static async findByVisitId(visitId) {
+        const client = await database_1.default.connect();
+        try {
+            const prescriptionQuery = `
+        SELECT id, consultation_id as "consultationId", visit_id as "visitId", 
+               patient_id as "patientId", prescribed_by as "prescribedBy", 
+               status, created_at as "createdAt", updated_at as "updatedAt"
+        FROM prescriptions 
+        WHERE visit_id = $1
+        ORDER BY created_at DESC
+      `;
+            const prescriptionResult = await client.query(prescriptionQuery, [visitId]);
+            const prescriptions = prescriptionResult.rows;
+            const prescriptionsWithItems = [];
+            for (const prescription of prescriptions) {
+                const itemsQuery = `
+          SELECT id, prescription_id as "prescriptionId", inventory_item_id as "inventoryItemId",
+                 item_name as "itemName", dosage, frequency, duration,
+                 quantity_prescribed as "quantityPrescribed", quantity_dispensed as "quantityDispensed",
+                 instructions
+          FROM prescription_items 
+          WHERE prescription_id = $1
+        `;
+                const itemsResult = await client.query(itemsQuery, [prescription.id]);
+                const items = itemsResult.rows;
+                prescriptionsWithItems.push({
+                    ...prescription,
+                    items,
+                });
+            }
+            return prescriptionsWithItems;
+        }
+        finally {
+            client.release();
+        }
+    }
+}
+exports.PrescriptionModel = PrescriptionModel;
+//# sourceMappingURL=Prescription.js.map

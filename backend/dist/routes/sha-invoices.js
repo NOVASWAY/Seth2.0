@@ -1,0 +1,406 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const express_validator_1 = require("express-validator");
+const auth_1 = require("../middleware/auth");
+const types_1 = require("../types");
+const database_1 = require("../config/database");
+const SHAService_1 = require("../services/SHAService");
+const router = express_1.default.Router();
+const shaService = new SHAService_1.SHAService();
+router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER]), [
+    (0, express_validator_1.query)("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
+    (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100"),
+    (0, express_validator_1.query)("status").optional().isString().withMessage("Status must be a string"),
+    (0, express_validator_1.query)("startDate").optional().isISO8601().withMessage("Start date must be valid"),
+    (0, express_validator_1.query)("endDate").optional().isISO8601().withMessage("End date must be valid"),
+    (0, express_validator_1.query)("search").optional().isString().withMessage("Search must be a string"),
+], async (req, res) => {
+    try {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                errors: errors.array().map(err => err.msg)
+            });
+        }
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = (page - 1) * limit;
+        const { status, startDate, endDate, search } = req.query;
+        let whereClause = "WHERE 1=1";
+        const params = [];
+        let paramCount = 0;
+        if (status) {
+            paramCount++;
+            whereClause += ` AND i.status = $${paramCount}`;
+            params.push(status);
+        }
+        if (startDate) {
+            paramCount++;
+            whereClause += ` AND i.invoice_date >= $${paramCount}`;
+            params.push(startDate);
+        }
+        if (endDate) {
+            paramCount++;
+            whereClause += ` AND i.invoice_date <= $${paramCount}`;
+            params.push(endDate);
+        }
+        if (search) {
+            paramCount++;
+            whereClause += ` AND (i.invoice_number ILIKE $${paramCount} OR p.first_name ILIKE $${paramCount} OR p.last_name ILIKE $${paramCount} OR p.op_number ILIKE $${paramCount})`;
+            params.push(`%${search}%`);
+        }
+        const result = await database_1.pool.query(`SELECT 
+          i.*,
+          c.claim_number,
+          p.op_number,
+          p.first_name,
+          p.last_name,
+          p.insurance_number,
+          u.username as generated_by_username
+         FROM sha_invoices i
+         JOIN sha_claims c ON i.claim_id = c.id
+         JOIN patients p ON i.patient_id = p.id
+         JOIN users u ON i.generated_by = u.id
+         ${whereClause}
+         ORDER BY i.created_at DESC
+         LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`, [...params, limit, offset]);
+        const countResult = await database_1.pool.query(`SELECT COUNT(*) as total
+         FROM sha_invoices i
+         JOIN sha_claims c ON i.claim_id = c.id
+         JOIN patients p ON i.patient_id = p.id
+         ${whereClause}`, params);
+        const total = parseInt(countResult.rows[0].total);
+        res.json({
+            success: true,
+            data: {
+                invoices: result.rows,
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit)
+                }
+            }
+        });
+    }
+    catch (error) {
+        console.error("Error fetching SHA invoices:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch SHA invoices"
+        });
+    }
+});
+router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER]), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const invoiceData = await shaService.getInvoiceForPrinting(id);
+        if (!invoiceData) {
+            return res.status(404).json({
+                success: false,
+                message: "Invoice not found"
+            });
+        }
+        res.json({
+            success: true,
+            data: invoiceData
+        });
+    }
+    catch (error) {
+        console.error("Error fetching SHA invoice:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch SHA invoice"
+        });
+    }
+});
+router.post("/generate/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER]), async (req, res) => {
+    try {
+        const { claimId } = req.params;
+        const result = await shaService.generateInvoiceForClaim(claimId, req.user.id);
+        res.status(201).json({
+            success: true,
+            data: result.invoice,
+            message: result.message
+        });
+    }
+    catch (error) {
+        console.error("Error generating SHA invoice:", error);
+        res.status(500).json({
+            success: false,
+            message: error instanceof Error ? error.message : "Failed to generate SHA invoice"
+        });
+    }
+});
+router.post("/submit/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
+    try {
+        const { claimId } = req.params;
+        const result = await shaService.submitSingleClaim(claimId, req.user.id);
+        res.json({
+            success: true,
+            data: result.data,
+            message: result.message
+        });
+    }
+    catch (error) {
+        console.error("Error submitting claim to SHA:", error);
+        res.status(500).json({
+            success: false,
+            message: error instanceof Error ? error.message : "Failed to submit claim to SHA"
+        });
+    }
+});
+router.get("/ready-for-review", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER]), async (req, res) => {
+    try {
+        const invoices = await shaService.getInvoicesReadyForReview();
+        res.json({
+            success: true,
+            data: invoices,
+            message: `Found ${invoices.length} invoices ready for review and printing`
+        });
+    }
+    catch (error) {
+        console.error("Error fetching invoices ready for review:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch invoices ready for review"
+        });
+    }
+});
+router.get("/submitted-archive", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), [
+    (0, express_validator_1.query)("startDate").optional().isISO8601().withMessage("Start date must be valid"),
+    (0, express_validator_1.query)("endDate").optional().isISO8601().withMessage("End date must be valid"),
+], async (req, res) => {
+    try {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                errors: errors.array().map(err => err.msg)
+            });
+        }
+        const { startDate, endDate } = req.query;
+        const invoices = await shaService.getSubmittedInvoices(startDate ? new Date(startDate) : undefined, endDate ? new Date(endDate) : undefined);
+        res.json({
+            success: true,
+            data: invoices,
+            message: `Found ${invoices.length} submitted invoices in archive`
+        });
+    }
+    catch (error) {
+        console.error("Error fetching submitted invoices:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch submitted invoices"
+        });
+    }
+});
+router.post("/generate/batch/:batchId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
+    try {
+        const { batchId } = req.params;
+        const batchResult = await database_1.pool.query(`SELECT * FROM sha_claim_batches WHERE id = $1`, [batchId]);
+        if (batchResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Batch not found"
+            });
+        }
+        const invoices = await shaService.generateInvoicesForBatch(batchId, req.user.id);
+        res.status(201).json({
+            success: true,
+            data: invoices,
+            message: `Generated ${invoices.length} invoices successfully`
+        });
+    }
+    catch (error) {
+        console.error("Error generating batch invoices:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to generate batch invoices"
+        });
+    }
+});
+router.patch("/:id/print", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER]), async (req, res) => {
+    try {
+        const { id } = req.params;
+        await shaService.markInvoiceAsPrinted(id, req.user.id);
+        res.json({
+            success: true,
+            message: "Invoice marked as printed successfully"
+        });
+    }
+    catch (error) {
+        console.error("Error marking invoice as printed:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to mark invoice as printed"
+        });
+    }
+});
+router.patch("/:id/submit", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await shaService.submitInvoiceToSHA(id, req.user.id);
+        if (result.success) {
+            res.json({
+                success: true,
+                data: result.data,
+                message: "Invoice submitted to SHA successfully"
+            });
+        }
+        else {
+            res.status(400).json({
+                success: false,
+                message: "Failed to submit invoice to SHA",
+                error: result.error
+            });
+        }
+    }
+    catch (error) {
+        console.error("Error submitting invoice to SHA:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to submit invoice to SHA"
+        });
+    }
+});
+router.get("/ready-for-printing/:batchType", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
+    try {
+        const { batchType } = req.params;
+        if (!["weekly", "monthly"].includes(batchType)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid batch type. Must be 'weekly' or 'monthly'"
+            });
+        }
+        const invoices = await shaService.getInvoicesReadyForPrinting(batchType);
+        res.json({
+            success: true,
+            data: invoices,
+            message: `Found ${invoices.length} invoices ready for printing`
+        });
+    }
+    catch (error) {
+        console.error("Error fetching invoices ready for printing:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch invoices ready for printing"
+        });
+    }
+});
+router.get("/compliance/report", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), [
+    (0, express_validator_1.query)("startDate").isISO8601().withMessage("Start date is required and must be valid"),
+    (0, express_validator_1.query)("endDate").isISO8601().withMessage("End date is required and must be valid"),
+], async (req, res) => {
+    try {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                errors: errors.array().map(err => err.msg)
+            });
+        }
+        const { startDate, endDate } = req.query;
+        const report = await shaService.getComplianceReport(new Date(startDate), new Date(endDate));
+        const summary = {
+            totalClaims: report.length,
+            totalInvoicesGenerated: report.filter((r) => r.invoice_number).length,
+            totalInvoicesPrinted: report.filter((r) => r.printed_at).length,
+            totalInvoicesSubmitted: report.filter((r) => r.submitted_at).length,
+            complianceIssues: report.filter((r) => r.compliance_status === 'rejected').length,
+            pendingCompliance: report.filter((r) => r.compliance_status === 'pending').length
+        };
+        res.json({
+            success: true,
+            data: {
+                summary,
+                details: report
+            }
+        });
+    }
+    catch (error) {
+        console.error("Error generating compliance report:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to generate compliance report"
+        });
+    }
+});
+router.patch("/bulk/print", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), [
+    (0, express_validator_1.body)("invoiceIds").isArray({ min: 1 }).withMessage("Invoice IDs array is required"),
+    (0, express_validator_1.body)("invoiceIds.*").isUUID().withMessage("All invoice IDs must be valid UUIDs"),
+], async (req, res) => {
+    try {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                errors: errors.array().map(err => err.msg)
+            });
+        }
+        const { invoiceIds } = req.body;
+        const results = [];
+        for (const invoiceId of invoiceIds) {
+            try {
+                await shaService.markInvoiceAsPrinted(invoiceId, req.user.id);
+                results.push({ invoiceId, success: true });
+            }
+            catch (error) {
+                results.push({
+                    invoiceId,
+                    success: false,
+                    error: error instanceof Error ? error.message : "Unknown error"
+                });
+            }
+        }
+        const successful = results.filter(r => r.success).length;
+        const failed = results.filter(r => !r.success).length;
+        res.json({
+            success: true,
+            data: {
+                total: invoiceIds.length,
+                successful,
+                failed,
+                results
+            },
+            message: `Bulk print completed: ${successful} successful, ${failed} failed`
+        });
+    }
+    catch (error) {
+        console.error("Error bulk printing invoices:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to bulk print invoices"
+        });
+    }
+});
+router.get("/:id/audit", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await database_1.pool.query(`SELECT 
+          at.*,
+          u.username as performed_by_username
+         FROM sha_audit_trail at
+         JOIN users u ON at.performed_by = u.id
+         WHERE at.invoice_id = $1
+         ORDER BY at.performed_at DESC`, [id]);
+        res.json({
+            success: true,
+            data: result.rows
+        });
+    }
+    catch (error) {
+        console.error("Error fetching audit trail:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch audit trail"
+        });
+    }
+});
+exports.default = router;
+//# sourceMappingURL=sha-invoices.js.map

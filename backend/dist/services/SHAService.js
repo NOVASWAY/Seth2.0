@@ -1,0 +1,455 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SHAService = void 0;
+const axios_1 = __importDefault(require("axios"));
+const database_1 = require("../config/database");
+const invoiceUtils_1 = require("../utils/invoiceUtils");
+class SHAService {
+    constructor() {
+        this.config = {
+            baseUrl: process.env.SHA_API_URL || "https://api.sha.go.ke",
+            apiKey: process.env.SHA_API_KEY || "",
+            providerCode: process.env.SHA_PROVIDER_CODE || "",
+            timeout: 30000,
+            requireInvoiceBeforeSubmission: process.env.SHA_REQUIRE_INVOICE_BEFORE_SUBMISSION !== "false",
+        };
+    }
+    async makeRequest(endpoint, data, method = "POST") {
+        try {
+            const response = await (0, axios_1.default)({
+                method,
+                url: `${this.config.baseUrl}${endpoint}`,
+                data: method !== "GET" ? data : undefined,
+                params: method === "GET" ? data : undefined,
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${this.config.apiKey}`,
+                    "X-Provider-Code": this.config.providerCode,
+                },
+                timeout: this.config.timeout,
+            });
+            return {
+                success: true,
+                data: response.data,
+                status: response.status,
+            };
+        }
+        catch (error) {
+            console.error("SHA API Error:", error.response?.data || error.message);
+            return {
+                success: false,
+                error: error.response?.data || error.message,
+                status: error.response?.status || 500,
+            };
+        }
+    }
+    async generateInvoiceForClaim(claimId, userId) {
+        try {
+            const claimResult = await database_1.pool.query(`SELECT c.*, p.op_number, p.first_name, p.last_name, p.insurance_number
+         FROM claims c
+         JOIN patients p ON c.patient_id = p.id
+         WHERE c.id = $1 AND c.status = 'ready_to_submit'`, [claimId]);
+            if (claimResult.rows.length === 0) {
+                throw new Error("Claim not found or not ready for submission");
+            }
+            const claim = claimResult.rows[0];
+            const existingInvoice = await database_1.pool.query(`SELECT id FROM sha_invoices WHERE claim_id = $1`, [claimId]);
+            if (existingInvoice.rows.length > 0) {
+                throw new Error("Invoice already exists for this claim");
+            }
+            const invoiceNumber = await (0, invoiceUtils_1.generateInvoiceNumber)("SHA");
+            const invoiceDate = new Date();
+            const dueDate = new Date(invoiceDate.getTime() + (30 * 24 * 60 * 60 * 1000));
+            const itemsResult = await database_1.pool.query(`SELECT * FROM claim_items WHERE claim_id = $1`, [claimId]);
+            const invoiceResult = await database_1.pool.query(`INSERT INTO sha_invoices (
+          id, invoice_number, claim_id, patient_id, op_number, visit_id,
+          invoice_date, due_date, total_amount, status, generated_at,
+          generated_by, compliance_status, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        RETURNING *`, [
+                crypto.randomUUID(),
+                invoiceNumber,
+                claimId,
+                claim.patient_id,
+                claim.op_number,
+                claim.visit_id,
+                invoiceDate,
+                dueDate,
+                claim.claim_amount,
+                "generated",
+                invoiceDate,
+                userId,
+                "pending",
+                invoiceDate,
+                invoiceDate
+            ]);
+            const invoice = invoiceResult.rows[0];
+            await database_1.pool.query(`UPDATE claims SET 
+          invoice_number = $1,
+          invoice_date = $2,
+          status = 'invoice_ready',
+          updated_at = $3
+        WHERE id = $4`, [invoiceNumber, invoiceDate, invoiceDate, claimId]);
+            await this.createAuditTrail(claimId, invoice.id, "INVOICE_GENERATED_PRE_SUBMISSION", userId, {
+                invoice_number: invoiceNumber,
+                total_amount: claim.claim_amount,
+                items_count: itemsResult.rows.length,
+                workflow_step: "pre_submission_invoice_generation"
+            });
+            return {
+                success: true,
+                invoice,
+                message: "Invoice generated successfully. Ready for review and printing before submission."
+            };
+        }
+        catch (error) {
+            console.error("Error generating invoice for claim:", error);
+            throw error;
+        }
+    }
+    async submitSingleClaim(claimId, userId) {
+        try {
+            const invoiceResult = await database_1.pool.query(`SELECT i.*, c.* FROM sha_invoices i
+         JOIN claims c ON i.claim_id = c.id
+         WHERE i.claim_id = $1 AND i.status IN ('generated', 'printed')`, [claimId]);
+            if (invoiceResult.rows.length === 0) {
+                throw new Error("Invoice must be generated and optionally printed before submission. Please generate invoice first.");
+            }
+            const invoice = invoiceResult.rows[0];
+            const claim = invoiceResult.rows[0];
+            const itemsResult = await database_1.pool.query(`SELECT * FROM claim_items WHERE claim_id = $1`, [claimId]);
+            const payload = {
+                claim_number: claim.claim_number,
+                member_number: claim.member_number,
+                invoice_number: invoice.invoice_number,
+                visit_date: claim.visit_date.toISOString().split("T")[0],
+                diagnosis: {
+                    code: claim.diagnosis_code,
+                    description: claim.diagnosis_description,
+                },
+                services: itemsResult.rows.map((item) => ({
+                    service_code: item.service_code,
+                    description: item.service_description,
+                    quantity: item.quantity,
+                    unit_price: item.unit_price,
+                    total_price: item.total_price,
+                })),
+                total_amount: claim.claim_amount,
+                provider_code: this.config.providerCode,
+            };
+            const logId = crypto.randomUUID();
+            await database_1.pool.query(`INSERT INTO sha_submission_logs (
+          id, claim_id, invoice_id, submission_type, request_payload, 
+          status, retry_count, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`, [logId, claimId, invoice.id, "single", JSON.stringify(payload), "pending", 0, new Date(), new Date()]);
+            const result = await this.makeRequest("/claims/submit", payload);
+            await database_1.pool.query(`UPDATE sha_submission_logs 
+         SET response_payload = $1, status = $2, error_message = $3, updated_at = $4
+         WHERE id = $5`, [
+                JSON.stringify(result.data),
+                result.success ? "success" : "failed",
+                result.success ? null : JSON.stringify(result.error),
+                new Date(),
+                logId,
+            ]);
+            if (result.success) {
+                const submissionDate = new Date();
+                const shaReference = result.data?.reference || result.data?.claim_reference;
+                await database_1.pool.query(`UPDATE claims 
+           SET status = $1, submission_date = $2, sha_reference = $3, updated_at = $4
+           WHERE id = $5`, ["submitted", submissionDate, shaReference, submissionDate, claimId]);
+                await database_1.pool.query(`UPDATE sha_invoices 
+           SET status = 'submitted', 
+               submitted_at = $1, 
+               submitted_by = $2,
+               sha_reference = $3,
+               updated_at = $4
+           WHERE id = $5`, [submissionDate, userId, shaReference, submissionDate, invoice.id]);
+                await this.createAuditTrail(claimId, invoice.id, "CLAIM_SUBMITTED_TO_SHA", userId, {
+                    sha_reference: shaReference,
+                    invoice_number: invoice.invoice_number,
+                    submission_date: submissionDate,
+                    workflow_step: "claim_submission_invoice_locked",
+                    note: "Invoice is now locked and no longer editable after SHA submission"
+                });
+                return {
+                    success: true,
+                    data: {
+                        sha_reference: shaReference,
+                        submission_date: submissionDate,
+                        invoice_number: invoice.invoice_number,
+                        status: "submitted"
+                    },
+                    message: "Claim submitted successfully to SHA. Invoice is now locked and archived."
+                };
+            }
+            else {
+                throw new Error(result.error || "Failed to submit claim to SHA");
+            }
+        }
+        catch (error) {
+            console.error("Error submitting claim:", error);
+            throw error;
+        }
+    }
+    async submitClaimBatch(batch, claims) {
+        const claimsData = [];
+        for (const claim of claims) {
+            const itemsResult = await database_1.pool.query(`
+        SELECT * FROM claim_items WHERE claim_id = $1
+      `, [claim.id]);
+            claimsData.push({
+                claim_number: claim.claim_number,
+                member_number: claim.member_number,
+                visit_date: claim.visit_date.toISOString().split("T")[0],
+                diagnosis: {
+                    code: claim.diagnosis_code,
+                    description: claim.diagnosis_description,
+                },
+                services: itemsResult.rows.map((item) => ({
+                    service_code: item.service_code,
+                    description: item.service_description,
+                    quantity: item.quantity,
+                    unit_price: item.unit_price,
+                    total_price: item.total_price,
+                })),
+                total_amount: claim.total_amount,
+            });
+        }
+        const payload = {
+            batch_number: batch.batch_number,
+            batch_date: batch.batch_date.toISOString().split("T")[0],
+            provider_code: this.config.providerCode,
+            claims: claimsData,
+            total_claims: batch.total_claims,
+            total_amount: batch.total_amount,
+        };
+        const logId = crypto.randomUUID();
+        await database_1.pool.query(`
+      INSERT INTO claim_submission_logs (
+        id, batch_id, submission_type, request_payload, status, retry_count, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `, [logId, batch.id, "batch", JSON.stringify(payload), "pending", 0, new Date(), new Date()]);
+        const result = await this.makeRequest("/claims/batch-submit", payload);
+        await database_1.pool.query(`
+      UPDATE claim_submission_logs 
+      SET response_payload = $1, status = $2, error_message = $3, updated_at = $4
+      WHERE id = $5
+    `, [
+            JSON.stringify(result.data),
+            result.success ? "success" : "failed",
+            result.success ? null : JSON.stringify(result.error),
+            new Date(),
+            logId,
+        ]);
+        if (result.success) {
+            await database_1.pool.query(`
+        UPDATE claim_batches 
+        SET status = $1, submission_date = $2, sha_batch_reference = $3, updated_at = $4
+        WHERE id = $5
+      `, ["submitted", new Date(), result.data?.batch_reference || result.data?.reference, new Date(), batch.id]);
+            for (const claim of claims) {
+                await database_1.pool.query(`
+          UPDATE claims 
+          SET status = $1, submission_date = $2, updated_at = $3
+          WHERE id = $4
+        `, ["submitted", new Date(), new Date(), claim.id]);
+            }
+        }
+        return result;
+    }
+    async checkClaimStatus(shaReference) {
+        return await this.makeRequest(`/claims/status/${shaReference}`, {}, "GET");
+    }
+    async checkBatchStatus(shaBatchReference) {
+        return await this.makeRequest(`/claims/batch-status/${shaBatchReference}`, {}, "GET");
+    }
+    async reconcileClaims() {
+        const claimsResult = await database_1.pool.query(`
+      SELECT * FROM claims 
+      WHERE status = 'submitted' AND sha_reference IS NOT NULL
+    `);
+        for (const claim of claimsResult.rows) {
+            try {
+                const statusResult = await this.checkClaimStatus(claim.sha_reference);
+                if (statusResult.success && statusResult.data) {
+                    const shaStatus = statusResult.data.status;
+                    const approvedAmount = statusResult.data.approved_amount;
+                    let newStatus = claim.status;
+                    if (shaStatus === "approved") {
+                        newStatus = "approved";
+                    }
+                    else if (shaStatus === "rejected") {
+                        newStatus = "rejected";
+                    }
+                    else if (shaStatus === "paid") {
+                        newStatus = "paid";
+                    }
+                    if (newStatus !== claim.status) {
+                        await database_1.pool.query(`
+              UPDATE claims 
+              SET status = $1, approved_amount = $2, 
+                  approval_date = $3, rejection_reason = $4, updated_at = $5
+              WHERE id = $6
+            `, [
+                            newStatus,
+                            approvedAmount,
+                            shaStatus === "approved" || shaStatus === "paid" ? new Date() : null,
+                            statusResult.data.rejection_reason,
+                            new Date(),
+                            claim.id,
+                        ]);
+                    }
+                }
+            }
+            catch (error) {
+                console.error(`Error reconciling claim ${claim.id}:`, error);
+            }
+        }
+    }
+    async createAuditTrail(claimId, invoiceId, action, userId, details) {
+        await database_1.pool.query(`INSERT INTO sha_audit_trail (
+        id, claim_id, invoice_id, action, performed_by, performed_at, 
+        details, compliance_check, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`, [
+            crypto.randomUUID(),
+            claimId,
+            invoiceId,
+            action,
+            userId,
+            new Date(),
+            JSON.stringify(details),
+            true,
+            new Date()
+        ]);
+    }
+    async getInvoicesReadyForReview() {
+        const result = await database_1.pool.query(`SELECT 
+        i.*,
+        c.claim_number,
+        c.diagnosis_code,
+        c.diagnosis_description,
+        p.op_number,
+        p.first_name,
+        p.last_name,
+        p.insurance_number,
+        u.username as generated_by_username
+       FROM sha_invoices i
+       JOIN claims c ON i.claim_id = c.id
+       JOIN patients p ON i.patient_id = p.id
+       JOIN users u ON i.generated_by = u.id
+       WHERE i.status IN ('generated', 'printed')
+       ORDER BY i.created_at DESC`);
+        return result.rows;
+    }
+    async getSubmittedInvoices(startDate, endDate) {
+        let whereClause = "WHERE i.status = 'submitted'";
+        const params = [];
+        if (startDate) {
+            params.push(startDate);
+            whereClause += ` AND i.submitted_at >= $${params.length}`;
+        }
+        if (endDate) {
+            params.push(endDate);
+            whereClause += ` AND i.submitted_at <= $${params.length}`;
+        }
+        const result = await database_1.pool.query(`SELECT 
+        i.*,
+        c.claim_number,
+        c.diagnosis_code,
+        c.diagnosis_description,
+        c.sha_reference as claim_sha_reference,
+        p.op_number,
+        p.first_name,
+        p.last_name,
+        p.insurance_number,
+        u1.username as generated_by_username,
+        u2.username as submitted_by_username
+       FROM sha_invoices i
+       JOIN claims c ON i.claim_id = c.id
+       JOIN patients p ON i.patient_id = p.id
+       JOIN users u1 ON i.generated_by = u1.id
+       LEFT JOIN users u2 ON i.submitted_by = u2.id
+       ${whereClause}
+       ORDER BY i.submitted_at DESC`, params);
+        return result.rows;
+    }
+    async getInvoiceForPrinting(id) {
+        const result = await database_1.pool.query(`SELECT 
+        i.*,
+        c.claim_number,
+        c.diagnosis_code,
+        c.diagnosis_description,
+        p.op_number,
+        p.first_name,
+        p.last_name,
+        p.insurance_number,
+        u.username as generated_by_username
+       FROM sha_invoices i
+       JOIN claims c ON i.claim_id = c.id
+       JOIN patients p ON i.patient_id = p.id
+       JOIN users u ON i.generated_by = u.id
+       WHERE i.id = $1`, [id]);
+        return result.rows[0];
+    }
+    async generateInvoicesForBatch(batchId, userId) {
+        const result = await database_1.pool.query(`SELECT 
+        c.*,
+        p.op_number,
+        p.first_name,
+        p.last_name,
+        p.insurance_number
+       FROM claims c
+       WHERE c.batch_id = $1 AND c.status = 'ready_to_submit'`, [batchId]);
+        return result.rows;
+    }
+    async markInvoiceAsPrinted(id, userId) {
+        const result = await database_1.pool.query(`UPDATE sha_invoices 
+       SET status = 'printed', printed_at = NOW(), printed_by = $2, updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`, [id, userId]);
+        return result.rows[0];
+    }
+    async submitInvoiceToSHA(id, userId) {
+        const result = await database_1.pool.query(`UPDATE sha_invoices 
+       SET status = 'submitted', submitted_at = NOW(), submitted_by = $2, updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`, [id, userId]);
+        return result.rows[0];
+    }
+    async getInvoicesReadyForPrinting(batchType) {
+        const result = await database_1.pool.query(`SELECT 
+        i.*,
+        c.claim_number,
+        c.diagnosis_code,
+        c.diagnosis_description,
+        p.op_number,
+        p.first_name,
+        p.last_name,
+        p.insurance_number,
+        u.username as generated_by_username
+       FROM sha_invoices i
+       JOIN claims c ON i.claim_id = c.id
+       JOIN patients p ON i.patient_id = p.id
+       JOIN users u ON i.generated_by = u.id
+       WHERE i.status = 'generated'
+       ORDER BY i.created_at DESC`);
+        return result.rows;
+    }
+    async getComplianceReport(startDate, endDate) {
+        const result = await database_1.pool.query(`SELECT 
+        COUNT(*) as total_claims,
+        COUNT(CASE WHEN status = 'submitted' THEN 1 END) as submitted_claims,
+        COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_claims,
+        COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected_claims,
+        AVG(CASE WHEN status = 'approved' THEN EXTRACT(EPOCH FROM (approved_at - submitted_at))/86400 END) as avg_approval_days
+       FROM claims
+       WHERE created_at >= $1 AND created_at <= $2`, [startDate || new Date(0), endDate || new Date()]);
+        return result.rows[0];
+    }
+}
+exports.SHAService = SHAService;
+//# sourceMappingURL=SHAService.js.map
