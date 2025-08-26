@@ -36,7 +36,7 @@ export default defineConfig({
     {
       command: "cd backend && npm start",
       port: 4001,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,
       env: {
         DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_db",
         REDIS_URL: "redis://localhost:6379",
@@ -48,7 +48,7 @@ export default defineConfig({
     {
       command: "npm start",
       port: 4002,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,
       env: {
         NEXT_PUBLIC_API_URL: "http://localhost:4001",
       },
