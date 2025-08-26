@@ -6,6 +6,7 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
+    "lint:backend": "cd backend && npm run lint",
     "start": "next start",
     "type-check": "tsc --noEmit",
     "docker:dev": "docker compose up -d",
