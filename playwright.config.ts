@@ -8,7 +8,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:3008",
+    baseURL: "http://localhost:4002",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -35,22 +35,22 @@ export default defineConfig({
   webServer: [
     {
       command: "cd backend && npm start",
-      port: 3002,
+      port: 4001,
       reuseExistingServer: !process.env.CI,
       env: {
         DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_db",
         REDIS_URL: "redis://localhost:6379",
         JWT_SECRET: "test-jwt-secret",
         JWT_REFRESH_SECRET: "test-jwt-refresh-secret",
-        PORT: "3002",
+        PORT: "4001",
       },
     },
     {
       command: "npm start",
-      port: 3008,
+      port: 4002,
       reuseExistingServer: !process.env.CI,
       env: {
-        NEXT_PUBLIC_API_URL: "http://localhost:3002",
+        NEXT_PUBLIC_API_URL: "http://localhost:4001",
       },
     },
   ],
