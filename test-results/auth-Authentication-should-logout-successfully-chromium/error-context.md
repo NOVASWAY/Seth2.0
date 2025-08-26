@@ -1,7 +1,7 @@
 # Page snapshot
 
 ```yaml
-- generic [active] [ref=e1]:
+- generic [ref=e1]:
   - generic [ref=e3]:
     - generic [ref=e4]:
       - img [ref=e7]
@@ -13,14 +13,14 @@
           - generic [ref=e16]: Login failed
         - generic [ref=e17]:
           - generic [ref=e18]: Username
-          - textbox "Username" [ref=e19]: invalid
+          - textbox "Username" [ref=e19]: admin
         - generic [ref=e20]:
           - generic [ref=e21]: Password
           - generic [ref=e22]:
-            - textbox "Password" [ref=e23]: invalid
+            - textbox "Password" [ref=e23]: admin123
             - button [ref=e24] [cursor=pointer]:
               - img
-        - button "Sign In" [ref=e25] [cursor=pointer]
+        - button "Sign In" [active] [ref=e25] [cursor=pointer]
       - generic [ref=e26]:
         - paragraph [ref=e27]: "Demo Credentials:"
         - paragraph [ref=e28]: admin / admin123

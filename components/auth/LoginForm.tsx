@@ -54,7 +54,7 @@ export function LoginForm() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription data-testid="error-message">{error}</AlertDescription>
               </Alert>
             )}
 
