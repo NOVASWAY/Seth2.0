@@ -1,45 +1,54 @@
 'use client'
-
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useSimpleAuth } from '../../lib/simpleAuth'
+import { useRouter } from 'next/navigation'
+import { useTheme } from '../../lib/ThemeContext'
 
 export default function LoginForm() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const { login } = useSimpleAuth()
   const router = useRouter()
-  const { login, isLoading } = useSimpleAuth()
+  const { theme } = useTheme()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsLoading(true)
     setError('')
 
     try {
       await login(username, password)
-      console.log('✅ Login successful, redirecting...')
       router.push('/dashboard')
     } catch (err) {
-      console.error('❌ Login error:', err)
       setError(err instanceof Error ? err.message : 'Login failed')
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
+        {/* Header */}
+        <div className="text-center">
+          <div className="mx-auto h-16 w-16 bg-gradient-to-br from-orange-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
+            <span className="text-white text-2xl font-bold">S</span>
+          </div>
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+            Welcome to Seth Clinic
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Use admin/admin123 to login
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            Sign in to your account to continue
           </p>
         </div>
+
+        {/* Login Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+          <div className="space-y-4">
             <div>
-              <label htmlFor="username" className="sr-only">
+              <label htmlFor="username" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Username
               </label>
               <input
@@ -48,14 +57,15 @@ export default function LoginForm() {
                 type="text"
                 required
                 data-testid="username"
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 transition-colors duration-200"
+                placeholder="Enter your username"
               />
             </div>
+            
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Password
               </label>
               <input
@@ -64,29 +74,36 @@ export default function LoginForm() {
                 type="password"
                 required
                 data-testid="password"
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 transition-colors duration-200"
+                placeholder="Enter your password"
               />
             </div>
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm text-center" data-testid="error-message">{error}</div>
+            <div className="text-red-600 text-sm text-center" data-testid="error-message">
+              {error}
+            </div>
           )}
 
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              data-testid="login-button"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {isLoading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            data-testid="login-button"
+            className="w-full bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            {isLoading ? 'Signing in...' : 'Sign in'}
+          </button>
         </form>
+
+        {/* Footer */}
+        <div className="text-center">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Use <strong>admin</strong> / <strong>admin123</strong> to sign in
+          </p>
+        </div>
       </div>
     </div>
   )

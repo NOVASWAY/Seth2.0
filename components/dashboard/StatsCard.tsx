@@ -4,7 +4,7 @@ interface StatsCardProps {
   change?: string
   changeType?: 'increase' | 'decrease' | 'neutral'
   icon?: React.ReactNode
-  color?: 'blue' | 'green' | 'red' | 'yellow' | 'purple'
+  color?: 'orange' | 'purple' | 'green' | 'red' | 'yellow'
 }
 
 export default function StatsCard({ 
@@ -13,20 +13,20 @@ export default function StatsCard({
   change, 
   changeType = 'neutral', 
   icon, 
-  color = 'blue' 
+  color = 'orange' 
 }: StatsCardProps) {
   const colorClasses = {
-    blue: 'bg-blue-500',
-    green: 'bg-green-500',
-    red: 'bg-red-500',
-    yellow: 'bg-yellow-500',
-    purple: 'bg-purple-500'
+    orange: 'bg-gradient-to-br from-orange-500 to-orange-600',
+    purple: 'bg-gradient-to-br from-purple-500 to-purple-600',
+    green: 'bg-gradient-to-br from-green-500 to-green-600',
+    red: 'bg-gradient-to-br from-red-500 to-red-600',
+    yellow: 'bg-gradient-to-br from-yellow-500 to-yellow-600'
   }
 
   const changeColorClasses = {
-    increase: 'text-green-600',
-    decrease: 'text-red-600',
-    neutral: 'text-gray-600'
+    increase: 'text-green-600 dark:text-green-400',
+    decrease: 'text-red-600 dark:text-red-400',
+    neutral: 'text-slate-600 dark:text-slate-400'
   }
 
   const changeIcon = {
@@ -36,29 +36,29 @@ export default function StatsCard({
   }
 
   return (
-    <div className="bg-white overflow-hidden shadow rounded-lg">
+    <div className="bg-white dark:bg-slate-800 overflow-hidden shadow-lg rounded-lg border border-slate-200 dark:border-slate-700 transition-all duration-300 hover:shadow-xl hover:scale-105">
       <div className="p-5">
         <div className="flex items-center">
           {icon && (
-            <div className={`flex-shrink-0 ${colorClasses[color]} rounded-md p-3`}>
+            <div className={`flex-shrink-0 ${colorClasses[color]} rounded-lg p-3 shadow-lg`}>
               <div className="text-white text-xl">{icon}</div>
             </div>
           )}
           <div className="ml-5 w-0 flex-1">
             <dl>
-              <dt className="text-sm font-medium text-gray-500 truncate">{title}</dt>
-              <dd className="text-lg font-medium text-gray-900">{value}</dd>
+              <dt className="text-sm font-medium text-slate-500 dark:text-slate-400 truncate">{title}</dt>
+              <dd className="text-2xl font-bold text-slate-900 dark:text-slate-100">{value}</dd>
             </dl>
           </div>
         </div>
       </div>
       {change && (
-        <div className="bg-gray-50 px-5 py-3">
+        <div className="bg-slate-50 dark:bg-slate-700 px-5 py-3 border-t border-slate-200 dark:border-slate-600">
           <div className="text-sm">
             <span className={`font-medium ${changeColorClasses[changeType]}`}>
               {changeIcon[changeType]} {change}
             </span>
-            <span className="text-gray-500 ml-1">from last month</span>
+            <span className="text-slate-500 dark:text-slate-400 ml-1">from last month</span>
           </div>
         </div>
       )}

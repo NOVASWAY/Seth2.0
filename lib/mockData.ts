@@ -137,52 +137,55 @@ export const mockPatients = [
 
 export const mockQuickActions = [
   {
-    id: "1",
-    title: "Add Patient",
-    description: "Register a new patient",
-    icon: "👤",
-    href: "/patients/new",
-    color: "blue" as const
+    id: '1',
+    title: 'Register Patient',
+    description: 'Add new patient to system',
+    icon: '👤',
+    href: '/patients/new',
+    color: 'orange' as const,
+    badge: 'New'
   },
   {
-    id: "2",
-    title: "Schedule Appointment",
-    description: "Book patient appointment",
-    icon: "📅",
-    href: "/appointments/new",
-    color: "green" as const
+    id: '2',
+    title: 'Schedule Appointment',
+    description: 'Book patient appointment',
+    icon: '📅',
+    href: '/appointments/new',
+    color: 'purple' as const,
+    badge: 'Hot'
   },
   {
-    id: "3",
-    title: "Process Payment",
-    description: "Handle patient payments",
-    icon: "💰",
-    href: "/payments/new",
-    color: "purple" as const
+    id: '3',
+    title: 'Process Payment',
+    description: 'Handle patient payments',
+    icon: '💰',
+    href: '/payments/new',
+    color: 'green' as const
   },
   {
-    id: "4",
-    title: "View Reports",
-    description: "Generate clinic reports",
-    icon: "📊",
-    href: "/reports",
-    color: "yellow" as const
+    id: '4',
+    title: 'View Reports',
+    description: 'Generate clinic reports',
+    icon: '📊',
+    href: '/reports',
+    color: 'orange' as const
   },
   {
-    id: "5",
-    title: "Manage Staff",
-    description: "Update staff information",
-    icon: "👨‍⚕️",
-    href: "/staff",
-    color: "red" as const
+    id: '5',
+    title: 'Manage Staff',
+    description: 'Staff scheduling & management',
+    icon: '👥',
+    href: '/staff',
+    color: 'purple' as const
   },
   {
-    id: "6",
-    title: "Inventory Check",
-    description: "Check medical supplies",
-    icon: "🏥",
-    href: "/inventory",
-    color: "blue" as const
+    id: '6',
+    title: 'Inventory Check',
+    description: 'Check medical supplies',
+    icon: '📦',
+    href: '/inventory',
+    color: 'yellow' as const,
+    badge: 'Low'
   }
 ]
 
