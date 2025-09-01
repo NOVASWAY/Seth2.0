@@ -31,29 +31,4 @@ export default defineConfig({
       use: { ...devices["Pixel 5"] },
     },
   ],
-
-  // webServer: [
-  //   {
-  //     command: "cd backend && npm start",
-  //     port: 4001,
-  //     reuseExistingServer: true,
-  //     timeout: 120000,
-  //     env: {
-  //       DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test_db",
-  //       REDIS_URL: "redis://localhost:6379",
-  //       JWT_SECRET: "test-jwt-secret",
-  //       JWT_REFRESH_SECRET: "test-jwt-refresh-secret",
-  //       PORT: "4001",
-  //     },
-  //   },
-  //   {
-  //     command: "npm run dev",
-  //     port: 3000,
-  //     reuseExistingServer: true,
-  //     timeout: 120000,
-  //     env: {
-  //       NEXT_PUBLIC_API_URL: "http://localhost:4001",
-  //     },
-  //   },
-  // ],
 })

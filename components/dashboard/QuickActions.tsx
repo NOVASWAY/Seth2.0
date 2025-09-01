@@ -1,3 +1,7 @@
+'use client'
+
+import { useRouter } from 'next/navigation'
+
 interface QuickAction {
   id: string
   title: string
@@ -14,6 +18,8 @@ interface QuickActionsProps {
 }
 
 export default function QuickActions({ actions, title = "Quick Actions" }: QuickActionsProps) {
+  const router = useRouter()
+
   const getColorClasses = (color: QuickAction['color']) => {
     const colors = {
       blue: 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200',
@@ -25,6 +31,32 @@ export default function QuickActions({ actions, title = "Quick Actions" }: Quick
     return colors[color]
   }
 
+  const handleActionClick = (action: QuickAction) => {
+    // Handle different action types
+    switch (action.id) {
+      case '1': // Register Patient
+        router.push('/patients')
+        break
+      case '2': // Schedule Appointment
+        router.push('/appointments')
+        break
+      case '3': // Process Payment
+        router.push('/payments')
+        break
+      case '4': // View Reports
+        router.push('/reports')
+        break
+      case '5': // Manage Staff
+        router.push('/staff')
+        break
+      case '6': // Inventory Check
+        router.push('/inventory')
+        break
+      default:
+        router.push(action.href)
+    }
+  }
+
   return (
     <div className="bg-white shadow rounded-lg">
       <div className="px-6 py-4 border-b border-gray-200">
@@ -33,10 +65,10 @@ export default function QuickActions({ actions, title = "Quick Actions" }: Quick
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {actions.map((action) => (
-            <a
+            <button
               key={action.id}
-              href={action.href}
-              className={`relative group p-4 rounded-lg border-2 transition-all duration-200 ${getColorClasses(action.color)}`}
+              onClick={() => handleActionClick(action)}
+              className={`relative group p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer ${getColorClasses(action.color)}`}
             >
               <div className="flex items-center space-x-3">
                 <div className="text-2xl">{action.icon}</div>
@@ -51,7 +83,7 @@ export default function QuickActions({ actions, title = "Quick Actions" }: Quick
                 )}
               </div>
               <div className="absolute inset-0 rounded-lg ring-2 ring-transparent group-hover:ring-current group-hover:ring-opacity-20 transition-all duration-200" />
-            </a>
+            </button>
           ))}
         </div>
       </div>

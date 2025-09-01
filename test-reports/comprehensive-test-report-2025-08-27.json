@@ -1,0 +1,151 @@
+{
+  "timestamp": "2025-08-27T18:14:41.935Z",
+  "summary": {
+    "total": 0,
+    "passed": 0,
+    "failed": 4,
+    "skipped": 0,
+    "successRate": 0
+  },
+  "categories": {
+    "Authentication": {
+      "total": 0,
+      "passed": 0,
+      "failed": 1,
+      "skipped": 0,
+      "errors": [
+        "Execution error: Command failed: npx playwright test e2e/auth.spec.ts --project=chromium --workers=1 --timeout=30000 --reporter=json"
+      ]
+    },
+    "Input Validation": {
+      "total": 0,
+      "passed": 0,
+      "failed": 1,
+      "skipped": 0,
+      "errors": [
+        "Execution error: Command failed: npx playwright test e2e/comprehensive/system-input.spec.ts --project=chromium --workers=1 --timeout=30000 --reporter=json"
+      ]
+    },
+    "Patient Management": {
+      "total": 0,
+      "passed": 0,
+      "failed": 1,
+      "skipped": 0,
+      "errors": [
+        "Execution error: Command failed: npx playwright test e2e/comprehensive/patient-management.spec.ts --project=chromium --workers=1 --timeout=30000 --reporter=json"
+      ]
+    },
+    "Prescription System": {
+      "total": 0,
+      "passed": 0,
+      "failed": 1,
+      "skipped": 0,
+      "errors": [
+        "Execution error: Command failed: npx playwright test e2e/comprehensive/prescription-system.spec.ts --project=chromium --workers=1 --timeout=30000 --reporter=json"
+      ]
+    },
+    "Diagnostics": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": [
+        "File not found: e2e/comprehensive/diagnostics-system.spec.ts"
+      ]
+    },
+    "Inventory Management": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": [
+        "File not found: e2e/comprehensive/inventory-management.spec.ts"
+      ]
+    },
+    "Financial & Claims": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": [
+        "File not found: e2e/comprehensive/financial-claims.spec.ts"
+      ]
+    },
+    "SHA Insurance": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": [
+        "File not found: e2e/comprehensive/sha-insurance.spec.ts"
+      ]
+    },
+    "Admin Functions": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": [
+        "File not found: e2e/comprehensive/admin-functions.spec.ts"
+      ]
+    },
+    "Queue Management": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": [
+        "File not found: e2e/comprehensive/queue-management.spec.ts"
+      ]
+    },
+    "Security & Access Control": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": [
+        "File not found: e2e/comprehensive/security-access.spec.ts"
+      ]
+    },
+    "Data Export & Import": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": [
+        "File not found: e2e/comprehensive/data-export-import.spec.ts"
+      ]
+    },
+    "Performance & Load": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": [
+        "File not found: e2e/comprehensive/performance-load.spec.ts"
+      ]
+    },
+    "Error Handling": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": [
+        "File not found: e2e/comprehensive/error-handling.spec.ts"
+      ]
+    },
+    "Integration Tests": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": [
+        "File not found: e2e/comprehensive/integration.spec.ts"
+      ]
+    }
+  },
+  "recommendations": [
+    "Review and fix failed tests before deployment",
+    "Consider adding more test cases for comprehensive coverage"
+  ]
+}

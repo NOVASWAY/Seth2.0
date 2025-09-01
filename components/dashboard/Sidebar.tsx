@@ -1,3 +1,7 @@
+'use client'
+
+import { useRouter, usePathname } from 'next/navigation'
+
 interface MenuItem {
   id: string
   title: string
@@ -15,6 +19,20 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ menuItems, user, isCollapsed = false, onToggle }: SidebarProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+
+  const handleNavigation = (href: string) => {
+    router.push(href)
+  }
+
+  const isActiveRoute = (href: string) => {
+    if (href === '/dashboard') {
+      return pathname === '/dashboard'
+    }
+    return pathname.startsWith(href)
+  }
+
   return (
     <div className={`bg-white shadow-lg transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       {/* Header */}
@@ -54,15 +72,19 @@ export default function Sidebar({ menuItems, user, isCollapsed = false, onToggle
       {/* Navigation Menu */}
       <nav className="flex-1 px-2 py-4 space-y-1">
         {menuItems.map((item) => (
-          <a
+          <button
             key={item.id}
-            href={item.href}
-            className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+            onClick={() => handleNavigation(item.href)}
+            className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+              isActiveRoute(item.href)
+                ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
           >
             <span className="text-lg mr-3">{item.icon}</span>
             {!isCollapsed && (
               <>
-                <span className="flex-1">{item.title}</span>
+                <span className="flex-1 text-left">{item.title}</span>
                 {item.badge && (
                   <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     {item.badge}
@@ -70,7 +92,7 @@ export default function Sidebar({ menuItems, user, isCollapsed = false, onToggle
                 )}
               </>
             )}
-          </a>
+          </button>
         ))}
       </nav>
 
