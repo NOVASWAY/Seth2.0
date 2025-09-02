@@ -190,8 +190,18 @@ jobs:
     - name: Install Playwright
       run: npx playwright install --with-deps
     
+    - name: Show Playwright configuration
+      run: |
+        echo "Playwright config:"
+        npx playwright --version
+        echo "Workers: 4 (CI mode)"
+        echo "Projects: $(npx playwright test --list | grep -c '^[0-9]')"
+    
     - name: Run E2E tests
-      run: npx playwright test
+      run: npx playwright test --workers=4
+      env:
+        PLAYWRIGHT_HTML_REPORT: 0
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 0
     
     - name: Upload E2E test results
       uses: actions/upload-artifact@v4
