@@ -150,21 +150,23 @@ else
     exit 1
 fi
 
-# Test prescription system endpoints
+# Test prescription system endpoints (requires authentication)
 echo "🔍 Testing prescription system endpoints..."
-if curl -f -s "http://localhost:5000/api/inventory/available-stock" > /dev/null; then
-    echo "✅ Prescription system API endpoints accessible"
+echo "⚠️  Note: Prescription endpoints require authentication - testing basic connectivity only"
+if curl -f -s "http://localhost:5000/api/inventory/available-stock" > /dev/null 2>&1; then
+    echo "✅ Prescription system API endpoints responding (auth required)"
 else
-    echo "❌ Prescription system API endpoints not accessible"
+    echo "❌ Prescription system API endpoints not responding"
     exit 1
 fi
 
-# Test diagnostics system endpoints
+# Test diagnostics system endpoints (requires authentication)
 echo "🔍 Testing diagnostics system endpoints..."
-if curl -f -s "http://localhost:5000/api/lab-tests/available" > /dev/null; then
-    echo "✅ Diagnostics system API endpoints accessible"
+echo "⚠️  Note: Diagnostics endpoints require authentication - testing basic connectivity only"
+if curl -f -s "http://localhost:5000/api/lab-tests/available" > /dev/null 2>&1; then
+    echo "✅ Diagnostics system API endpoints responding (auth required)"
 else
-    echo "❌ Diagnostics system API endpoints not accessible"
+    echo "❌ Diagnostics system API endpoints not responding"
     exit 1
 fi
 
