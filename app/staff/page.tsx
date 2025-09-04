@@ -312,75 +312,88 @@ export default function StaffPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-500 rounded-lg">
-              <Users className="h-8 w-8 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+      <div className="container mx-auto p-6 space-y-8">
+        {/* Enhanced Header */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                <Users className="h-10 w-10 text-white" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-indigo-600 dark:from-slate-100 dark:to-indigo-400 bg-clip-text text-transparent">
+                  Staff Management
+                </h1>
+                <p className="text-slate-600 dark:text-slate-400 mt-2 text-lg">Manage your clinic staff, roles, and permissions</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-                Staff Management
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400 mt-1">Manage your clinic staff and track performance</p>
-            </div>
-          </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Add Staff Member
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Add New Staff Member</DialogTitle>
-                <DialogDescription>
-                  Create a new staff account with appropriate role and permissions.
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                  <UserPlus className="h-5 w-5 mr-2" />
+                  Add New Staff Member
+                </Button>
+              </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader className="text-center pb-4">
+                <div className="mx-auto w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
+                  <UserPlus className="h-6 w-6 text-white" />
+                </div>
+                <DialogTitle className="text-2xl font-bold">Add New Staff Member</DialogTitle>
+                <DialogDescription className="text-base">
+                  Create a new staff account with appropriate role and permissions for your clinic.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+              <div className="grid gap-6 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="first_name">First Name</Label>
+                    <Label htmlFor="first_name" className="text-sm font-semibold">First Name</Label>
                     <Input
                       id="first_name"
                       value={formData.first_name}
                       onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                      className="h-11 border-2 focus:border-indigo-500"
+                      placeholder="Enter first name"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="last_name">Last Name</Label>
+                    <Label htmlFor="last_name" className="text-sm font-semibold">Last Name</Label>
                     <Input
                       id="last_name"
                       value={formData.last_name}
                       onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                      className="h-11 border-2 focus:border-indigo-500"
+                      placeholder="Enter last name"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username *</Label>
+                  <Label htmlFor="username" className="text-sm font-semibold">Username *</Label>
                   <Input
                     id="username"
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    className="h-11 border-2 focus:border-indigo-500"
+                    placeholder="Enter unique username"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email" className="text-sm font-semibold">Email Address</Label>
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="h-11 border-2 focus:border-indigo-500"
+                    placeholder="Enter email address"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="role">Role *</Label>
+                  <Label htmlFor="role" className="text-sm font-semibold">Role *</Label>
                   <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 border-2 focus:border-indigo-500">
                       <SelectValue placeholder="Select a role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -393,47 +406,59 @@ export default function StaffPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password *</Label>
+                  <Label htmlFor="password" className="text-sm font-semibold">Password *</Label>
                   <Input
                     id="password"
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="h-11 border-2 focus:border-indigo-500"
+                    placeholder="Enter password (min 8 characters)"
                     required
                   />
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              <DialogFooter className="gap-3 pt-4">
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="px-6">
+                  <X className="h-4 w-4 mr-2" />
                   Cancel
                 </Button>
-                <Button onClick={handleAddStaff} disabled={submitting}>
+                <Button onClick={handleAddStaff} disabled={submitting} className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 px-8">
                   {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                  Add Staff
+                  Add Staff Member
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
 
-        {/* Filters */}
-        <Card>
+        {/* Enhanced Filters */}
+        <Card className="bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700">
+          <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-700 dark:to-slate-600 rounded-t-lg">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Filter className="h-5 w-5 text-indigo-600" />
+              Search & Filter Staff
+            </CardTitle>
+            <CardDescription>
+              Find and filter staff members by name, email, or role
+            </CardDescription>
+          </CardHeader>
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
                   <Input
-                    placeholder="Search staff members..."
+                    placeholder="Search by name, username, or email..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-12 h-12 text-lg border-2 border-slate-200 dark:border-slate-600 focus:border-indigo-500 dark:focus:border-indigo-400 rounded-lg"
                   />
                 </div>
               </div>
-              <div className="w-full sm:w-48">
+              <div className="w-full sm:w-56">
                 <Select value={selectedRole} onValueChange={setSelectedRole}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-12 text-lg border-2 border-slate-200 dark:border-slate-600 focus:border-indigo-500 dark:focus:border-indigo-400 rounded-lg">
                     <SelectValue placeholder="Filter by role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -450,15 +475,18 @@ export default function StaffPage() {
           </CardContent>
         </Card>
 
-        {/* Staff List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Staff Members ({filteredStaff.length})</CardTitle>
-            <CardDescription>
+        {/* Enhanced Staff List */}
+        <Card className="bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700">
+          <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-700 dark:to-slate-600 rounded-t-lg">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <Users className="h-6 w-6 text-indigo-600" />
+              Staff Members ({filteredStaff.length})
+            </CardTitle>
+            <CardDescription className="text-base">
               Manage your clinic staff members and their roles
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             {loading ? (
               <div className="text-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
@@ -475,50 +503,55 @@ export default function StaffPage() {
             ) : (
               <div className="space-y-4">
                 {filteredStaff.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-12 w-12">
-                        <AvatarFallback>
+                  <div key={member.id} className="flex items-center justify-between p-6 bg-gradient-to-r from-white to-slate-50 dark:from-slate-800 dark:to-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:border-indigo-300 dark:hover:border-indigo-500">
+                    <div className="flex items-center gap-6">
+                      <Avatar className="h-16 w-16 border-4 border-white dark:border-slate-600 shadow-lg">
+                        <AvatarFallback className="text-lg font-bold bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
                           {member.first_name?.[0]}{member.last_name?.[0] || member.username[0]}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">
                           {member.first_name && member.last_name 
                             ? `${member.first_name} ${member.last_name}` 
                             : member.username}
                         </h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">@{member.username}</p>
+                        <p className="text-base text-slate-600 dark:text-slate-400 mb-2">@{member.username}</p>
                         {member.email && (
-                          <p className="text-sm text-slate-500 dark:text-slate-500 flex items-center gap-1">
-                            <Mail className="h-3 w-3" />
+                          <p className="text-sm text-slate-500 dark:text-slate-500 flex items-center gap-2">
+                            <Mail className="h-4 w-4" />
                             {member.email}
                           </p>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge className={getRoleBadgeColor(member.role)}>
-                        {getRoleLabel(member.role)}
-                      </Badge>
-                      <Badge variant={member.is_active ? "default" : "secondary"}>
-                        {member.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                      <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col gap-2">
+                        <Badge className={`${getRoleBadgeColor(member.role)} text-sm px-3 py-1 font-semibold`}>
+                          {getRoleLabel(member.role)}
+                        </Badge>
+                        <Badge variant={member.is_active ? "default" : "secondary"} className="text-sm px-3 py-1">
+                          {member.is_active ? "✅ Active" : "❌ Inactive"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => openEditDialog(member)}
+                          className="border-indigo-300 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-600 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
                         </Button>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => handleDeleteStaff(member.id)}
-                          className="text-red-600 hover:text-red-700"
+                          className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-900/20"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
                         </Button>
                       </div>
                     </div>
