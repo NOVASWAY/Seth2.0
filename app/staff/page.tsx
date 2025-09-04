@@ -473,6 +473,7 @@ export default function StaffPage() {
           </Card>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   )
 }
