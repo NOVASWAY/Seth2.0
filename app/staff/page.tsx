@@ -167,83 +167,103 @@ export default function StaffPage() {
   const roles = ["all", "Doctor", "Nurse", "Pharmacist", "Receptionist", "Lab Technician"]
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Users className="h-8 w-8" />
-          <h1 className="text-3xl font-bold">Staff Management</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+      <div className="container mx-auto p-6 space-y-8">
+        <div className="flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg shadow-lg">
+              <Users className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
+                Staff Management
+              </h1>
+              <p className="text-slate-600 dark:text-slate-400 mt-1">Manage your clinic staff and track performance</p>
+            </div>
+          </div>
+          <Button 
+            onClick={handleAddStaff} 
+            disabled={isLoading} 
+            className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            <UserPlus className="h-4 w-4" />
+            Add Staff Member
+          </Button>
         </div>
-        <Button onClick={handleAddStaff} disabled={isLoading} className="flex items-center gap-2">
-          <UserPlus className="h-4 w-4" />
-          Add Staff Member
-        </Button>
-      </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="directory">Staff Directory</TabsTrigger>
-          <TabsTrigger value="schedules">Schedules</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="overview" className="space-y-6 animate-in slide-in-from-bottom-4 duration-700 delay-200">
+          <TabsList className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 shadow-lg">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white transition-all duration-300">Overview</TabsTrigger>
+            <TabsTrigger value="directory" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white transition-all duration-300">Staff Directory</TabsTrigger>
+            <TabsTrigger value="schedules" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white transition-all duration-300">Schedules</TabsTrigger>
+            <TabsTrigger value="performance" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white transition-all duration-300">Performance</TabsTrigger>
+          </TabsList>
 
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Staff</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{mockStaff.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  +2 from last month
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Staff</CardTitle>
-                <CheckCircle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {mockStaff.filter(s => s.status === "active").length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Currently working
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Doctors</CardTitle>
-                <Shield className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {mockStaff.filter(s => s.role === "Doctor").length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Medical professionals
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Support Staff</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-purple-600">
-                  {mockStaff.filter(s => s.role !== "Doctor").length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Support personnel
-                </p>
-              </CardContent>
-            </Card>
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6 animate-in fade-in-0 slide-in-from-right-4 duration-500">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">Total Staff</CardTitle>
+                  <div className="p-2 bg-indigo-500 rounded-lg">
+                    <Users className="h-4 w-4 text-white" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{mockStaff.length}</div>
+                  <p className="text-sm text-indigo-600 dark:text-indigo-400 mt-1">
+                    +2 from last month
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-semibold text-green-700 dark:text-green-300">Active Staff</CardTitle>
+                  <div className="p-2 bg-green-500 rounded-lg">
+                    <CheckCircle className="h-4 w-4 text-white" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                    {mockStaff.filter(s => s.status === "active").length}
+                  </div>
+                  <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                    Currently working
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-semibold text-blue-700 dark:text-blue-300">Doctors</CardTitle>
+                  <div className="p-2 bg-blue-500 rounded-lg">
+                    <Shield className="h-4 w-4 text-white" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                    {mockStaff.filter(s => s.role === "Doctor").length}
+                  </div>
+                  <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                    Medical professionals
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-semibold text-purple-700 dark:text-purple-300">Support Staff</CardTitle>
+                  <div className="p-2 bg-purple-500 rounded-lg">
+                    <Users className="h-4 w-4 text-white" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                    {mockStaff.filter(s => s.role !== "Doctor").length}
+                  </div>
+                  <p className="text-sm text-purple-600 dark:text-purple-400 mt-1">
+                    Support personnel
+                  </p>
+                </CardContent>
+              </Card>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

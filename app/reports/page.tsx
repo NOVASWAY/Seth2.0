@@ -74,83 +74,99 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-2">
-        <BarChart3 className="h-8 w-8" />
-        <h1 className="text-3xl font-bold">Reports & Analytics</h1>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+      <div className="container mx-auto p-6 space-y-8">
+        <div className="flex items-center gap-3 animate-in slide-in-from-top-4 duration-500">
+          <div className="p-2 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-lg shadow-lg">
+            <BarChart3 className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
+              Reports & Analytics
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">Comprehensive insights and data visualization for your clinic</p>
+          </div>
+        </div>
 
-      <Tabs value={selectedReport} onValueChange={setSelectedReport} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="financial" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            Financial
-          </TabsTrigger>
-          <TabsTrigger value="patients" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Patients
-          </TabsTrigger>
-          <TabsTrigger value="appointments" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Appointments
-          </TabsTrigger>
-          <TabsTrigger value="inventory" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            Inventory
-          </TabsTrigger>
-        </TabsList>
+        <Tabs value={selectedReport} onValueChange={setSelectedReport} className="space-y-6 animate-in slide-in-from-bottom-4 duration-700 delay-200">
+          <TabsList className="grid w-full grid-cols-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 shadow-lg">
+            <TabsTrigger value="financial" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-blue-600 data-[state=active]:text-white transition-all duration-300">
+              <DollarSign className="h-4 w-4" />
+              Financial
+            </TabsTrigger>
+            <TabsTrigger value="patients" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-blue-600 data-[state=active]:text-white transition-all duration-300">
+              <Users className="h-4 w-4" />
+              Patients
+            </TabsTrigger>
+            <TabsTrigger value="appointments" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-blue-600 data-[state=active]:text-white transition-all duration-300">
+              <Calendar className="h-4 w-4" />
+              Appointments
+            </TabsTrigger>
+            <TabsTrigger value="inventory" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-blue-600 data-[state=active]:text-white transition-all duration-300">
+              <Activity className="h-4 w-4" />
+              Inventory
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Financial Reports */}
-        <TabsContent value="financial" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrencyDisplay(financialData.totalRevenue)}</div>
-                <p className="text-xs text-muted-foreground">
-                  +{financialData.monthlyGrowth}% from last month
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrencyDisplay(financialData.totalExpenses)}</div>
-                <p className="text-xs text-muted-foreground">
-                  -2.1% from last month
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrencyDisplay(financialData.netProfit)}</div>
-                <p className="text-xs text-muted-foreground">
-                  +15.2% from last month
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Growth Rate</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{financialData.monthlyGrowth}%</div>
-                <p className="text-xs text-muted-foreground">
-                  Monthly growth rate
-                </p>
-              </CardContent>
-            </Card>
+          {/* Financial Reports */}
+          <TabsContent value="financial" className="space-y-6 animate-in fade-in-0 slide-in-from-right-4 duration-500">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Total Revenue</CardTitle>
+                  <div className="p-2 bg-emerald-500 rounded-lg">
+                    <TrendingUp className="h-4 w-4 text-white" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrencyDisplay(financialData.totalRevenue)}</div>
+                  <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">
+                    +{financialData.monthlyGrowth}% from last month
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-semibold text-red-700 dark:text-red-300">Total Expenses</CardTitle>
+                  <div className="p-2 bg-red-500 rounded-lg">
+                    <TrendingUp className="h-4 w-4 text-white" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-red-600 dark:text-red-400">{formatCurrencyDisplay(financialData.totalExpenses)}</div>
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                    -2.1% from last month
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-semibold text-blue-700 dark:text-blue-300">Net Profit</CardTitle>
+                  <div className="p-2 bg-blue-500 rounded-lg">
+                    <TrendingUp className="h-4 w-4 text-white" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{formatCurrencyDisplay(financialData.netProfit)}</div>
+                  <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                    +15.2% from last month
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-semibold text-purple-700 dark:text-purple-300">Growth Rate</CardTitle>
+                  <div className="p-2 bg-purple-500 rounded-lg">
+                    <TrendingUp className="h-4 w-4 text-white" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">{financialData.monthlyGrowth}%</div>
+                  <p className="text-sm text-purple-600 dark:text-purple-400 mt-1">
+                    Monthly growth rate
+                  </p>
+                </CardContent>
+              </Card>
           </div>
 
           <Card>
