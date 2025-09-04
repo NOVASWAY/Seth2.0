@@ -153,8 +153,10 @@ fi
 # Test prescription system endpoints (requires authentication)
 echo "🔍 Testing prescription system endpoints..."
 echo "⚠️  Note: Prescription endpoints require authentication - testing basic connectivity only"
-if curl -f -s "http://localhost:5000/api/inventory/available-stock" > /dev/null 2>&1; then
-    echo "✅ Prescription system API endpoints responding (auth required)"
+if curl -s "http://localhost:5000/api/inventory/available-stock" | grep -q "401\|Unauthorized\|error" 2>/dev/null; then
+    echo "✅ Prescription system API endpoints responding (auth required - 401 expected)"
+elif curl -s "http://localhost:5000/api/inventory/available-stock" > /dev/null 2>&1; then
+    echo "✅ Prescription system API endpoints responding"
 else
     echo "❌ Prescription system API endpoints not responding"
     exit 1
@@ -163,8 +165,10 @@ fi
 # Test diagnostics system endpoints (requires authentication)
 echo "🔍 Testing diagnostics system endpoints..."
 echo "⚠️  Note: Diagnostics endpoints require authentication - testing basic connectivity only"
-if curl -f -s "http://localhost:5000/api/lab-tests/available" > /dev/null 2>&1; then
-    echo "✅ Diagnostics system API endpoints responding (auth required)"
+if curl -s "http://localhost:5000/api/lab-tests/available" | grep -q "401\|Unauthorized\|error" 2>/dev/null; then
+    echo "✅ Diagnostics system API endpoints responding (auth required - 401 expected)"
+elif curl -s "http://localhost:5000/api/lab-tests/available" > /dev/null 2>&1; then
+    echo "✅ Diagnostics system API endpoints responding"
 else
     echo "❌ Diagnostics system API endpoints not responding"
     exit 1
