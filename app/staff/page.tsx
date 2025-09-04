@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { 
   Users, 
   UserPlus, 
@@ -25,146 +26,290 @@ import {
   Shield,
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
+  Save,
+  X,
+  Loader2
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
-// Mock staff data
-const mockStaff = [
-  {
-    id: 1,
-    name: "Dr. Sarah Kimani",
-    role: "Doctor",
-    department: "General Medicine",
-    email: "sarah.kimani@sethclinic.com",
-    phone: "+254 700 123 456",
-    status: "active",
-    joinDate: "2023-01-15",
-    avatar: "/avatars/sarah.jpg",
-    specialization: "Internal Medicine",
-    license: "KMPDC-12345"
-  },
-  {
-    id: 2,
-    name: "Dr. John Mwangi",
-    role: "Doctor",
-    department: "Pediatrics",
-    email: "john.mwangi@sethclinic.com",
-    phone: "+254 700 234 567",
-    status: "active",
-    joinDate: "2023-03-20",
-    avatar: "/avatars/john.jpg",
-    specialization: "Pediatric Medicine",
-    license: "KMPDC-12346"
-  },
-  {
-    id: 3,
-    name: "Mary Wanjiku",
-    role: "Nurse",
-    department: "General Medicine",
-    email: "mary.wanjiku@sethclinic.com",
-    phone: "+254 700 345 678",
-    status: "active",
-    joinDate: "2023-02-10",
-    avatar: "/avatars/mary.jpg",
-    specialization: "General Nursing",
-    license: "NCN-78901"
-  },
-  {
-    id: 4,
-    name: "Peter Kiprop",
-    role: "Pharmacist",
-    department: "Pharmacy",
-    email: "peter.kiprop@sethclinic.com",
-    phone: "+254 700 456 789",
-    status: "active",
-    joinDate: "2023-04-05",
-    avatar: "/avatars/peter.jpg",
-    specialization: "Clinical Pharmacy",
-    license: "PPB-45678"
-  },
-  {
-    id: 5,
-    name: "Grace Akinyi",
-    role: "Receptionist",
-    department: "Administration",
-    email: "grace.akinyi@sethclinic.com",
-    phone: "+254 700 567 890",
-    status: "inactive",
-    joinDate: "2023-01-20",
-    avatar: "/avatars/grace.jpg",
-    specialization: "Administrative Support",
-    license: "N/A"
-  }
+interface StaffMember {
+  id: string
+  username: string
+  email?: string
+  role: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  first_name?: string
+  last_name?: string
+}
+
+const ROLES = [
+  { value: "ADMIN", label: "Administrator" },
+  { value: "RECEPTIONIST", label: "Receptionist" },
+  { value: "NURSE", label: "Nurse" },
+  { value: "CLINICAL_OFFICER", label: "Clinical Officer" },
+  { value: "PHARMACIST", label: "Pharmacist" },
+  { value: "INVENTORY_MANAGER", label: "Inventory Manager" },
+  { value: "CLAIMS_MANAGER", label: "Claims Manager" }
 ]
 
 export default function StaffPage() {
-  const { toast } = useToast()
+  const [staff, setStaff] = useState<StaffMember[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedDepartment, setSelectedDepartment] = useState("all")
   const [selectedRole, setSelectedRole] = useState("all")
-  const [isLoading, setIsLoading] = useState(false)
-
-  const filteredStaff = mockStaff.filter(staff => {
-    const matchesSearch = staff.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         staff.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesDepartment = selectedDepartment === "all" || staff.department === selectedDepartment
-    const matchesRole = selectedRole === "all" || staff.role === selectedRole
-    
-    return matchesSearch && matchesDepartment && matchesRole
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null)
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    first_name: "",
+    last_name: "",
+    role: "",
+    password: ""
   })
+  const [submitting, setSubmitting] = useState(false)
+  const { toast } = useToast()
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-      case "inactive":
-        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-      case "on_leave":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
-    }
-  }
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case "Doctor":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
-      case "Nurse":
-        return "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400"
-      case "Pharmacist":
-        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-      case "Receptionist":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
-    }
-  }
-
-  const handleAddStaff = async () => {
-    setIsLoading(true)
+  // Fetch staff data
+  const fetchStaff = async () => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      toast({
-        title: "Staff Member Added",
-        description: "New staff member has been added successfully.",
+      setLoading(true)
+      const token = localStorage.getItem("token")
+      const response = await fetch("/api/admin/users", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       })
+
+      if (response.ok) {
+        const result = await response.json()
+        setStaff(result.data.users || [])
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to fetch staff data",
+          variant: "destructive",
+        })
+      }
     } catch (error) {
+      console.error("Error fetching staff:", error)
       toast({
         title: "Error",
-        description: "Failed to add staff member. Please try again.",
+        description: "Failed to fetch staff data",
         variant: "destructive",
       })
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  const departments = ["all", "General Medicine", "Pediatrics", "Pharmacy", "Administration", "Laboratory"]
-  const roles = ["all", "Doctor", "Nurse", "Pharmacist", "Receptionist", "Lab Technician"]
+  useEffect(() => {
+    fetchStaff()
+  }, [])
+
+  // Handle add staff
+  const handleAddStaff = async () => {
+    if (!formData.username || !formData.role || !formData.password) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setSubmitting(true)
+      const token = localStorage.getItem("token")
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          role: formData.role,
+          password: formData.password
+        }),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Staff member added successfully",
+        })
+        setIsAddDialogOpen(false)
+        setFormData({
+          username: "",
+          email: "",
+          first_name: "",
+          last_name: "",
+          role: "",
+          password: ""
+        })
+        fetchStaff()
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Error",
+          description: error.message || "Failed to add staff member",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error adding staff:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add staff member",
+        variant: "destructive",
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  // Handle edit staff
+  const handleEditStaff = async () => {
+    if (!editingStaff) return
+
+    try {
+      setSubmitting(true)
+      const token = localStorage.getItem("token")
+      const response = await fetch(`/api/admin/users/${editingStaff.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          role: formData.role,
+          is_active: true
+        }),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Staff member updated successfully",
+        })
+        setIsEditDialogOpen(false)
+        setEditingStaff(null)
+        setFormData({
+          username: "",
+          email: "",
+          first_name: "",
+          last_name: "",
+          role: "",
+          password: ""
+        })
+        fetchStaff()
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Error",
+          description: error.message || "Failed to update staff member",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error updating staff:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update staff member",
+        variant: "destructive",
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  // Handle delete staff
+  const handleDeleteStaff = async (staffId: string) => {
+    if (!confirm("Are you sure you want to delete this staff member?")) return
+
+    try {
+      const token = localStorage.getItem("token")
+      const response = await fetch(`/api/admin/users/${staffId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Staff member deleted successfully",
+        })
+        fetchStaff()
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Error",
+          description: error.message || "Failed to delete staff member",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error deleting staff:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete staff member",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Open edit dialog
+  const openEditDialog = (staff: StaffMember) => {
+    setEditingStaff(staff)
+    setFormData({
+      username: staff.username,
+      email: staff.email || "",
+      first_name: staff.first_name || "",
+      last_name: staff.last_name || "",
+      role: staff.role,
+      password: ""
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  // Filter staff
+  const filteredStaff = staff.filter((member) => {
+    const matchesSearch = member.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         member.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         `${member.first_name} ${member.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesRole = selectedRole === "all" || member.role === selectedRole
+    return matchesSearch && matchesRole
+  })
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case "ADMIN": return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+      case "CLINICAL_OFFICER": return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+      case "NURSE": return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+      case "PHARMACIST": return "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400"
+      case "RECEPTIONIST": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
+      case "INVENTORY_MANAGER": return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"
+      case "CLAIMS_MANAGER": return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400"
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
+    }
+  }
+
+  const getRoleLabel = (role: string) => {
+    const roleObj = ROLES.find(r => r.value === role)
+    return roleObj ? roleObj.label : role
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
@@ -181,294 +326,273 @@ export default function StaffPage() {
               <p className="text-slate-600 dark:text-slate-400 mt-1">Manage your clinic staff and track performance</p>
             </div>
           </div>
-          <Button onClick={handleAddStaff} disabled={isLoading}>
-            <UserPlus className="h-4 w-4" />
-            Add Staff Member
-          </Button>
-        </div>
-
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="directory">Staff Directory</TabsTrigger>
-            <TabsTrigger value="schedules">Schedules</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
-          </TabsList>
-
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6 animate-in fade-in-0 slide-in-from-right-4 duration-500">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">Total Staff</CardTitle>
-                  <div className="p-2 bg-indigo-500 rounded-lg">
-                    <Users className="h-4 w-4 text-white" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{mockStaff.length}</div>
-                  <p className="text-sm text-indigo-600 dark:text-indigo-400 mt-1">
-                    +2 from last month
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-semibold text-green-700 dark:text-green-300">Active Staff</CardTitle>
-                  <div className="p-2 bg-green-500 rounded-lg">
-                    <CheckCircle className="h-4 w-4 text-white" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-600 dark:text-green-400">
-                    {mockStaff.filter(s => s.status === "active").length}
-                  </div>
-                  <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                    Currently working
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-semibold text-blue-700 dark:text-blue-300">Doctors</CardTitle>
-                  <div className="p-2 bg-blue-500 rounded-lg">
-                    <Shield className="h-4 w-4 text-white" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                    {mockStaff.filter(s => s.role === "Doctor").length}
-                  </div>
-                  <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
-                    Medical professionals
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-semibold text-purple-700 dark:text-purple-300">Support Staff</CardTitle>
-                  <div className="p-2 bg-purple-500 rounded-lg">
-                    <Users className="h-4 w-4 text-white" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
-                    {mockStaff.filter(s => s.role !== "Doctor").length}
-                  </div>
-                  <p className="text-sm text-purple-600 dark:text-purple-400 mt-1">
-                    Support personnel
-                  </p>
-                </CardContent>
-              </Card>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Department Distribution</CardTitle>
-                <CardDescription>Staff distribution across departments</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {["General Medicine", "Pediatrics", "Pharmacy", "Administration"].map(dept => {
-                    const count = mockStaff.filter(s => s.department === dept).length
-                    return (
-                      <div key={dept} className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{dept}</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${(count / mockStaff.length) * 100}%` }}
-                            />
-                          </div>
-                          <span className="text-sm text-muted-foreground w-8">{count}</span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Latest staff updates and changes</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Dr. Sarah Kimani completed patient consultation</p>
-                      <p className="text-xs text-muted-foreground">2 minutes ago</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Mary Wanjiku updated patient records</p>
-                      <p className="text-xs text-muted-foreground">15 minutes ago</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Peter Kiprop dispensed medication</p>
-                      <p className="text-xs text-muted-foreground">30 minutes ago</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Staff Directory Tab */}
-        <TabsContent value="directory" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Staff Directory</CardTitle>
-              <CardDescription>Manage and view all staff members</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* Search and Filter Controls */}
-              <div className="flex flex-col md:flex-row gap-4 mb-6">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add Staff Member
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Add New Staff Member</DialogTitle>
+                <DialogDescription>
+                  Create a new staff account with appropriate role and permissions.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="first_name">First Name</Label>
                     <Input
-                      placeholder="Search staff by name or email..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      id="first_name"
+                      value={formData.first_name}
+                      onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="last_name">Last Name</Label>
+                    <Input
+                      id="last_name"
+                      value={formData.last_name}
+                      onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
                     />
                   </div>
                 </div>
-                <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                  <SelectTrigger className="w-full md:w-48">
-                    <SelectValue placeholder="Department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map(dept => (
-                      <SelectItem key={dept} value={dept}>
-                        {dept === "all" ? "All Departments" : dept}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username *</Label>
+                  <Input
+                    id="username"
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role *</Label>
+                  <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ROLES.map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                          {role.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password *</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddStaff} disabled={submitting}>
+                  {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                  Add Staff
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Filters */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search staff members..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="w-full sm:w-48">
                 <Select value={selectedRole} onValueChange={setSelectedRole}>
-                  <SelectTrigger className="w-full md:w-48">
-                    <SelectValue placeholder="Role" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {roles.map(role => (
-                      <SelectItem key={role} value={role}>
-                        {role === "all" ? "All Roles" : role}
+                    <SelectItem value="all">All Roles</SelectItem>
+                    {ROLES.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          </CardContent>
+        </Card>
 
-              {/* Staff List */}
+        {/* Staff List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Staff Members ({filteredStaff.length})</CardTitle>
+            <CardDescription>
+              Manage your clinic staff members and their roles
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-slate-600 dark:text-slate-400">Loading staff members...</p>
+              </div>
+            ) : filteredStaff.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="h-12 w-12 mx-auto mb-4 text-slate-400" />
+                <p className="text-slate-600 dark:text-slate-400">No staff members found</p>
+                <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">
+                  {searchTerm || selectedRole !== "all" ? "Try adjusting your search criteria" : "Add your first staff member to get started"}
+                </p>
+              </div>
+            ) : (
               <div className="space-y-4">
-                {filteredStaff.map((staff) => (
-                  <div key={staff.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                {filteredStaff.map((member) => (
+                  <div key={member.id} className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
                     <div className="flex items-center gap-4">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={staff.avatar} alt={staff.name} />
-                        <AvatarFallback>{staff.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        <AvatarFallback>
+                          {member.first_name?.[0]}{member.last_name?.[0] || member.username[0]}
+                        </AvatarFallback>
                       </Avatar>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{staff.name}</h3>
-                          <Badge className={getRoleColor(staff.role)}>
-                            {staff.role}
-                          </Badge>
-                          <Badge className={getStatusColor(staff.status)}>
-                            {staff.status}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
+                      <div>
+                        <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+                          {member.first_name && member.last_name 
+                            ? `${member.first_name} ${member.last_name}` 
+                            : member.username}
+                        </h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">@{member.username}</p>
+                        {member.email && (
+                          <p className="text-sm text-slate-500 dark:text-slate-500 flex items-center gap-1">
                             <Mail className="h-3 w-3" />
-                            {staff.email}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {staff.phone}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {staff.department}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            Joined: {new Date(staff.joinDate).toLocaleDateString()}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Shield className="h-3 w-3" />
-                            License: {staff.license}
-                          </div>
-                        </div>
+                            {member.email}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                    <div className="flex items-center gap-3">
+                      <Badge className={getRoleBadgeColor(member.role)}>
+                        {getRoleLabel(member.role)}
+                      </Badge>
+                      <Badge variant={member.is_active ? "default" : "secondary"}>
+                        {member.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(member)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteStaff(member.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* Schedules Tab */}
-        <TabsContent value="schedules" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Staff Schedules</CardTitle>
-              <CardDescription>Manage staff schedules and shifts</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Staff scheduling system will be implemented here</p>
-                <p className="text-sm">This will include shift management, time tracking, and schedule optimization</p>
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Staff Member</DialogTitle>
+              <DialogDescription>
+                Update staff member information and role.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit_first_name">First Name</Label>
+                  <Input
+                    id="edit_first_name"
+                    value={formData.first_name}
+                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_last_name">Last Name</Label>
+                  <Input
+                    id="edit_last_name"
+                    value={formData.last_name}
+                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  />
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Performance Tab */}
-        <TabsContent value="performance" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Staff Performance</CardTitle>
-              <CardDescription>Track and analyze staff performance metrics</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Staff performance tracking system will be implemented here</p>
-                <p className="text-sm">This will include KPIs, performance reviews, and analytics</p>
+              <div className="space-y-2">
+                <Label htmlFor="edit_email">Email</Label>
+                <Input
+                  id="edit_email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              <div className="space-y-2">
+                <Label htmlFor="edit_role">Role</Label>
+                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLES.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditStaff} disabled={submitting}>
+                {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
