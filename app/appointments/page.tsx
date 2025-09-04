@@ -4,7 +4,7 @@ import { useSimpleAuth } from '../../lib/simpleAuth'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Sidebar from '../../components/dashboard/Sidebar'
-import { mockMenuItems } from '../../lib/mockData'
+import { menuItems } from '../../lib/menuConfig'
 
 interface Appointment {
   id: string

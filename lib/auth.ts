@@ -2,7 +2,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import axios from "axios"
 import type { UserRole } from "../types"
-import { MockAuthService } from "./mockAuth"
+// Mock authentication removed - using real API only
 
 export interface AuthUser {
   id: string
@@ -102,20 +102,7 @@ export const useAuthStore = create<AuthState>()(
               console.log('🔐 Login attempt:', { username, isTestMode })
             }
             
-            if (isTestMode) {
-              // Use mock authentication for tests
-              console.log('🔐 Using mock authentication')
-              const result = await MockAuthService.login(username, password)
-              set({
-                user: result.user,
-                accessToken: result.tokens.accessToken,
-                refreshToken: result.tokens.refreshToken,
-                isAuthenticated: true,
-                isLoading: false,
-              })
-              console.log('🔐 Mock login successful:', result.user.username)
-              return
-            }
+            // Mock authentication removed - using real API only
 
             // Use real API for production
             console.log('🔐 Using real API authentication')
@@ -151,10 +138,8 @@ export const useAuthStore = create<AuthState>()(
         logout: async () => {
           const { accessToken } = get()
           try {
-            if (getIsTestMode()) {
-              // Use mock logout for tests
-              await MockAuthService.logout()
-            } else if (accessToken) {
+            // Mock authentication removed - using real API only
+            if (accessToken) {
               // Use real API for production
               await axios.post(
                 `${API_BASE_URL}/auth/logout`,
@@ -183,17 +168,7 @@ export const useAuthStore = create<AuthState>()(
           if (!refreshToken) return false
 
           try {
-            if (getIsTestMode()) {
-              // Use mock refresh for tests
-              const tokens = await MockAuthService.refreshToken()
-              set({
-                accessToken: tokens.accessToken,
-                refreshToken: tokens.refreshToken,
-              })
-              return true
-            }
-
-            // Use real API for production
+            // Mock authentication removed - using real API only
             const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
               refreshToken,
             })
