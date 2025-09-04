@@ -117,6 +117,27 @@ export function formatSHACurrency(amount: number): string {
   }).format(amount)
 }
 
+// Format currency for general use (consistent with frontend)
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-KE', {
+    style: 'currency',
+    currency: 'KES',
+    minimumFractionDigits: 2
+  }).format(amount)
+}
+
+// Parse currency string to number
+export function parseCurrency(currencyString: string): number {
+  const cleaned = currencyString.replace(/[^\d.]/g, '')
+  return parseFloat(cleaned) || 0
+}
+
+// Validate currency amount
+export function isValidCurrencyAmount(value: string): boolean {
+  const parsed = parseCurrency(value)
+  return !isNaN(parsed) && parsed >= 0
+}
+
 // Calculate invoice due date based on SHA payment terms
 export function calculateInvoiceDueDate(invoiceDate: Date, paymentTerms: number = 30): Date {
   const dueDate = new Date(invoiceDate)

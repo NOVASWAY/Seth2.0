@@ -26,7 +26,7 @@ import {
   Receipt,
   Calendar,
   User,
-  DollarSign,
+  Banknote,
   FileCheck,
   Search,
   Filter,

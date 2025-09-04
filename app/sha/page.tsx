@@ -14,7 +14,7 @@ import {
   CheckCircle,
   AlertCircle,
   Calendar,
-  DollarSign,
+  Banknote,
   Printer,
   Send,
   Shield
@@ -98,7 +98,7 @@ export default function SHAManagementPage() {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
-                  <DollarSign className="h-6 w-6 text-indigo-600" />
+                  <Banknote className="h-6 w-6 text-indigo-600" />
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Value</p>
                     <p className="text-xl font-bold">KES --</p>

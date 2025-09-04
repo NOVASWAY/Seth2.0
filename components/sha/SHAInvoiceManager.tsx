@@ -20,7 +20,7 @@ import {
   CheckCircle,
   AlertCircle,
   Clock,
-  DollarSign,
+  Banknote,
   Eye,
   MoreHorizontal
 } from "lucide-react"
@@ -378,7 +378,7 @@ export function SHAInvoiceManager() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <DollarSign className="h-8 w-8 text-purple-600" />
+              <Banknote className="h-8 w-8 text-purple-600" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Value</p>
                 <p className="text-2xl font-bold">

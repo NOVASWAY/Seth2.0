@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Trash2, Calculator } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { formatCurrencyDisplay, getCurrencySymbol } from "@/lib/currency"
 
 interface BillingItem {
   id: string
@@ -232,7 +233,7 @@ export function BillingForm({ opNumber, patientId, onInvoiceCreated }: BillingFo
                   </div>
 
                   <div>
-                    <Label>Unit Price (KES)</Label>
+                    <Label>Unit Price ({getCurrencySymbol()})</Label>
                     <Input
                       type="number"
                       min="0"
@@ -245,7 +246,7 @@ export function BillingForm({ opNumber, patientId, onInvoiceCreated }: BillingFo
                   <div className="flex items-center gap-2">
                     <div className="flex-1">
                       <Label>Total</Label>
-                      <div className="text-lg font-medium">KES {item.total_price.toFixed(2)}</div>
+                      <div className="text-lg font-medium">{formatCurrencyDisplay(item.total_price)}</div>
                     </div>
                     {items.length > 1 && (
                       <Button type="button" variant="outline" size="sm" onClick={() => removeItem(item.id)}>
@@ -261,7 +262,7 @@ export function BillingForm({ opNumber, patientId, onInvoiceCreated }: BillingFo
           {/* Discount and Notes */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="discount">Discount Amount (KES)</Label>
+              <Label htmlFor="discount">Discount Amount ({getCurrencySymbol()})</Label>
               <Input
                 id="discount"
                 type="number"
@@ -289,19 +290,19 @@ export function BillingForm({ opNumber, patientId, onInvoiceCreated }: BillingFo
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span>KES {subtotal.toFixed(2)}</span>
+                  <span>{formatCurrencyDisplay(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>VAT (16%):</span>
-                  <span>KES {taxAmount.toFixed(2)}</span>
+                  <span>{formatCurrencyDisplay(taxAmount)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Discount:</span>
-                  <span>-KES {discountAmount.toFixed(2)}</span>
+                  <span>-{formatCurrencyDisplay(discountAmount)}</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold border-t pt-2">
                   <span>Total:</span>
-                  <span>KES {totalAmount.toFixed(2)}</span>
+                  <span>{formatCurrencyDisplay(totalAmount)}</span>
                 </div>
               </div>
             </CardContent>

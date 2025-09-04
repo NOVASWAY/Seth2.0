@@ -102,36 +102,36 @@ export function QueueBoard() {
   const getStatusColor = (status: VisitStatus) => {
     switch (status) {
       case "REGISTERED":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
       case "TRIAGED":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
       case "WAITING_CONSULTATION":
-        return "bg-orange-100 text-orange-800"
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"
       case "IN_CONSULTATION":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
       case "WAITING_LAB":
-        return "bg-purple-100 text-purple-800"
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400"
       case "LAB_RESULTS_READY":
-        return "bg-indigo-100 text-indigo-800"
+        return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400"
       case "WAITING_PHARMACY":
-        return "bg-pink-100 text-pink-800"
+        return "bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400"
       case "COMPLETED":
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
     }
   }
 
   const getPriorityColor = (priority: "HIGH" | "MEDIUM" | "LOW") => {
     switch (priority) {
       case "HIGH":
-        return "bg-red-100 text-red-800 border-red-200"
+        return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
       case "MEDIUM":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+        return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800"
       case "LOW":
-        return "bg-green-100 text-green-800 border-green-200"
+        return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600"
     }
   }
 

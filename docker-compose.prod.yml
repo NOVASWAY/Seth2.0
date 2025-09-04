@@ -59,6 +59,10 @@ services:
       # Prescription system specific variables
       LOG_LEVEL: ${LOG_LEVEL:-info}
       ENABLE_AUDIT_LOGGING: ${ENABLE_AUDIT_LOGGING:-true}
+      # Currency configuration
+      DEFAULT_CURRENCY: ${DEFAULT_CURRENCY:-KES}
+      CURRENCY_LOCALE: ${CURRENCY_LOCALE:-en-KE}
+      CURRENCY_SYMBOL: ${CURRENCY_SYMBOL:-KES}
       AUTO_SAVE_INTERVAL: ${AUTO_SAVE_INTERVAL:-30000}
       # M-Pesa Integration
       MPESA_CONSUMER_KEY: ${MPESA_CONSUMER_KEY}
@@ -101,6 +105,10 @@ services:
       # SHA Insurance Integration
       SHA_API_URL: ${SHA_API_URL}
       SHA_API_KEY: ${SHA_API_KEY}
+      # Currency configuration
+      DEFAULT_CURRENCY: ${DEFAULT_CURRENCY:-KES}
+      CURRENCY_LOCALE: ${CURRENCY_LOCALE:-en-KE}
+      CURRENCY_SYMBOL: ${CURRENCY_SYMBOL:-KES}
       # M-Pesa Integration
       MPESA_CONSUMER_KEY: ${MPESA_CONSUMER_KEY}
       MPESA_CONSUMER_SECRET: ${MPESA_CONSUMER_SECRET}
@@ -126,6 +134,10 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-1.0.0}
       NEXT_PUBLIC_ENVIRONMENT: production
+      # Currency configuration
+      NEXT_PUBLIC_DEFAULT_CURRENCY: ${DEFAULT_CURRENCY:-KES}
+      NEXT_PUBLIC_CURRENCY_LOCALE: ${CURRENCY_LOCALE:-en-KE}
+      NEXT_PUBLIC_CURRENCY_SYMBOL: ${CURRENCY_SYMBOL:-KES}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:

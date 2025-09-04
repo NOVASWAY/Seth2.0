@@ -4,6 +4,23 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Currency configuration table
+CREATE TABLE currency_config (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    currency_code VARCHAR(3) NOT NULL DEFAULT 'KES',
+    currency_symbol VARCHAR(10) NOT NULL DEFAULT 'KES',
+    locale VARCHAR(10) NOT NULL DEFAULT 'en-KE',
+    decimal_places INTEGER NOT NULL DEFAULT 2,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_active_currency UNIQUE (is_active) DEFERRABLE INITIALLY DEFERRED
+);
+
+-- Insert default KES currency configuration
+INSERT INTO currency_config (currency_code, currency_symbol, locale, decimal_places, is_active) 
+VALUES ('KES', 'KES', 'en-KE', 2, true);
+
 -- Users table
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -145,8 +162,8 @@ CREATE TABLE inventory_batches (
     batch_number VARCHAR(100) NOT NULL,
     quantity INTEGER NOT NULL,
     original_quantity INTEGER NOT NULL,
-    unit_cost DECIMAL(10,2) NOT NULL,
-    selling_price DECIMAL(10,2) NOT NULL,
+    unit_cost DECIMAL(10,2) NOT NULL, -- Cost in KES
+    selling_price DECIMAL(10,2) NOT NULL, -- Price in KES
     expiry_date DATE NOT NULL,
     supplier_name VARCHAR(200),
     received_date DATE DEFAULT CURRENT_DATE,
@@ -180,12 +197,12 @@ CREATE TABLE invoices (
     buyer_name VARCHAR(200), -- For walk-in sales
     buyer_phone VARCHAR(20),
     invoice_type VARCHAR(20) NOT NULL CHECK (invoice_type IN ('PRESCRIPTION', 'WALK_IN', 'CONSULTATION', 'LAB')),
-    subtotal DECIMAL(10,2) NOT NULL,
-    tax_amount DECIMAL(10,2) DEFAULT 0,
-    discount_amount DECIMAL(10,2) DEFAULT 0,
-    total_amount DECIMAL(10,2) NOT NULL,
-    amount_paid DECIMAL(10,2) DEFAULT 0,
-    balance_amount DECIMAL(10,2) NOT NULL,
+    subtotal DECIMAL(10,2) NOT NULL, -- Subtotal in KES
+    tax_amount DECIMAL(10,2) DEFAULT 0, -- Tax in KES
+    discount_amount DECIMAL(10,2) DEFAULT 0, -- Discount in KES
+    total_amount DECIMAL(10,2) NOT NULL, -- Total in KES
+    amount_paid DECIMAL(10,2) DEFAULT 0, -- Paid amount in KES
+    balance_amount DECIMAL(10,2) NOT NULL, -- Balance in KES
     status VARCHAR(20) DEFAULT 'UNPAID' CHECK (status IN ('PAID', 'PARTIAL', 'UNPAID')),
     payment_due_date DATE,
     created_by UUID NOT NULL REFERENCES users(id),
@@ -201,8 +218,8 @@ CREATE TABLE invoice_items (
     service_type VARCHAR(100), -- For non-inventory services
     item_name VARCHAR(200) NOT NULL,
     quantity INTEGER NOT NULL,
-    unit_price DECIMAL(10,2) NOT NULL,
-    total_price DECIMAL(10,2) NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL, -- Price in KES
+    total_price DECIMAL(10,2) NOT NULL, -- Total in KES
     batch_id UUID REFERENCES inventory_batches(id)
 );
 
@@ -210,7 +227,7 @@ CREATE TABLE invoice_items (
 CREATE TABLE payments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     invoice_id UUID NOT NULL REFERENCES invoices(id),
-    amount DECIMAL(10,2) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL, -- Payment amount in KES
     payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('CASH', 'MPESA', 'BANK_TRANSFER', 'OTHER')),
     mpesa_reference VARCHAR(100),
     bank_reference VARCHAR(100),
@@ -227,8 +244,8 @@ CREATE TABLE accounts_receivable (
     invoice_id UUID NOT NULL REFERENCES invoices(id),
     patient_id UUID REFERENCES patients(id),
     op_number VARCHAR(20),
-    original_amount DECIMAL(10,2) NOT NULL,
-    remaining_amount DECIMAL(10,2) NOT NULL,
+    original_amount DECIMAL(10,2) NOT NULL, -- Original amount in KES
+    remaining_amount DECIMAL(10,2) NOT NULL, -- Remaining amount in KES
     due_date DATE NOT NULL,
     aging_bucket VARCHAR(10) NOT NULL CHECK (aging_bucket IN ('0-30', '31-60', '61-90', '90+')),
     status VARCHAR(20) DEFAULT 'CURRENT' CHECK (status IN ('CURRENT', 'OVERDUE', 'SETTLED')),
@@ -264,10 +281,10 @@ CREATE TABLE sha_claims (
     facility_level VARCHAR(20) CHECK (facility_level IN ('Level1', 'Level2', 'Level3', 'Level4', 'Level5', 'Level6')),
     
     -- Financial Information
-    claim_amount DECIMAL(10,2) NOT NULL,
-    approved_amount DECIMAL(10,2),
-    paid_amount DECIMAL(10,2) DEFAULT 0,
-    balance_variance DECIMAL(10,2) DEFAULT 0,
+    claim_amount DECIMAL(10,2) NOT NULL, -- Claim amount in KES
+    approved_amount DECIMAL(10,2), -- Approved amount in KES
+    paid_amount DECIMAL(10,2) DEFAULT 0, -- Paid amount in KES
+    balance_variance DECIMAL(10,2) DEFAULT 0, -- Variance in KES
     
     -- Status Tracking (Enhanced)
     status VARCHAR(30) DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'READY_TO_SUBMIT', 'INVOICE_GENERATED', 'SUBMITTED', 'APPROVED', 'REJECTED', 'PARTIALLY_PAID', 'PAID')),
@@ -311,16 +328,16 @@ CREATE TABLE sha_claim_items (
     
     -- Pricing Information
     quantity INTEGER NOT NULL DEFAULT 1,
-    unit_price DECIMAL(10,2) NOT NULL,
-    total_amount DECIMAL(10,2) NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL, -- Price in KES
+    total_amount DECIMAL(10,2) NOT NULL, -- Amount in KES
     
     -- SHA Processing
     sha_service_code VARCHAR(50),
     sha_service_category VARCHAR(100),
     sha_tariff_code VARCHAR(50),
     approved_quantity INTEGER,
-    approved_unit_price DECIMAL(10,2),
-    approved_amount DECIMAL(10,2),
+    approved_unit_price DECIMAL(10,2), -- Approved price in KES
+    approved_amount DECIMAL(10,2), -- Approved amount in KES
     rejection_reason TEXT,
     
     -- Clinical Information
@@ -355,7 +372,7 @@ CREATE TABLE sha_invoices (
     visit_id UUID REFERENCES visits(id),
     invoice_date DATE NOT NULL,
     due_date DATE NOT NULL,
-    total_amount DECIMAL(10,2) NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL, -- Total amount in KES
     status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'generated', 'printed', 'submitted', 'paid')),
     generated_at TIMESTAMP,
     generated_by UUID NOT NULL REFERENCES users(id),
@@ -410,7 +427,7 @@ CREATE TABLE sha_claim_batches (
     batch_date DATE NOT NULL,
     batch_type VARCHAR(20) DEFAULT 'custom' CHECK (batch_type IN ('weekly', 'monthly', 'custom')),
     total_claims INTEGER NOT NULL,
-    total_amount DECIMAL(10,2) NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL, -- Total amount in KES
     status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'processing', 'completed', 'failed')),
     submission_date TIMESTAMP,
     completion_date TIMESTAMP,
@@ -514,7 +531,7 @@ CREATE TABLE patient_encounters (
     location VARCHAR(100),
     
     -- Financial Information
-    total_charges DECIMAL(10,2) DEFAULT 0,
+    total_charges DECIMAL(10,2) DEFAULT 0, -- Total charges in KES
     insurance_eligible BOOLEAN DEFAULT false,
     sha_eligible BOOLEAN DEFAULT false,
     private_pay BOOLEAN DEFAULT false,
@@ -704,10 +721,10 @@ CREATE TABLE audit_logs (
 CREATE TABLE cash_reconciliations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     shift_date DATE NOT NULL,
-    opening_float DECIMAL(10,2) NOT NULL,
-    expected_cash DECIMAL(10,2) NOT NULL,
-    actual_cash DECIMAL(10,2) NOT NULL,
-    variance DECIMAL(10,2) NOT NULL,
+    opening_float DECIMAL(10,2) NOT NULL, -- Opening float in KES
+    expected_cash DECIMAL(10,2) NOT NULL, -- Expected cash in KES
+    actual_cash DECIMAL(10,2) NOT NULL, -- Actual cash in KES
+    variance DECIMAL(10,2) NOT NULL, -- Variance in KES
     notes TEXT,
     reconciled_by UUID NOT NULL REFERENCES users(id),
     reconciled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

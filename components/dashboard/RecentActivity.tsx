@@ -31,12 +31,12 @@ export default function RecentActivity({
 
   const getStatusColor = (status?: ActivityItem['status']) => {
     const colors = {
-      success: 'text-green-600',
-      warning: 'text-yellow-600',
-      error: 'text-red-600',
-      info: 'text-blue-600'
+      success: 'text-green-600 dark:text-green-400',
+      warning: 'text-yellow-600 dark:text-yellow-400',
+      error: 'text-red-600 dark:text-red-400',
+      info: 'text-blue-600 dark:text-blue-400'
     }
-    return colors[status] || 'text-gray-600'
+    return colors[status] || 'text-gray-600 dark:text-gray-400'
   }
 
   const formatTimestamp = (timestamp: string) => {
@@ -51,11 +51,11 @@ export default function RecentActivity({
   }
 
   return (
-    <div className="bg-white shadow rounded-lg">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900">{title}</h3>
+    <div className="bg-white dark:bg-slate-800 shadow rounded-lg border border-slate-200 dark:border-slate-700">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100">{title}</h3>
       </div>
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-gray-200 dark:divide-slate-700">
         {activities.slice(0, maxItems).map((activity) => (
           <div key={activity.id} className="px-6 py-4">
             <div className="flex items-start space-x-3">
@@ -68,9 +68,9 @@ export default function RecentActivity({
                 </p>
                 <div className="flex items-center space-x-2 mt-1">
                   {activity.user && (
-                    <span className="text-xs text-gray-500">by {activity.user}</span>
+                    <span className="text-xs text-gray-500 dark:text-slate-400">by {activity.user}</span>
                   )}
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-400 dark:text-slate-500">
                     {formatTimestamp(activity.timestamp)}
                   </span>
                 </div>
@@ -81,7 +81,7 @@ export default function RecentActivity({
       </div>
       {activities.length === 0 && (
         <div className="px-6 py-8 text-center">
-          <p className="text-gray-500">No recent activity</p>
+          <p className="text-gray-500 dark:text-slate-400">No recent activity</p>
         </div>
       )}
     </div>

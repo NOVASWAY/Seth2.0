@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Alert, AlertDescription } from "../ui/alert"
 import { Loader2 } from "lucide-react"
 import type { InventoryItem } from "../../types"
+import { getCurrencySymbol } from "@/lib/currency"
 
 const batchSchema = z.object({
   inventoryItemId: z.string().min(1, "Please select an item"),
@@ -156,7 +157,7 @@ export function AddBatchDialog({ open, onOpenChange, onSuccess }: AddBatchDialog
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="unitCost">Unit Cost (KES) *</Label>
+              <Label htmlFor="unitCost">Unit Cost ({getCurrencySymbol()}) *</Label>
               <Input
                 id="unitCost"
                 type="number"
@@ -169,7 +170,7 @@ export function AddBatchDialog({ open, onOpenChange, onSuccess }: AddBatchDialog
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sellingPrice">Selling Price (KES) *</Label>
+              <Label htmlFor="sellingPrice">Selling Price ({getCurrencySymbol()}) *</Label>
               <Input
                 id="sellingPrice"
                 type="number"

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { CreditCard, Smartphone, Banknote } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { formatCurrencyDisplay, getCurrencySymbol } from "@/lib/currency"
 
 interface PaymentFormProps {
   invoice: {
@@ -59,7 +60,7 @@ export function PaymentForm({ invoice, onPaymentProcessed }: PaymentFormProps) {
         const result = await response.json()
         toast({
           title: "Payment Processed",
-          description: `Payment of KES ${paymentData.amount} recorded successfully`,
+          description: `Payment of ${formatCurrencyDisplay(paymentData.amount)} recorded successfully`,
         })
         onPaymentProcessed?.()
       } else {
@@ -133,22 +134,22 @@ export function PaymentForm({ invoice, onPaymentProcessed }: PaymentFormProps) {
         <div className="space-y-4 mb-6">
           <div className="flex justify-between">
             <span>Total Amount:</span>
-            <span className="font-medium">KES {invoice.total_amount.toFixed(2)}</span>
+            <span className="font-medium">{formatCurrencyDisplay(invoice.total_amount)}</span>
           </div>
           <div className="flex justify-between">
             <span>Amount Paid:</span>
-            <span className="font-medium">KES {invoice.amount_paid.toFixed(2)}</span>
+            <span className="font-medium">{formatCurrencyDisplay(invoice.amount_paid)}</span>
           </div>
           <div className="flex justify-between text-lg font-bold border-t pt-2">
             <span>Balance Due:</span>
-            <span>KES {invoice.balance.toFixed(2)}</span>
+            <span>{formatCurrencyDisplay(invoice.balance)}</span>
           </div>
         </div>
 
         <form onSubmit={handlePayment} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="amount">Payment Amount (KES)</Label>
+              <Label htmlFor="amount">Payment Amount ({getCurrencySymbol()})</Label>
               <Input
                 id="amount"
                 type="number"
@@ -239,7 +240,7 @@ export function PaymentForm({ invoice, onPaymentProcessed }: PaymentFormProps) {
           </div>
 
           <Button type="submit" disabled={loading} className="w-full">
-            {loading ? "Processing Payment..." : `Record Payment - KES ${paymentData.amount.toFixed(2)}`}
+            {loading ? "Processing Payment..." : `Record Payment - ${formatCurrencyDisplay(paymentData.amount)}`}
           </Button>
         </form>
       </CardContent>

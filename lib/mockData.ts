@@ -19,7 +19,7 @@ export const mockStats = [
   },
   {
     title: "Revenue (This Month)",
-    value: "$45,230",
+    value: "KES 45,230",
     change: "+8%",
     changeType: "increase" as const,
     icon: "💰",
@@ -55,7 +55,7 @@ export const mockActivities = [
   {
     id: "3",
     type: "payment" as const,
-    message: "Payment received: $150 for consultation",
+    message: "Payment received: KES 150 for consultation",
     timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
     user: "Receptionist",
     status: "success" as const
