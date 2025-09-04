@@ -74,35 +74,35 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <div className="container mx-auto p-6 space-y-8">
-        <div className="flex items-center gap-3 animate-in slide-in-from-top-4 duration-500">
-          <div className="p-2 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-lg shadow-lg">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-emerald-500 rounded-lg">
             <BarChart3 className="h-8 w-8 text-white" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
               Reports & Analytics
             </h1>
             <p className="text-slate-600 dark:text-slate-400 mt-1">Comprehensive insights and data visualization for your clinic</p>
           </div>
         </div>
 
-        <Tabs value={selectedReport} onValueChange={setSelectedReport} className="space-y-6 animate-in slide-in-from-bottom-4 duration-700 delay-200">
-          <TabsList className="grid w-full grid-cols-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 shadow-lg">
-            <TabsTrigger value="financial" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-blue-600 data-[state=active]:text-white transition-all duration-300">
+        <Tabs value={selectedReport} onValueChange={setSelectedReport} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="financial" className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
               Financial
             </TabsTrigger>
-            <TabsTrigger value="patients" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-blue-600 data-[state=active]:text-white transition-all duration-300">
+            <TabsTrigger value="patients" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Patients
             </TabsTrigger>
-            <TabsTrigger value="appointments" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-blue-600 data-[state=active]:text-white transition-all duration-300">
+            <TabsTrigger value="appointments" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Appointments
             </TabsTrigger>
-            <TabsTrigger value="inventory" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-blue-600 data-[state=active]:text-white transition-all duration-300">
+            <TabsTrigger value="inventory" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
               Inventory
             </TabsTrigger>

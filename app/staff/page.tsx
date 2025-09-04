@@ -167,36 +167,32 @@ export default function StaffPage() {
   const roles = ["all", "Doctor", "Nurse", "Pharmacist", "Receptionist", "Lab Technician"]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <div className="container mx-auto p-6 space-y-8">
-        <div className="flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg shadow-lg">
+            <div className="p-2 bg-indigo-500 rounded-lg">
               <Users className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
                 Staff Management
               </h1>
               <p className="text-slate-600 dark:text-slate-400 mt-1">Manage your clinic staff and track performance</p>
             </div>
           </div>
-          <Button 
-            onClick={handleAddStaff} 
-            disabled={isLoading} 
-            className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-          >
+          <Button onClick={handleAddStaff} disabled={isLoading}>
             <UserPlus className="h-4 w-4" />
             Add Staff Member
           </Button>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-6 animate-in slide-in-from-bottom-4 duration-700 delay-200">
-          <TabsList className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 shadow-lg">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white transition-all duration-300">Overview</TabsTrigger>
-            <TabsTrigger value="directory" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white transition-all duration-300">Staff Directory</TabsTrigger>
-            <TabsTrigger value="schedules" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white transition-all duration-300">Schedules</TabsTrigger>
-            <TabsTrigger value="performance" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white transition-all duration-300">Performance</TabsTrigger>
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="directory">Staff Directory</TabsTrigger>
+            <TabsTrigger value="schedules">Schedules</TabsTrigger>
+            <TabsTrigger value="performance">Performance</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
