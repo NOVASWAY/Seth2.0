@@ -1,30 +1,36 @@
 'use client'
 import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from '../../lib/ThemeContext'
-import { ChevronLeft, ChevronRight, User, LogOut } from 'lucide-react'
-
-interface MenuItem {
-  id: string
-  title: string
-  href: string
-  icon: string
-  badge?: string
-}
+import { useAuthStore } from '../../lib/auth'
+import { getMenuItemsForRole, getRoleDisplayName, type MenuItem } from '../../lib/roleBasedMenuConfig'
+import { ChevronLeft, ChevronRight, User, LogOut, Heart, Activity } from 'lucide-react'
 
 interface SidebarProps {
-  menuItems: MenuItem[]
-  user: any
+  user?: any
   isCollapsed?: boolean
-  onToggle: () => void
+  onToggle?: () => void
 }
 
-export default function Sidebar({ menuItems, user, isCollapsed = false, onToggle }: SidebarProps) {
+export default function Sidebar({ user, isCollapsed = false, onToggle }: SidebarProps = {}) {
   const router = useRouter()
   const pathname = usePathname()
   const { theme, colors } = useTheme()
+  const { logout, user: authUser } = useAuthStore()
+  
+  // Use provided user or fall back to auth store user
+  const currentUser = user || authUser
+
+  // Get role-based menu items
+  const menuItems = getMenuItemsForRole(currentUser?.role || '')
 
   const handleNavigation = (href: string) => {
     router.push(href)
+  }
+
+  const handleLogout = async () => {
+    console.log('🔐 Sidebar: Logout called')
+    await logout()
+    router.push('/login')
   }
 
   const isActiveRoute = (href: string) => {
@@ -42,8 +48,9 @@ export default function Sidebar({ menuItems, user, isCollapsed = false, onToggle
       <div className="flex items-center justify-between h-16 px-4 border-b border-slate-200 dark:border-slate-700">
         {!isCollapsed && (
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white text-lg font-bold">S</span>
+            <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center relative">
+              <Heart className="w-4 h-4 text-white fill-current" />
+              <Activity className="w-3 h-3 text-white absolute -top-1 -right-1" />
             </div>
             <span className="text-lg font-semibold text-slate-900 dark:text-slate-100">Seth Clinic</span>
           </div>
@@ -68,7 +75,7 @@ export default function Sidebar({ menuItems, user, isCollapsed = false, onToggle
                 {user?.username || 'User'}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                {user?.role || 'Staff'}
+                {getRoleDisplayName(user?.role || 'Staff')}
               </p>
             </div>
           )}
@@ -104,14 +111,18 @@ export default function Sidebar({ menuItems, user, isCollapsed = false, onToggle
 
       {/* Footer */}
       <div className="px-4 py-4 border-t border-slate-200 dark:border-slate-700">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-purple-600 rounded-lg flex items-center justify-center">
+        <button
+          onClick={handleLogout}
+          className="flex items-center space-x-3 w-full p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group"
+          data-testid="sidebar-logout-button"
+        >
+          <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center group-hover:from-red-600 group-hover:to-red-700 transition-all">
             <LogOut className="w-4 h-4 text-white" />
           </div>
           {!isCollapsed && (
-            <span className="text-sm text-slate-600 dark:text-slate-400">Logout</span>
+            <span className="text-sm text-slate-600 dark:text-slate-400 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">Logout</span>
           )}
-        </div>
+        </button>
       </div>
     </div>
   )

@@ -49,6 +49,7 @@ services:
       DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/seth_clinic
       REDIS_URL: redis://redis:6379
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      JWT_REFRESH_SECRET: your-super-secret-refresh-key-change-in-production
       LOG_LEVEL: debug
       # SHA configuration
       SHA_API_URL: https://api.sha.go.ke

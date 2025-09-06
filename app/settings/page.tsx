@@ -21,7 +21,9 @@ import {
   Save,
   RefreshCw
 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "../../hooks/use-toast"
+import { ProtectedRoute } from "../../components/auth/ProtectedRoute"
+import { UserRole } from "../../types"
 
 export default function SettingsPage() {
   const { toast } = useToast()
@@ -74,7 +76,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <ProtectedRoute requiredRoles={[UserRole.ADMIN]}>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-500 rounded-lg">
@@ -89,20 +92,20 @@ export default function SettingsPage() {
         </div>
 
         <Tabs defaultValue="clinic" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="clinic" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-4 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <TabsTrigger value="clinic" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 hover:text-slate-900 dark:hover:text-slate-100">
               <Globe className="h-4 w-4" />
               Clinic
             </TabsTrigger>
-            <TabsTrigger value="user" className="flex items-center gap-2">
+            <TabsTrigger value="user" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 hover:text-slate-900 dark:hover:text-slate-100">
               <User className="h-4 w-4" />
               User
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
+            <TabsTrigger value="notifications" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 hover:text-slate-900 dark:hover:text-slate-100">
               <Bell className="h-4 w-4" />
               Notifications
             </TabsTrigger>
-            <TabsTrigger value="system" className="flex items-center gap-2">
+            <TabsTrigger value="system" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 hover:text-slate-900 dark:hover:text-slate-100">
               <Shield className="h-4 w-4" />
               System
             </TabsTrigger>
@@ -110,74 +113,78 @@ export default function SettingsPage() {
 
           {/* Clinic Settings */}
           <TabsContent value="clinic" className="space-y-4">
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
                   <Globe className="h-5 w-5" />
                   Clinic Information
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-slate-600 dark:text-slate-400">
                   Manage your clinic's basic information and preferences
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="clinicName">Clinic Name</Label>
+                    <Label htmlFor="clinicName" className="text-slate-700 dark:text-slate-300">Clinic Name</Label>
                     <Input
                       id="clinicName"
                       value={clinicSettings.name}
                       onChange={(e) => setClinicSettings(prev => ({ ...prev, name: e.target.value }))}
+                      className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="clinicPhone">Phone Number</Label>
+                    <Label htmlFor="clinicPhone" className="text-slate-700 dark:text-slate-300">Phone Number</Label>
                     <Input
                       id="clinicPhone"
                       value={clinicSettings.phone}
                       onChange={(e) => setClinicSettings(prev => ({ ...prev, phone: e.target.value }))}
+                      className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="clinicEmail">Email Address</Label>
+                    <Label htmlFor="clinicEmail" className="text-slate-700 dark:text-slate-300">Email Address</Label>
                     <Input
                       id="clinicEmail"
                       type="email"
                       value={clinicSettings.email}
                       onChange={(e) => setClinicSettings(prev => ({ ...prev, email: e.target.value }))}
+                      className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="clinicAddress">Address</Label>
+                    <Label htmlFor="clinicAddress" className="text-slate-700 dark:text-slate-300">Address</Label>
                     <Input
                       id="clinicAddress"
                       value={clinicSettings.address}
                       onChange={(e) => setClinicSettings(prev => ({ ...prev, address: e.target.value }))}
+                      className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="currency">Currency</Label>
+                    <Label htmlFor="currency" className="text-slate-700 dark:text-slate-300">Currency</Label>
                     <Select value={clinicSettings.currency} onValueChange={(value) => setClinicSettings(prev => ({ ...prev, currency: value }))}>
-                      <SelectTrigger>
-                        <SelectValue />
+                      <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                        <SelectValue className="text-slate-900 dark:text-slate-100" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="KES">Kenyan Shilling (KES)</SelectItem>
-                        <SelectItem value="USD">US Dollar (USD)</SelectItem>
-                        <SelectItem value="EUR">Euro (EUR)</SelectItem>
+                      <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                        <SelectItem value="KES" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">Kenyan Shilling (KES)</SelectItem>
+                        <SelectItem value="USD" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">US Dollar (USD)</SelectItem>
+                        <SelectItem value="EUR" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">Euro (EUR)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="timezone">Timezone</Label>
+                    <Label htmlFor="timezone" className="text-slate-700 dark:text-slate-300">Timezone</Label>
                     <Select value={clinicSettings.timezone} onValueChange={(value) => setClinicSettings(prev => ({ ...prev, timezone: value }))}>
-                      <SelectTrigger>
-                        <SelectValue />
+                      <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                        <SelectValue className="text-slate-900 dark:text-slate-100" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Africa/Nairobi">Africa/Nairobi</SelectItem>
-                        <SelectItem value="Africa/Dar_es_Salaam">Africa/Dar_es_Salaam</SelectItem>
-                        <SelectItem value="Africa/Kampala">Africa/Kampala</SelectItem>
+                      <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                        <SelectItem value="Africa/Nairobi" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">Africa/Nairobi</SelectItem>
+                        <SelectItem value="Africa/Dar_es_Salaam" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">Africa/Dar_es_Salaam</SelectItem>
+                        <SelectItem value="Africa/Kampala" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">Africa/Kampala</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -193,13 +200,13 @@ export default function SettingsPage() {
 
           {/* User Settings */}
           <TabsContent value="user" className="space-y-4">
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
                   <User className="h-5 w-5" />
                   User Preferences
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-slate-600 dark:text-slate-400">
                   Customize your personal settings and preferences
                 </CardDescription>
               </CardHeader>
@@ -207,8 +214,8 @@ export default function SettingsPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Dark Mode</Label>
-                      <p className="text-sm text-muted-foreground">
+                      <Label className="text-slate-700 dark:text-slate-300">Dark Mode</Label>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
                         Switch between light and dark themes
                       </p>
                     </div>
@@ -218,14 +225,14 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="language">Language</Label>
+                    <Label htmlFor="language" className="text-slate-700 dark:text-slate-300">Language</Label>
                     <Select value={userSettings.language} onValueChange={(value) => setUserSettings(prev => ({ ...prev, language: value }))}>
-                      <SelectTrigger>
-                        <SelectValue />
+                      <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                        <SelectValue className="text-slate-900 dark:text-slate-100" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="sw">Kiswahili</SelectItem>
+                      <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                        <SelectItem value="en" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">English</SelectItem>
+                        <SelectItem value="sw" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">Kiswahili</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -241,13 +248,13 @@ export default function SettingsPage() {
 
         {/* Notifications */}
         <TabsContent value="notifications" className="space-y-4">
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
                 <Bell className="h-5 w-5" />
                 Notification Settings
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-slate-600 dark:text-slate-400">
                 Configure how you receive notifications and alerts
               </CardDescription>
             </CardHeader>
@@ -255,8 +262,8 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Push Notifications</Label>
-                    <p className="text-sm text-muted-foreground">
+                    <Label className="text-slate-700 dark:text-slate-300">Push Notifications</Label>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
                       Receive notifications in the application
                     </p>
                   </div>
@@ -267,8 +274,8 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Email Alerts</Label>
-                    <p className="text-sm text-muted-foreground">
+                    <Label className="text-slate-700 dark:text-slate-300">Email Alerts</Label>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
                       Receive important updates via email
                     </p>
                   </div>
@@ -279,8 +286,8 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>SMS Alerts</Label>
-                    <p className="text-sm text-muted-foreground">
+                    <Label className="text-slate-700 dark:text-slate-300">SMS Alerts</Label>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
                       Receive urgent notifications via SMS
                     </p>
                   </div>
@@ -301,13 +308,13 @@ export default function SettingsPage() {
 
         {/* System Settings */}
         <TabsContent value="system" className="space-y-4">
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
                 <Shield className="h-5 w-5" />
                 System Configuration
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-slate-600 dark:text-slate-400">
                 Manage system security and maintenance settings
               </CardDescription>
             </CardHeader>
@@ -315,8 +322,8 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Automatic Backups</Label>
-                    <p className="text-sm text-muted-foreground">
+                    <Label className="text-slate-700 dark:text-slate-300">Automatic Backups</Label>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
                       Automatically backup system data
                     </p>
                   </div>
@@ -326,34 +333,36 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="backupFrequency">Backup Frequency</Label>
+                  <Label htmlFor="backupFrequency" className="text-slate-700 dark:text-slate-300">Backup Frequency</Label>
                   <Select value={systemSettings.backupFrequency} onValueChange={(value) => setSystemSettings(prev => ({ ...prev, backupFrequency: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
+                    <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                      <SelectValue className="text-slate-900 dark:text-slate-100" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                      <SelectItem value="daily" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">Daily</SelectItem>
+                      <SelectItem value="weekly" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">Weekly</SelectItem>
+                      <SelectItem value="monthly" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">Monthly</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
+                  <Label htmlFor="sessionTimeout" className="text-slate-700 dark:text-slate-300">Session Timeout (minutes)</Label>
                   <Input
                     id="sessionTimeout"
                     type="number"
                     value={systemSettings.sessionTimeout}
                     onChange={(e) => setSystemSettings(prev => ({ ...prev, sessionTimeout: e.target.value }))}
+                    className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="maxLoginAttempts">Max Login Attempts</Label>
+                  <Label htmlFor="maxLoginAttempts" className="text-slate-700 dark:text-slate-300">Max Login Attempts</Label>
                   <Input
                     id="maxLoginAttempts"
                     type="number"
                     value={systemSettings.maxLoginAttempts}
                     onChange={(e) => setSystemSettings(prev => ({ ...prev, maxLoginAttempts: e.target.value }))}
+                    className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -378,5 +387,6 @@ export default function SettingsPage() {
       </Tabs>
       </div>
     </div>
+    </ProtectedRoute>
   )
 }

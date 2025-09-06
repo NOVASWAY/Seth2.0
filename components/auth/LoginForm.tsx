@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { useSimpleAuth } from '../../lib/simpleAuth'
+import { useAuthStore } from '../../lib/auth'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '../../lib/ThemeContext'
 
@@ -9,7 +9,7 @@ export default function LoginForm() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const { login } = useSimpleAuth()
+  const { login } = useAuthStore()
   const router = useRouter()
   const { theme } = useTheme()
 

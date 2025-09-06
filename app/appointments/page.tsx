@@ -1,10 +1,9 @@
 'use client'
 
-import { useSimpleAuth } from '../../lib/simpleAuth'
+import { useAuthStore } from '../../lib/auth'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Sidebar from '../../components/dashboard/Sidebar'
-import { menuItems } from '../../lib/menuConfig'
 
 interface Appointment {
   id: string
@@ -76,7 +75,7 @@ const mockAppointments: Appointment[] = [
 ]
 
 export default function AppointmentsPage() {
-  const { user, isAuthenticated, isLoading } = useSimpleAuth()
+  const { user, isAuthenticated, isLoading } = useAuthStore()
   const router = useRouter()
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
@@ -162,7 +161,6 @@ export default function AppointmentsPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar
-        menuItems={mockMenuItems}
         user={user}
         isCollapsed={isSidebarCollapsed}
         onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}

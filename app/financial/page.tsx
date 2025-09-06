@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { BillingForm } from "@/components/financial/BillingForm"
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
+import { BillingForm } from "../../components/financial/BillingForm"
 import { Banknote, TrendingUp, AlertCircle, Clock } from "lucide-react"
+import { ProtectedRoute } from "../../components/auth/ProtectedRoute"
+import { UserRole } from "../../types"
 
 interface DashboardData {
   today_revenue: number
@@ -56,36 +58,37 @@ export default function FinancialPage() {
     : 0
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.CLAIMS_MANAGER]}>
+      <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Financial Management</h1>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Financial Management</h1>
       </div>
 
       {/* Dashboard Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Today's Revenue</CardTitle>
             <Banknote className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">KES {dashboardData?.today_revenue.toFixed(2) || "0.00"}</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">KES {dashboardData?.today_revenue.toFixed(2) || "0.00"}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Receivables</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Total Receivables</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">KES {totalReceivables.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">KES {totalReceivables.toFixed(2)}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overdue (90+ days)</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Overdue (90+ days)</CardTitle>
             <AlertCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
@@ -97,11 +100,11 @@ export default function FinancialPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recent Transactions</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Recent Transactions</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardData?.recent_transactions.length || 0}</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{dashboardData?.recent_transactions.length || 0}</div>
           </CardContent>
         </Card>
       </div>
@@ -140,26 +143,26 @@ export default function FinancialPage() {
             <CardContent>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">
+                  <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                       KES {dashboardData?.receivables.current.toFixed(2) || "0.00"}
                     </div>
                     <div className="text-sm text-muted-foreground">Current (0-30 days)</div>
                   </div>
-                  <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                    <div className="text-2xl font-bold text-yellow-600">
+                  <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                    <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                       KES {dashboardData?.receivables.thirty_days.toFixed(2) || "0.00"}
                     </div>
                     <div className="text-sm text-muted-foreground">31-60 days</div>
                   </div>
-                  <div className="text-center p-4 bg-orange-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">
+                  <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                    <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                       KES {dashboardData?.receivables.sixty_days.toFixed(2) || "0.00"}
                     </div>
                     <div className="text-sm text-muted-foreground">61-90 days</div>
                   </div>
-                  <div className="text-center p-4 bg-red-50 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">
+                  <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                    <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                       KES {dashboardData?.receivables.ninety_plus.toFixed(2) || "0.00"}
                     </div>
                     <div className="text-sm text-muted-foreground">90+ days</div>
@@ -185,5 +188,6 @@ export default function FinancialPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </ProtectedRoute>
   )
 }

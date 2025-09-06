@@ -1,10 +1,9 @@
 'use client'
 
-import { useSimpleAuth } from '../../lib/simpleAuth'
+import { useAuthStore } from '../../lib/auth'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Sidebar from '../../components/dashboard/Sidebar'
-import { menuItems } from '../../lib/menuConfig'
 
 interface Payment {
   id: string
@@ -59,7 +58,7 @@ const mockPayments: Payment[] = [
 ]
 
 export default function PaymentsPage() {
-  const { user, isAuthenticated, isLoading } = useSimpleAuth()
+  const { user, isAuthenticated, isLoading } = useAuthStore()
   const router = useRouter()
   const [payments, setPayments] = useState<Payment[]>(mockPayments)
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -138,7 +137,6 @@ export default function PaymentsPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar
-        menuItems={mockMenuItems}
         user={user}
         isCollapsed={isSidebarCollapsed}
         onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}

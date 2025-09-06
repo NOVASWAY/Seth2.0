@@ -1,14 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-// import { DatePickerWithRange } from "@/components/ui/date-picker"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
+import { Button } from "../../components/ui/button"
+import { Input } from "../../components/ui/input"
+import { Label } from "../../components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
+// import { DatePickerWithRange } from "../../components/ui/date-picker"
+import { Badge } from "../../components/ui/badge"
 import { 
   BarChart3, 
   TrendingUp, 
@@ -20,15 +20,22 @@ import {
   RefreshCw,
   FileText,
   PieChart,
-  Activity
+  Activity,
+  Upload
 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import { formatCurrencyDisplay } from "@/lib/currency"
+import { useToast } from "../../hooks/use-toast"
+import { formatCurrencyDisplay } from "../../lib/currency"
 
 export default function ReportsPage() {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [selectedReport, setSelectedReport] = useState("financial")
+  const [selectedFormats, setSelectedFormats] = useState({
+    financial: "pdf",
+    patients: "pdf", 
+    appointments: "pdf",
+    inventory: "pdf"
+  })
 
   // Mock data for reports
   const financialData = {
@@ -52,17 +59,188 @@ export default function ReportsPage() {
     noShowAppointments: 15
   }
 
+  // CSV Import functionality
+  const handleCSVImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please select a CSV file.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const csv = e.target?.result as string
+        const lines = csv.split('\n')
+        const headers = lines[0].split(',').map(h => h.trim())
+        
+        // Parse CSV data
+        const data = lines.slice(1)
+          .filter(line => line.trim())
+          .map(line => {
+            const values = line.split(',').map(v => v.trim())
+            const row: any = {}
+            headers.forEach((header, index) => {
+              row[header] = values[index] || ''
+            })
+            return row
+          })
+
+        toast({
+          title: "CSV Import Successful",
+          description: `Successfully imported ${data.length} patient records from ${file.name}`,
+        })
+
+        // Here you would typically send the data to your backend API
+        console.log('Imported patient data:', data)
+      } catch (error) {
+        toast({
+          title: "Import Error",
+          description: "Failed to parse CSV file. Please check the format.",
+          variant: "destructive",
+        })
+      }
+    }
+    reader.readAsText(file)
+  }
+
   const generateReport = async (reportType: string) => {
     setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // Get the selected format for this report type
+      const format = selectedFormats[selectedReport as keyof typeof selectedFormats] || "pdf"
+      
+      // Generate report data based on type
+      let reportData = {}
+      let fileName = ""
+      let mimeType = ""
+      let content = ""
+      
+      switch (reportType) {
+        case "Financial":
+          reportData = {
+            title: "Financial Report",
+            generatedAt: new Date().toISOString(),
+            data: financialData,
+            summary: {
+              totalRevenue: financialData.totalRevenue,
+              totalExpenses: financialData.totalExpenses,
+              netProfit: financialData.netProfit,
+              growthRate: financialData.monthlyGrowth
+            }
+          }
+          fileName = `financial-report-${new Date().toISOString().split('T')[0]}`
+          break
+          
+        case "Patient":
+          reportData = {
+            title: "Patient Demographics Report",
+            generatedAt: new Date().toISOString(),
+            data: patientStats,
+            summary: {
+              totalPatients: patientStats.totalPatients,
+              newPatients: patientStats.newPatients,
+              activePatients: patientStats.activePatients,
+              averageAge: patientStats.averageAge
+            }
+          }
+          fileName = `patient-report-${new Date().toISOString().split('T')[0]}`
+          break
+          
+        case "Appointment":
+          reportData = {
+            title: "Appointment Analytics Report",
+            generatedAt: new Date().toISOString(),
+            data: appointmentStats,
+            summary: {
+              totalAppointments: appointmentStats.totalAppointments,
+              completedAppointments: appointmentStats.completedAppointments,
+              cancelledAppointments: appointmentStats.cancelledAppointments,
+              noShowAppointments: appointmentStats.noShowAppointments,
+              completionRate: Math.round((appointmentStats.completedAppointments / appointmentStats.totalAppointments) * 100)
+            }
+          }
+          fileName = `appointment-report-${new Date().toISOString().split('T')[0]}`
+          break
+          
+        case "Inventory":
+          reportData = {
+            title: "Inventory Status Report",
+            generatedAt: new Date().toISOString(),
+            data: {
+              totalItems: 1250,
+              lowStock: 45,
+              outOfStock: 12,
+              totalValue: 2500000
+            },
+            summary: {
+              totalItems: 1250,
+              lowStockItems: 45,
+              outOfStockItems: 12,
+              totalInventoryValue: 2500000,
+              stockHealth: "Good"
+            }
+          }
+          fileName = `inventory-report-${new Date().toISOString().split('T')[0]}`
+          break
+          
+        default:
+          throw new Error("Unknown report type")
+      }
+      
+      // Generate content based on selected format
+      switch (format) {
+        case "pdf":
+          // For PDF, we'll create a simple HTML that can be printed to PDF
+          content = generatePDFContent(reportData)
+          mimeType = "text/html"
+          fileName += ".html"
+          break
+        case "excel":
+          // For Excel, we'll create CSV format (simplified Excel)
+          content = generateCSVContent(reportData)
+          mimeType = "text/csv"
+          fileName += ".csv"
+          break
+        case "csv":
+          content = generateCSVContent(reportData)
+          mimeType = "text/csv"
+          fileName += ".csv"
+          break
+        default:
+          // Default to JSON
+          content = JSON.stringify(reportData, null, 2)
+          mimeType = "application/json"
+          fileName += ".json"
+      }
+      
+      // Create and download the report
+      const dataBlob = new Blob([content], { type: mimeType })
+      
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
       
       toast({
         title: "Report Generated",
-        description: `${reportType} report has been generated successfully.`,
+        description: `${reportType} report has been generated and downloaded successfully in ${format.toUpperCase()} format.`,
       })
     } catch (error) {
+      console.error('Error generating report:', error)
       toast({
         title: "Error",
         description: "Failed to generate report. Please try again.",
@@ -71,6 +249,81 @@ export default function ReportsPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Helper function to generate PDF content (HTML format)
+  const generatePDFContent = (data: any) => {
+    const currentDate = new Date().toLocaleDateString()
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${data.title}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .section { margin-bottom: 20px; }
+        .section h3 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 5px; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .data-table th, .data-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .data-table th { background-color: #f2f2f2; }
+        .summary { background-color: #f8f9fa; padding: 15px; border-radius: 5px; }
+        .footer { margin-top: 30px; text-align: center; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>${data.title}</h1>
+        <p>Generated on: ${currentDate}</p>
+    </div>
+    
+    <div class="section">
+        <h3>Summary</h3>
+        <div class="summary">
+            ${Object.entries(data.summary).map(([key, value]) => 
+              `<p><strong>${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</strong> ${value}</p>`
+            ).join('')}
+        </div>
+    </div>
+    
+    <div class="section">
+        <h3>Detailed Data</h3>
+        <table class="data-table">
+            ${Object.entries(data.data).map(([key, value]) => 
+              `<tr><th>${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</th><td>${value}</td></tr>`
+            ).join('')}
+        </table>
+    </div>
+    
+    <div class="footer">
+        <p>This report was generated by Seth Medical Clinic CMS</p>
+    </div>
+</body>
+</html>`
+  }
+
+  // Helper function to generate CSV content
+  const generateCSVContent = (data: any) => {
+    const csvRows = []
+    
+    // Add header
+    csvRows.push('Field,Value')
+    
+    // Add summary data
+    csvRows.push('')
+    csvRows.push('SUMMARY')
+    Object.entries(data.summary).forEach(([key, value]) => {
+      csvRows.push(`${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())},${value}`)
+    })
+    
+    // Add detailed data
+    csvRows.push('')
+    csvRows.push('DETAILED DATA')
+    Object.entries(data.data).forEach(([key, value]) => {
+      csvRows.push(`${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())},${value}`)
+    })
+    
+    return csvRows.join('\n')
   }
 
   return (
@@ -89,20 +342,32 @@ export default function ReportsPage() {
         </div>
 
         <Tabs value={selectedReport} onValueChange={setSelectedReport} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="financial" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-4 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <TabsTrigger 
+              value="financial" 
+              className="flex items-center gap-2 text-slate-700 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:shadow-sm"
+            >
               <DollarSign className="h-4 w-4" />
               Financial
             </TabsTrigger>
-            <TabsTrigger value="patients" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="patients" 
+              className="flex items-center gap-2 text-slate-700 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:shadow-sm"
+            >
               <Users className="h-4 w-4" />
               Patients
             </TabsTrigger>
-            <TabsTrigger value="appointments" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="appointments" 
+              className="flex items-center gap-2 text-slate-700 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:shadow-sm"
+            >
               <Calendar className="h-4 w-4" />
               Appointments
             </TabsTrigger>
-            <TabsTrigger value="inventory" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="inventory" 
+              className="flex items-center gap-2 text-slate-700 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:shadow-sm"
+            >
               <Activity className="h-4 w-4" />
               Inventory
             </TabsTrigger>
@@ -169,43 +434,46 @@ export default function ReportsPage() {
               </Card>
           </div>
 
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <CardHeader>
-              <CardTitle>Financial Report Generator</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-slate-900 dark:text-slate-100">Financial Report Generator</CardTitle>
+              <CardDescription className="text-slate-600 dark:text-slate-400">
                 Generate detailed financial reports for your clinic
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="reportType">Report Type</Label>
+                  <Label htmlFor="reportType" className="text-slate-700 dark:text-slate-300">Report Type</Label>
                   <Select defaultValue="monthly">
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Daily Report</SelectItem>
-                      <SelectItem value="weekly">Weekly Report</SelectItem>
-                      <SelectItem value="monthly">Monthly Report</SelectItem>
-                      <SelectItem value="yearly">Yearly Report</SelectItem>
+                    <SelectContent className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600">
+                      <SelectItem value="daily" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Daily Report</SelectItem>
+                      <SelectItem value="weekly" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Weekly Report</SelectItem>
+                      <SelectItem value="monthly" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Monthly Report</SelectItem>
+                      <SelectItem value="yearly" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Yearly Report</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dateRange">Date Range</Label>
-                  <Input type="date" />
+                  <Label htmlFor="dateRange" className="text-slate-700 dark:text-slate-300">Date Range</Label>
+                  <Input type="date" className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="format">Export Format</Label>
-                  <Select defaultValue="pdf">
-                    <SelectTrigger>
+                  <Label htmlFor="format" className="text-slate-700 dark:text-slate-300">Export Format</Label>
+                  <Select 
+                    value={selectedFormats.financial} 
+                    onValueChange={(value) => setSelectedFormats(prev => ({ ...prev, financial: value }))}
+                  >
+                    <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pdf">PDF</SelectItem>
-                      <SelectItem value="excel">Excel</SelectItem>
-                      <SelectItem value="csv">CSV</SelectItem>
+                    <SelectContent className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600">
+                      <SelectItem value="pdf" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">PDF</SelectItem>
+                      <SelectItem value="excel" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Excel</SelectItem>
+                      <SelectItem value="csv" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">CSV</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -225,105 +493,173 @@ export default function ReportsPage() {
         {/* Patient Reports */}
         <TabsContent value="patients" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Total Patients</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{patientStats.totalPatients.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{patientStats.totalPatients.toLocaleString()}</div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   +{patientStats.newPatients} new this month
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Patients</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Active Patients</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{patientStats.activePatients.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{patientStats.activePatients.toLocaleString()}</div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   Currently active
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">New Patients</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">New Patients</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{patientStats.newPatients}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{patientStats.newPatients}</div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   This month
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Average Age</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Average Age</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{patientStats.averageAge}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{patientStats.averageAge}</div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   Years
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <CardHeader>
-              <CardTitle>Patient Report Generator</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-slate-900 dark:text-slate-100">Patient Report Generator</CardTitle>
+              <CardDescription className="text-slate-600 dark:text-slate-400">
                 Generate detailed patient reports and demographics
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="patientReportType">Report Type</Label>
+                  <Label htmlFor="patientReportType" className="text-slate-700 dark:text-slate-300">Report Type</Label>
                   <Select defaultValue="demographics">
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="demographics">Demographics</SelectItem>
-                      <SelectItem value="registration">Registration Trends</SelectItem>
-                      <SelectItem value="ageGroups">Age Groups</SelectItem>
-                      <SelectItem value="geographic">Geographic Distribution</SelectItem>
+                    <SelectContent className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600">
+                      <SelectItem value="demographics" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Demographics</SelectItem>
+                      <SelectItem value="registration" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Registration Trends</SelectItem>
+                      <SelectItem value="ageGroups" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Age Groups</SelectItem>
+                      <SelectItem value="geographic" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Geographic Distribution</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="patientDateRange">Date Range</Label>
-                  <Input type="date" />
+                  <Label htmlFor="patientDateRange" className="text-slate-700 dark:text-slate-300">Date Range</Label>
+                  <Input type="date" className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="patientFormat">Export Format</Label>
-                  <Select defaultValue="pdf">
-                    <SelectTrigger>
+                  <Label htmlFor="patientFormat" className="text-slate-700 dark:text-slate-300">Export Format</Label>
+                  <Select 
+                    value={selectedFormats.patients} 
+                    onValueChange={(value) => setSelectedFormats(prev => ({ ...prev, patients: value }))}
+                  >
+                    <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pdf">PDF</SelectItem>
-                      <SelectItem value="excel">Excel</SelectItem>
-                      <SelectItem value="csv">CSV</SelectItem>
+                    <SelectContent className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600">
+                      <SelectItem value="pdf" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">PDF</SelectItem>
+                      <SelectItem value="excel" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Excel</SelectItem>
+                      <SelectItem value="csv" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">CSV</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-              <Button 
-                onClick={() => generateReport("Patient")} 
-                disabled={isLoading}
-                className="flex items-center gap-2"
-              >
-                {isLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                Generate Patient Report
-              </Button>
+              <div className="flex flex-wrap gap-3">
+                <Button 
+                  onClick={() => generateReport("Patient")} 
+                  disabled={isLoading}
+                  className="flex items-center gap-2"
+                >
+                  {isLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  Generate Patient Report
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  onClick={() => document.getElementById('csv-import')?.click()}
+                  className="flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  Import CSV Data
+                </Button>
+                
+                <input
+                  id="csv-import"
+                  type="file"
+                  accept=".csv"
+                  onChange={handleCSVImport}
+                  className="hidden"
+                />
+                
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    toast({
+                      title: "Export Template",
+                      description: "Downloading CSV template for patient data import...",
+                    })
+                    // Generate and download CSV template
+                    const template = "Patient ID,First Name,Last Name,Email,Phone,Date of Birth,Gender,Address,Insurance Provider,Insurance Number\n"
+                    const blob = new Blob([template], { type: 'text/csv' })
+                    const url = URL.createObjectURL(blob)
+                    const link = document.createElement('a')
+                    link.href = url
+                    link.download = 'patient-import-template.csv'
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
+                    URL.revokeObjectURL(url)
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  Download Template
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    toast({
+                      title: "Refresh Data",
+                      description: "Refreshing patient data from database...",
+                    })
+                    // Simulate data refresh
+                    setTimeout(() => {
+                      toast({
+                        title: "Data Refreshed",
+                        description: "Patient data has been updated successfully.",
+                      })
+                    }, 1000)
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh Data
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -331,93 +667,96 @@ export default function ReportsPage() {
         {/* Appointment Reports */}
         <TabsContent value="appointments" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Appointments</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Total Appointments</CardTitle>
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{appointmentStats.totalAppointments}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{appointmentStats.totalAppointments}</div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   This month
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Completed</CardTitle>
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{appointmentStats.completedAppointments}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{appointmentStats.completedAppointments}</div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   {Math.round((appointmentStats.completedAppointments / appointmentStats.totalAppointments) * 100)}% completion rate
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Cancelled</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Cancelled</CardTitle>
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600">{appointmentStats.cancelledAppointments}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{appointmentStats.cancelledAppointments}</div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   {Math.round((appointmentStats.cancelledAppointments / appointmentStats.totalAppointments) * 100)}% cancellation rate
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">No Shows</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">No Shows</CardTitle>
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">{appointmentStats.noShowAppointments}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{appointmentStats.noShowAppointments}</div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   {Math.round((appointmentStats.noShowAppointments / appointmentStats.totalAppointments) * 100)}% no-show rate
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <CardHeader>
-              <CardTitle>Appointment Report Generator</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-slate-900 dark:text-slate-100">Appointment Report Generator</CardTitle>
+              <CardDescription className="text-slate-600 dark:text-slate-400">
                 Generate detailed appointment reports and analytics
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="appointmentReportType">Report Type</Label>
+                  <Label htmlFor="appointmentReportType" className="text-slate-700 dark:text-slate-300">Report Type</Label>
                   <Select defaultValue="summary">
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="summary">Appointment Summary</SelectItem>
-                      <SelectItem value="trends">Appointment Trends</SelectItem>
-                      <SelectItem value="noShows">No-Show Analysis</SelectItem>
-                      <SelectItem value="cancellations">Cancellation Analysis</SelectItem>
+                    <SelectContent className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600">
+                      <SelectItem value="summary" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Appointment Summary</SelectItem>
+                      <SelectItem value="trends" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Appointment Trends</SelectItem>
+                      <SelectItem value="noShows" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">No-Show Analysis</SelectItem>
+                      <SelectItem value="cancellations" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Cancellation Analysis</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="appointmentDateRange">Date Range</Label>
-                  <Input type="date" />
+                  <Label htmlFor="appointmentDateRange" className="text-slate-700 dark:text-slate-300">Date Range</Label>
+                  <Input type="date" className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="appointmentFormat">Export Format</Label>
-                  <Select defaultValue="pdf">
-                    <SelectTrigger>
+                  <Label htmlFor="appointmentFormat" className="text-slate-700 dark:text-slate-300">Export Format</Label>
+                  <Select 
+                    value={selectedFormats.appointments} 
+                    onValueChange={(value) => setSelectedFormats(prev => ({ ...prev, appointments: value }))}
+                  >
+                    <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pdf">PDF</SelectItem>
-                      <SelectItem value="excel">Excel</SelectItem>
-                      <SelectItem value="csv">CSV</SelectItem>
+                    <SelectContent className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600">
+                      <SelectItem value="pdf" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">PDF</SelectItem>
+                      <SelectItem value="excel" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Excel</SelectItem>
+                      <SelectItem value="csv" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">CSV</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -437,93 +776,96 @@ export default function ReportsPage() {
         {/* Inventory Reports */}
         <TabsContent value="inventory" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Items</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Total Items</CardTitle>
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">1,250</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">1,250</div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   In inventory
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Low Stock</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Low Stock</CardTitle>
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600">45</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">45</div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   Items need restocking
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Out of Stock</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Out of Stock</CardTitle>
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">12</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">12</div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   Items out of stock
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Value</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Total Value</CardTitle>
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrencyDisplay(2500000)}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatCurrencyDisplay(2500000)}</div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   Inventory value
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <CardHeader>
-              <CardTitle>Inventory Report Generator</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-slate-900 dark:text-slate-100">Inventory Report Generator</CardTitle>
+              <CardDescription className="text-slate-600 dark:text-slate-400">
                 Generate detailed inventory reports and stock analysis
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="inventoryReportType">Report Type</Label>
+                  <Label htmlFor="inventoryReportType" className="text-slate-700 dark:text-slate-300">Report Type</Label>
                   <Select defaultValue="stock">
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="stock">Stock Levels</SelectItem>
-                      <SelectItem value="movement">Stock Movement</SelectItem>
-                      <SelectItem value="expiry">Expiry Tracking</SelectItem>
-                      <SelectItem value="value">Inventory Valuation</SelectItem>
+                    <SelectContent className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600">
+                      <SelectItem value="stock" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Stock Levels</SelectItem>
+                      <SelectItem value="movement" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Stock Movement</SelectItem>
+                      <SelectItem value="expiry" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Expiry Tracking</SelectItem>
+                      <SelectItem value="value" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Inventory Valuation</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="inventoryDateRange">Date Range</Label>
-                  <Input type="date" />
+                  <Label htmlFor="inventoryDateRange" className="text-slate-700 dark:text-slate-300">Date Range</Label>
+                  <Input type="date" className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="inventoryFormat">Export Format</Label>
-                  <Select defaultValue="pdf">
-                    <SelectTrigger>
+                  <Label htmlFor="inventoryFormat" className="text-slate-700 dark:text-slate-300">Export Format</Label>
+                  <Select 
+                    value={selectedFormats.inventory} 
+                    onValueChange={(value) => setSelectedFormats(prev => ({ ...prev, inventory: value }))}
+                  >
+                    <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pdf">PDF</SelectItem>
-                      <SelectItem value="excel">Excel</SelectItem>
-                      <SelectItem value="csv">CSV</SelectItem>
+                    <SelectContent className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600">
+                      <SelectItem value="pdf" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">PDF</SelectItem>
+                      <SelectItem value="excel" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">Excel</SelectItem>
+                      <SelectItem value="csv" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">CSV</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

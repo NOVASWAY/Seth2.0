@@ -1,10 +1,9 @@
 'use client'
 
-import { useSimpleAuth } from '../../lib/simpleAuth'
+import { useAuthStore } from '../../lib/auth'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Sidebar from '../../components/dashboard/Sidebar'
-import { menuItems } from '../../lib/menuConfig'
 
 interface Patient {
   id: string
@@ -74,7 +73,7 @@ const mockPatients: Patient[] = [
 ]
 
 export default function PatientsPage() {
-  const { user, isAuthenticated, isLoading } = useSimpleAuth()
+  const { user, isAuthenticated, isLoading } = useAuthStore()
   const router = useRouter()
   const [patients, setPatients] = useState<Patient[]>(mockPatients)
   const [searchTerm, setSearchTerm] = useState('')
@@ -129,7 +128,6 @@ export default function PatientsPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar
-        menuItems={mockMenuItems}
         user={user}
         isCollapsed={isSidebarCollapsed}
         onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}

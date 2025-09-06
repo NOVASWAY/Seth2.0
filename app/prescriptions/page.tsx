@@ -1,215 +1,269 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useAuthStore } from "../../lib/auth"
 import { ProtectedRoute } from "../../components/auth/ProtectedRoute"
 import { UserRole } from "../../types"
-import { PrescriptionForm } from "../../components/prescriptions/PrescriptionForm"
-import { EnhancedPatientInput } from "../../components/patients/EnhancedPatientInput"
+import Sidebar from "../../components/dashboard/Sidebar"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
 import { Badge } from "../../components/ui/badge"
-import { FileText, UserPlus, Pill, Clock, Save } from "lucide-react"
-import type { Patient } from "../../types"
+import { Input } from "../../components/ui/input"
+import { Label } from "../../components/ui/label"
+import { useToast } from "../../hooks/use-toast"
+import { 
+  Pill, 
+  Plus, 
+  Search, 
+  RefreshCw,
+  Calendar,
+  User,
+  Eye,
+  Edit
+} from "lucide-react"
+import { format } from "date-fns"
+
+interface Prescription {
+  id: string
+  patient_id: string
+  visit_id: string
+  prescribed_by: string
+  prescription_date: string
+  status: string
+  notes: string
+  created_at: string
+  patient?: {
+    first_name: string
+    last_name: string
+  }
+  items: PrescriptionItem[]
+}
+
+interface PrescriptionItem {
+  id: string
+  medication_name: string
+  dosage: string
+  frequency: string
+  duration: string
+  quantity: number
+  instructions: string
+}
 
 export default function PrescriptionsPage() {
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
-  const [currentStep, setCurrentStep] = useState<"patient" | "prescription">("patient")
-  const [consultationId, setConsultationId] = useState("demo-consultation-123")
-  const [visitId, setVisitId] = useState("demo-visit-456")
+  const { accessToken } = useAuthStore()
+  const { toast } = useToast()
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
 
-  const handlePatientSelected = (patient: Patient) => {
-    setSelectedPatient(patient)
-    setCurrentStep("prescription")
+  useEffect(() => {
+    fetchPrescriptions()
+  }, [])
+
+  const fetchPrescriptions = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/prescriptions`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch prescriptions: ${response.status}`)
+      }
+
+      const data = await response.json()
+      setPrescriptions(data.prescriptions || [])
+    } catch (error) {
+      console.error("Error fetching prescriptions:", error)
+      toast({
+        title: "Error",
+        description: "Failed to fetch prescriptions. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleNewPatientCreated = (patient: Patient) => {
-    setSelectedPatient(patient)
-    setCurrentStep("prescription")
-  }
+  const filteredPrescriptions = prescriptions.filter(prescription => {
+    const matchesSearch = 
+      prescription.patient?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      prescription.patient?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      prescription.items.some(item => 
+        item.medication_name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
 
-  const handlePrescriptionSuccess = (prescription: any) => {
-    console.log("Prescription created:", prescription)
-    // Reset to start new prescription
-    setSelectedPatient(null)
-    setCurrentStep("patient")
-  }
+    return matchesSearch
+  })
 
-  const resetFlow = () => {
-    setSelectedPatient(null)
-    setCurrentStep("patient")
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "active":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
+      case "completed":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
+      case "cancelled":
+        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300"
+      case "expired":
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300"
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300"
+    }
   }
 
   return (
-    <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.CLINICAL_OFFICER]}>
-      <div className="container mx-auto p-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Prescription Management</h1>
-          <p className="text-muted-foreground">
-            Create prescriptions with real-time stock availability and enhanced patient management
-          </p>
-        </div>
-
-        {/* Feature Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Pill className="h-5 w-5 text-primary" />
-                <span className="font-medium">Stock Integration</span>
+    <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE]}>
+      <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
+        <Sidebar />
+        
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700">
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Prescriptions</h1>
+                  <p className="text-slate-600 dark:text-slate-400">Manage patient prescriptions and medications</p>
+                </div>
+                
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  New Prescription
+                </Button>
               </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                Real-time medicine availability from inventory
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <UserPlus className="h-5 w-5 text-primary" />
-                <span className="font-medium">Patient Management</span>
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                Search existing or register new patients
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
-                <span className="font-medium">Auto-Save</span>
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                Automatic saving every 30 seconds
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Save className="h-5 w-5 text-primary" />
-                <span className="font-medium">Draft Recovery</span>
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                Restore drafts after power outages
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Progress Indicator */}
-        <div className="mb-6">
-          <div className="flex items-center gap-4">
-            <div className={`flex items-center gap-2 ${currentStep === "patient" ? "text-primary" : "text-muted-foreground"}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                currentStep === "patient" ? "border-primary bg-primary text-white" : "border-muted-foreground"
-              }`}>
-                1
-              </div>
-              <span className="font-medium">Patient Selection</span>
-            </div>
-            
-            <div className="w-8 h-1 bg-muted-foreground/20 rounded"></div>
-            
-            <div className={`flex items-center gap-2 ${currentStep === "prescription" ? "text-primary" : "text-muted-foreground"}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                currentStep === "prescription" ? "border-primary bg-primary text-white" : "border-muted-foreground"
-              }`}>
-                2
-              </div>
-              <span className="font-medium">Create Prescription</span>
             </div>
           </div>
-        </div>
 
-        {/* Main Content */}
-        <Tabs value={currentStep} className="w-full">
-          <TabsContent value="patient" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserPlus className="h-5 w-5" />
-                  Step 1: Patient Selection & Registration
-                </CardTitle>
-                <CardDescription>
-                  Search for existing patients or register a new one. All data is automatically saved.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <EnhancedPatientInput
-                  onPatientSelected={handlePatientSelected}
-                  onNewPatientCreated={handleNewPatientCreated}
-                  onCancel={resetFlow}
-                  showVisitInfo={true}
+          <div className="flex-1 overflow-auto p-6">
+            {/* Search */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+                <Input
+                  placeholder="Search prescriptions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100"
                 />
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            </div>
 
-          <TabsContent value="prescription" className="mt-0">
-            {selectedPatient && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Step 2: Create Prescription
-                  </CardTitle>
-                  <CardDescription>
-                    Prescribe medicines for {selectedPatient.firstName} {selectedPatient.lastName} with real-time stock availability.
-                  </CardDescription>
-                  
-                  {/* Patient Info */}
-                  <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <span className="font-medium">Patient:</span> {selectedPatient.firstName} {selectedPatient.lastName}
+            {/* Prescriptions List */}
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <RefreshCw className="h-8 w-8 animate-spin text-slate-400" />
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {filteredPrescriptions.length === 0 ? (
+                  <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <Pill className="h-12 w-12 text-slate-400 mb-4" />
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">No prescriptions found</h3>
+                      <p className="text-slate-600 dark:text-slate-400 text-center">
+                        Get started by creating a new prescription.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  filteredPrescriptions.map((prescription) => (
+                    <Card key={prescription.id} className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                              <Pill className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <CardTitle className="text-slate-900 dark:text-slate-100">
+                                {prescription.patient ? `${prescription.patient.first_name} ${prescription.patient.last_name}` : "Unknown Patient"}
+                              </CardTitle>
+                              <CardDescription className="text-slate-600 dark:text-slate-400">
+                                Prescribed on {format(new Date(prescription.prescription_date), "MMM dd, yyyy 'at' h:mm a")}
+                              </CardDescription>
+                            </div>
+                          </div>
+                          
+                          <Badge className={getStatusColor(prescription.status)}>
+                            {prescription.status.toUpperCase()}
+                          </Badge>
                         </div>
-                        <Badge variant="outline">{selectedPatient.opNumber}</Badge>
-                        <Badge variant="secondary">{selectedPatient.insuranceType}</Badge>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={resetFlow}>
-                        Change Patient
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <PrescriptionForm
-                    consultationId={consultationId}
-                    visitId={visitId}
-                    patientId={selectedPatient.id}
-                    onSuccess={handlePrescriptionSuccess}
-                    onCancel={resetFlow}
-                  />
-                </CardContent>
-              </Card>
+                      </CardHeader>
+                      
+                      <CardContent>
+                        <div className="space-y-4">
+                          {prescription.notes && (
+                            <div>
+                              <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Notes</Label>
+                              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{prescription.notes}</p>
+                            </div>
+                          )}
+                          
+                          <div>
+                            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Medications</Label>
+                            <div className="mt-2 space-y-2">
+                              {prescription.items.map((item, index) => (
+                                <div key={index} className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <Pill className="h-4 w-4 text-slate-500" />
+                                      <span className="font-medium text-slate-900 dark:text-slate-100">
+                                        {item.medication_name}
+                                      </span>
+                                      <span className="text-sm text-slate-600 dark:text-slate-400">
+                                        {item.dosage}
+                                      </span>
+                                    </div>
+                                    <span className="text-sm text-slate-500 dark:text-slate-400">
+                                      Qty: {item.quantity}
+                                    </span>
+                                  </div>
+                                  <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                                    {item.frequency} for {item.duration}
+                                    {item.instructions && ` • ${item.instructions}`}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                            <User className="h-4 w-4" />
+                            Prescribed by: {prescription.prescribed_by}
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300"
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Details
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300"
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
             )}
-          </TabsContent>
-        </Tabs>
-
-        {/* Demo Information */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Demo Information</CardTitle>
-            <CardDescription>
-              This is a demonstration of the enhanced prescription system. In a real environment:
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm">
-              <li>• <strong>Consultation ID:</strong> Would come from an actual consultation record</li>
-              <li>• <strong>Visit ID:</strong> Would be generated when the patient is registered for today's visit</li>
-              <li>• <strong>Stock Availability:</strong> Shows real-time data from your inventory system</li>
-              <li>• <strong>Auto-save:</strong> Protects against data loss during power outages or server downtime</li>
-              <li>• <strong>Patient Search:</strong> Searches through your actual patient database</li>
-            </ul>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </ProtectedRoute>
   )

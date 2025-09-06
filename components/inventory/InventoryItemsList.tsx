@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import type React from "react"
+import { useAuthStore } from "../../lib/auth"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
 import { Input } from "../ui/input"
@@ -14,6 +15,7 @@ interface InventoryItemsListProps {
 }
 
 export function InventoryItemsList({ onRefresh }: InventoryItemsListProps) {
+  const { accessToken } = useAuthStore()
   const [items, setItems] = useState<InventoryItem[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -36,9 +38,9 @@ export function InventoryItemsList({ onRefresh }: InventoryItemsListProps) {
         params.append("search", search)
       }
 
-      const response = await fetch(`/api/inventory/items?${params}`, {
+      const response = await fetch(`http://localhost:5000/api/inventory/items?${params}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       })
 

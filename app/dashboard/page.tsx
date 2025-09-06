@@ -1,6 +1,6 @@
 'use client'
 
-import { useSimpleAuth } from '../../lib/simpleAuth'
+import { useAuthStore } from '../../lib/auth'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useTheme } from '../../lib/ThemeContext'
@@ -10,10 +10,10 @@ import RecentActivity from '../../components/dashboard/RecentActivity'
 import QuickActions from '../../components/dashboard/QuickActions'
 import PatientQueue from '../../components/dashboard/PatientQueue'
 import ThemeToggle from '../../components/ui/ThemeToggle'
-import { menuItems } from '../../lib/menuConfig'
+import { getQuickActionsForRole } from '../../lib/roleBasedQuickActions'
 
 export default function Dashboard() {
-  const { user, isAuthenticated, isLoading } = useSimpleAuth()
+  const { user, isAuthenticated, isLoading } = useAuthStore()
   const router = useRouter()
   const [isChecking, setIsChecking] = useState(true)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -23,8 +23,10 @@ export default function Dashboard() {
   const [stats, setStats] = useState([])
   const [activities, setActivities] = useState([])
   const [patients, setPatients] = useState([])
-  const [quickActions, setQuickActions] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
+
+  // Get role-based quick actions
+  const quickActions = getQuickActionsForRole(user?.role || '')
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
@@ -35,7 +37,6 @@ export default function Dashboard() {
       setStats([])
       setActivities([])
       setPatients([])
-      setQuickActions([])
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
@@ -59,10 +60,10 @@ export default function Dashboard() {
     return () => clearTimeout(timer)
   }, [isAuthenticated, user, isLoading, router])
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     console.log('🔐 Dashboard: Logout called')
-    const { logout } = useSimpleAuth.getState()
-    logout()
+    const { logout } = useAuthStore.getState()
+    await logout()
     router.push('/login')
   }
 
@@ -89,7 +90,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex transition-colors duration-300">
-      <Sidebar menuItems={menuItems} user={user} isCollapsed={isSidebarCollapsed} onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
+      <Sidebar user={user} isCollapsed={isSidebarCollapsed} onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
       <div className="flex-1 flex flex-col">
         <nav className="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700 transition-colors duration-300">
           <div className="px-4 sm:px-6 lg:px-8">
