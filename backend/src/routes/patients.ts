@@ -206,6 +206,99 @@ router.put(
   },
 )
 
+// Import patients from CSV
+router.post(
+  "/import",
+  authorize([UserRole.ADMIN, UserRole.RECEPTIONIST]),
+  [
+    body("patients").isArray().withMessage("Patients must be an array"),
+    body("patients.*.op_number").trim().isLength({ min: 1 }).withMessage("OP number is required"),
+    body("patients.*.first_name").trim().isLength({ min: 1 }).withMessage("First name is required"),
+    body("patients.*.last_name").trim().isLength({ min: 1 }).withMessage("Last name is required"),
+    body("patients.*.insurance_type").isIn(["SHA", "PRIVATE", "CASH"]).withMessage("Invalid insurance type"),
+    body("patients.*.age").optional().isInt({ min: 0, max: 150 }).withMessage("Invalid age"),
+    body("patients.*.phone_number").optional().isString().withMessage("Phone number must be a string"),
+    body("patients.*.date_of_birth").optional().isISO8601().withMessage("Invalid date of birth"),
+    body("patients.*.area").optional().isString().withMessage("Area must be a string"),
+  ],
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation failed",
+          errors: errors.array(),
+        })
+      }
+
+      const { patients } = req.body
+      const results = {
+        successful: [],
+        failed: [],
+        total: patients.length
+      }
+
+      // Process each patient
+      for (const patientData of patients) {
+        try {
+          // Check if patient with OP number already exists
+          const existingPatient = await PatientModel.findByOpNumber(patientData.op_number)
+          if (existingPatient) {
+            results.failed.push({
+              op_number: patientData.op_number,
+              name: `${patientData.first_name} ${patientData.last_name}`,
+              error: "Patient with this OP number already exists"
+            })
+            continue
+          }
+
+          // Convert date string to Date object if provided
+          if (patientData.date_of_birth) {
+            patientData.date_of_birth = new Date(patientData.date_of_birth)
+          }
+
+          // Create patient
+          const patient = await PatientModel.create({
+            opNumber: patientData.op_number,
+            firstName: patientData.first_name,
+            lastName: patientData.last_name,
+            age: patientData.age,
+            dateOfBirth: patientData.date_of_birth,
+            area: patientData.area,
+            phoneNumber: patientData.phone_number,
+            insuranceType: patientData.insurance_type,
+            gender: "OTHER" // Default gender since it's not provided in CSV
+          })
+
+          results.successful.push({
+            op_number: patient.opNumber,
+            name: `${patient.firstName} ${patient.lastName}`,
+            id: patient.id
+          })
+        } catch (error: any) {
+          results.failed.push({
+            op_number: patientData.op_number,
+            name: `${patientData.first_name} ${patientData.last_name}`,
+            error: error.message || "Failed to create patient"
+          })
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Import completed. ${results.successful.length} successful, ${results.failed.length} failed.`,
+        data: results
+      })
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Failed to import patients",
+      })
+    }
+  },
+)
+
 // Search patients endpoint
 router.get(
   "/search",
