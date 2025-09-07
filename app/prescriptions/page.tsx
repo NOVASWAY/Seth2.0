@@ -57,12 +57,26 @@ export default function PrescriptionsPage() {
   const [searchTerm, setSearchTerm] = useState("")
 
   useEffect(() => {
-    fetchPrescriptions()
-  }, [])
+    if (accessToken) {
+      fetchPrescriptions()
+    } else {
+      setIsLoading(false)
+    }
+  }, [accessToken])
 
   const fetchPrescriptions = async () => {
     try {
       setIsLoading(true)
+      if (!accessToken) {
+        console.error("No access token available")
+        toast({
+          title: "Authentication Error",
+          description: "Please log in to access prescriptions data.",
+          variant: "destructive",
+        })
+        return
+      }
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/prescriptions`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -71,6 +85,14 @@ export default function PrescriptionsPage() {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Authentication Error",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
+          })
+          return
+        }
         throw new Error(`Failed to fetch prescriptions: ${response.status}`)
       }
 
@@ -112,6 +134,24 @@ export default function PrescriptionsPage() {
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300"
     }
+  }
+
+  if (!accessToken) {
+    return (
+      <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE]}>
+        <div className="flex h-screen bg-slate-50 dark:bg-slate-900 items-center justify-center">
+          <div className="text-center">
+            <User className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+              Authentication Required
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400">
+              Please log in to access prescriptions data.
+            </p>
+          </div>
+        </div>
+      </ProtectedRoute>
+    )
   }
 
   return (

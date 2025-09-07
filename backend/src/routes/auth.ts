@@ -24,7 +24,11 @@ router.post(
       }
 
       const { username, password } = req.body
-      const result = await AuthService.login({ username, password })
+      const result = await AuthService.login(
+        { username, password },
+        req.ip,
+        req.get("User-Agent")
+      )
 
       if (!result) {
         return res.status(401).json({

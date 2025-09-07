@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken"
 import { UserModel, type User } from "../models/User"
 import redisClient from "../config/redis"
+import { EventLoggerService } from "./EventLoggerService"
 import type { UserRole } from "../types"
 
 export interface LoginCredentials {
@@ -26,20 +27,52 @@ export class AuthService {
   private static readonly REFRESH_TOKEN_EXPIRES_IN = "7d"
   private static readonly MAX_LOGIN_ATTEMPTS = 5
 
-  static async login(credentials: LoginCredentials): Promise<{ user: AuthUser; tokens: AuthTokens } | null> {
+  static async login(credentials: LoginCredentials, ipAddress?: string, userAgent?: string): Promise<{ user: AuthUser; tokens: AuthTokens } | null> {
     const user = await UserModel.findByUsername(credentials.username)
 
     if (!user) {
+      // Log failed login attempt for non-existent user
+      await EventLoggerService.logEvent({
+        event_type: "LOGIN",
+        username: credentials.username,
+        action: "login_failed",
+        details: { reason: "user_not_found" },
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        severity: "MEDIUM",
+      })
       return null
     }
 
     // Check if account is locked
     if (user.isLocked) {
+      // Log locked account login attempt
+      await EventLoggerService.logEvent({
+        event_type: "SECURITY",
+        user_id: user.id,
+        username: user.username,
+        action: "login_blocked_locked",
+        details: { reason: "account_locked", failed_attempts: user.failedLoginAttempts },
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        severity: "HIGH",
+      })
       throw new Error("Account is locked due to too many failed login attempts")
     }
 
     // Check if account is active
     if (!user.isActive) {
+      // Log inactive account login attempt
+      await EventLoggerService.logEvent({
+        event_type: "SECURITY",
+        user_id: user.id,
+        username: user.username,
+        action: "login_blocked_inactive",
+        details: { reason: "account_inactive" },
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        severity: "MEDIUM",
+      })
       throw new Error("Account is deactivated")
     }
 
@@ -51,7 +84,37 @@ export class AuthService {
       const newAttempts = user.failedLoginAttempts + 1
       await UserModel.updateLoginAttempts(user.id, newAttempts)
 
+      // Log failed login attempt
+      await EventLoggerService.logEvent({
+        event_type: "LOGIN",
+        user_id: user.id,
+        username: user.username,
+        action: "login_failed",
+        details: { 
+          reason: "invalid_password", 
+          failed_attempts: newAttempts,
+          max_attempts: this.MAX_LOGIN_ATTEMPTS
+        },
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        severity: newAttempts >= this.MAX_LOGIN_ATTEMPTS ? "CRITICAL" : "MEDIUM",
+      })
+
       if (newAttempts >= this.MAX_LOGIN_ATTEMPTS) {
+        // Log account lockout
+        await EventLoggerService.logEvent({
+          event_type: "SECURITY",
+          user_id: user.id,
+          username: user.username,
+          action: "account_locked",
+          details: { 
+            reason: "max_failed_attempts_reached",
+            failed_attempts: newAttempts
+          },
+          ip_address: ipAddress,
+          user_agent: userAgent,
+          severity: "CRITICAL",
+        })
         throw new Error("Account locked due to too many failed login attempts")
       }
 
@@ -66,6 +129,21 @@ export class AuthService {
 
     // Store refresh token in Redis
     await this.storeRefreshToken(user.id, tokens.refreshToken)
+
+    // Log successful login
+    await EventLoggerService.logEvent({
+      event_type: "LOGIN",
+      user_id: user.id,
+      username: user.username,
+      action: "login_success",
+      details: { 
+        role: user.role,
+        previous_failed_attempts: user.failedLoginAttempts
+      },
+      ip_address: ipAddress,
+      user_agent: userAgent,
+      severity: "LOW",
+    })
 
     const authUser: AuthUser = {
       id: user.id,

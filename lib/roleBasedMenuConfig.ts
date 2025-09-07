@@ -24,6 +24,13 @@ export const getMenuItemsForRole = (userRole: string): MenuItem[] => {
       roles: ["ADMIN", "RECEPTIONIST", "NURSE", "CLINICAL_OFFICER"]
     },
     {
+      id: "patient-assignments",
+      title: "Patient Assignments",
+      href: "/patient-assignments",
+      icon: "👥",
+      roles: ["ADMIN", "CLINICAL_OFFICER", "NURSE", "PHARMACIST", "CASHIER"]
+    },
+    {
       id: "appointments",
       title: "Appointments",
       href: "/appointments",
@@ -106,6 +113,13 @@ export const getMenuItemsForRole = (userRole: string): MenuItem[] => {
       href: "/financial",
       icon: "💳",
       roles: ["ADMIN", "CLAIMS_MANAGER"]
+    },
+    {
+      id: "sync",
+      title: "System Sync",
+      href: "/sync",
+      icon: "🔄",
+      roles: ["ADMIN", "CLINICAL_OFFICER"]
     },
     {
       id: "settings",

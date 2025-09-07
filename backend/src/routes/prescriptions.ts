@@ -3,8 +3,94 @@ import { body, validationResult } from "express-validator"
 import { PrescriptionModel } from "../models/Prescription"
 import { authorize, type AuthenticatedRequest } from "../middleware/auth"
 import { UserRole } from "../types"
+import pool from "../config/database"
 
 const router = express.Router()
+
+// Get all prescriptions (with pagination and filtering)
+router.get(
+  "/",
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.PHARMACIST]),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const { limit = 50, offset = 0, status, patientId } = req.query
+      
+      let whereClause = ""
+      let queryParams: any[] = []
+      let paramIndex = 1
+
+      if (status) {
+        whereClause += `WHERE status = $${paramIndex}`
+        queryParams.push(status)
+        paramIndex++
+      }
+
+      if (patientId) {
+        const condition = whereClause ? "AND" : "WHERE"
+        whereClause += ` ${condition} patient_id = $${paramIndex}`
+        queryParams.push(patientId)
+        paramIndex++
+      }
+
+      // Get total count
+      const countQuery = `SELECT COUNT(*) as total FROM prescriptions ${whereClause}`
+      const countResult = await pool.query(countQuery, queryParams)
+      const total = parseInt(countResult.rows[0].total)
+
+      // Get prescriptions with pagination
+      const prescriptionsQuery = `
+        SELECT id, consultation_id as "consultationId", visit_id as "visitId", 
+               patient_id as "patientId", prescribed_by as "prescribedBy", 
+               status, created_at as "createdAt", updated_at as "updatedAt"
+        FROM prescriptions 
+        ${whereClause}
+        ORDER BY created_at DESC
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `
+      
+      queryParams.push(parseInt(limit as string), parseInt(offset as string))
+      const prescriptionsResult = await pool.query(prescriptionsQuery, queryParams)
+      const prescriptions = prescriptionsResult.rows
+
+      // Get items for each prescription
+      const prescriptionsWithItems = []
+      for (const prescription of prescriptions) {
+        const itemsQuery = `
+          SELECT id, prescription_id as "prescriptionId", inventory_item_id as "inventoryItemId",
+                 item_name as "itemName", dosage, frequency, duration,
+                 quantity_prescribed as "quantityPrescribed", quantity_dispensed as "quantityDispensed",
+                 instructions
+          FROM prescription_items 
+          WHERE prescription_id = $1
+        `
+        const itemsResult = await pool.query(itemsQuery, [prescription.id])
+        const items = itemsResult.rows
+
+        prescriptionsWithItems.push({
+          ...prescription,
+          items,
+        })
+      }
+
+      res.json({
+        success: true,
+        data: prescriptionsWithItems,
+        pagination: {
+          total,
+          limit: parseInt(limit as string),
+          offset: parseInt(offset as string),
+          has_more: prescriptions.length === parseInt(limit as string),
+        },
+      })
+    } catch (error) {
+      console.error("Error fetching prescriptions:", error)
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch prescriptions",
+      })
+    }
+  },
+)
 
 // Get all prescriptions for a patient
 router.get(

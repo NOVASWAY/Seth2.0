@@ -123,9 +123,11 @@ export default function SHAPage() {
   ]
 
   useEffect(() => {
-    fetchClaims()
-    fetchBatches()
-  }, [])
+    if (accessToken) {
+      fetchClaims()
+      fetchBatches()
+    }
+  }, [accessToken])
 
   const fetchClaims = async () => {
     try {
@@ -187,6 +189,12 @@ export default function SHAPage() {
 
   const fetchBatches = async () => {
     try {
+      // Check if user is authenticated
+      if (!accessToken) {
+        console.error("No access token available for SHA batches")
+        return
+      }
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/sha-batches`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -197,6 +205,12 @@ export default function SHAPage() {
       if (response.ok) {
         const data = await response.json()
         setBatches(data.batches || [])
+      } else if (response.status === 404) {
+        // SHA batches API endpoint not implemented yet
+        console.log("SHA batches API endpoint not yet implemented in backend")
+        setBatches([]) // Set empty array for now
+      } else if (response.status === 401) {
+        console.error("Authentication error when fetching SHA batches")
       }
     } catch (error) {
       console.error("Error fetching SHA batches:", error)
@@ -208,6 +222,16 @@ export default function SHAPage() {
     setIsSubmitting(true)
 
     try {
+      // Check if user is authenticated
+      if (!accessToken) {
+        toast({
+          title: "Authentication Error",
+          description: "Please log in to create SHA claims.",
+          variant: "destructive",
+        })
+        return
+      }
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/sha-claims`, {
         method: "POST",
         headers: {
@@ -221,6 +245,21 @@ export default function SHAPage() {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Authentication Error",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
+          })
+          return
+        } else if (response.status === 404) {
+          toast({
+            title: "Info",
+            description: "SHA claims functionality is not yet implemented in the backend.",
+            variant: "default",
+          })
+          return
+        }
         throw new Error(`Failed to create SHA claim: ${response.status}`)
       }
 
@@ -621,7 +660,15 @@ export default function SHAPage() {
             </div>
 
             {/* Claims List */}
-            {isLoading ? (
+            {!accessToken ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <User className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">Authentication Required</h3>
+                  <p className="text-slate-600 dark:text-slate-400">Please log in to view SHA claims data.</p>
+                </div>
+              </div>
+            ) : isLoading ? (
               <div className="flex items-center justify-center h-64">
                 <RefreshCw className="h-8 w-8 animate-spin text-slate-400" />
               </div>

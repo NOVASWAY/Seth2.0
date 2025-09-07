@@ -27,11 +27,16 @@ import patientEncountersRoutes from "./routes/patient-encounters"
 import shaDocumentsRoutes from "./routes/sha-documents"
 import shaExportsRoutes from "./routes/sha-exports"
 import clinicalAutocompleteRoutes from "./routes/clinical-autocomplete"
+import eventRoutes from "./routes/events"
+import patientAssignmentRoutes from "./routes/patient-assignments"
+import notificationRoutes from "./routes/notifications"
+import userPresenceRoutes from "./routes/user-presence"
 
 // Import middleware
 import { errorHandler } from "./middleware/errorHandler"
 import { auditLogger } from "./middleware/auditLogger"
 import { authenticate } from "./middleware/auth"
+import { initializeWebSocket } from "./services/WebSocketService"
 
 // Load environment variables
 dotenv.config()
@@ -119,6 +124,10 @@ app.use("/api/patient-encounters", authenticate, patientEncountersRoutes)
 app.use("/api/sha-documents", authenticate, shaDocumentsRoutes)
 app.use("/api/sha-exports", authenticate, shaExportsRoutes)
 app.use("/api/clinical-autocomplete", authenticate, clinicalAutocompleteRoutes)
+app.use("/api/events", authenticate, eventRoutes)
+app.use("/api/patient-assignments", authenticate, patientAssignmentRoutes)
+app.use("/api/notifications", authenticate, notificationRoutes)
+app.use("/api/user-presence", authenticate, userPresenceRoutes)
 
 // Audit logging middleware (after routes)
 app.use(auditLogger)
@@ -141,5 +150,8 @@ server.listen(PORT, () => {
   console.log(`📊 Health check: http://localhost:${PORT}/health`)
   console.log(`🔒 Environment: ${process.env.NODE_ENV}`)
 })
+
+// Initialize WebSocket service
+initializeWebSocket(server)
 
 export default app

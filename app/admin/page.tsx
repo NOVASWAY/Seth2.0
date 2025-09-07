@@ -3,6 +3,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AdminDashboard } from "@/components/admin/AdminDashboard"
 import { UserManagement } from "@/components/admin/UserManagement"
+import { UserRecoveryForm } from "@/components/admin/UserRecoveryForm"
+import { EventLogger } from "@/components/admin/EventLogger"
 import { Shield } from "lucide-react"
 
 export default function AdminPage() {
@@ -17,6 +19,8 @@ export default function AdminPage() {
         <TabsList>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="users">User Management</TabsTrigger>
+          <TabsTrigger value="recovery">Account Recovery</TabsTrigger>
+          <TabsTrigger value="events">Event Logger</TabsTrigger>
           <TabsTrigger value="migration">Data Migration</TabsTrigger>
           <TabsTrigger value="audit">Audit Logs</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
@@ -28,6 +32,14 @@ export default function AdminPage() {
 
         <TabsContent value="users">
           <UserManagement />
+        </TabsContent>
+
+        <TabsContent value="recovery">
+          <UserRecoveryForm />
+        </TabsContent>
+
+        <TabsContent value="events">
+          <EventLogger />
         </TabsContent>
 
         <TabsContent value="migration">

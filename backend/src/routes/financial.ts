@@ -368,7 +368,7 @@ router.get("/dashboard", authenticateToken, requireRole([UserRole.ADMIN, UserRol
       `
         SELECT COALESCE(SUM(amount), 0) as today_revenue
         FROM payments 
-        WHERE payment_date >= $1 AND payment_date < $2
+        WHERE received_at >= $1 AND received_at < $2
       `,
       [startOfDay, endOfDay],
     )
@@ -376,12 +376,12 @@ router.get("/dashboard", authenticateToken, requireRole([UserRole.ADMIN, UserRol
     // Outstanding receivables
     const receivablesResult = await pool.query(`
         SELECT 
-          COALESCE(SUM(CASE WHEN aging_bucket = '0-30' THEN amount ELSE 0 END), 0) as current,
-          COALESCE(SUM(CASE WHEN aging_bucket = '31-60' THEN amount ELSE 0 END), 0) as thirty_days,
-          COALESCE(SUM(CASE WHEN aging_bucket = '61-90' THEN amount ELSE 0 END), 0) as sixty_days,
-          COALESCE(SUM(CASE WHEN aging_bucket = '90+' THEN amount ELSE 0 END), 0) as ninety_plus
+          COALESCE(SUM(CASE WHEN aging_bucket = '0-30' THEN remaining_amount ELSE 0 END), 0) as current,
+          COALESCE(SUM(CASE WHEN aging_bucket = '31-60' THEN remaining_amount ELSE 0 END), 0) as thirty_days,
+          COALESCE(SUM(CASE WHEN aging_bucket = '61-90' THEN remaining_amount ELSE 0 END), 0) as sixty_days,
+          COALESCE(SUM(CASE WHEN aging_bucket = '90+' THEN remaining_amount ELSE 0 END), 0) as ninety_plus
         FROM accounts_receivable 
-        WHERE status != 'paid'
+        WHERE status != 'SETTLED'
       `)
 
     // Recent transactions
@@ -389,7 +389,7 @@ router.get("/dashboard", authenticateToken, requireRole([UserRole.ADMIN, UserRol
         SELECT p.*, i.invoice_number, i.op_number
         FROM payments p
         LEFT JOIN invoices i ON p.invoice_id = i.id
-        ORDER BY p.payment_date DESC
+        ORDER BY p.received_at DESC
         LIMIT 10
       `)
 

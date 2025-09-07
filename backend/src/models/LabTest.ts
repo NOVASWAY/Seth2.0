@@ -1,5 +1,6 @@
 import pool from "../config/database"
 import type { LabTest } from "../types"
+import crypto from "crypto"
 
 export interface CreateLabTestData {
   testCode: string
@@ -35,24 +36,36 @@ export class LabTestModel {
       await client.query("BEGIN")
       
       const query = `
-        INSERT INTO lab_tests (
-          test_code, test_name, test_category, description, specimen_type,
-          turnaround_time, price, is_active, reference_ranges, instructions
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        INSERT INTO clinical_lab_tests (
+          id, test_code, test_name, test_category, test_sub_category, specimen_type,
+          specimen_volume, fasting_required, normal_range_male, normal_range_female,
+          normal_range_pediatric, units, turnaround_time_hours, price,
+          clinical_significance, preparation_instructions, search_keywords,
+          created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
         RETURNING *
       `
       
       const values = [
+        crypto.randomUUID(), // id
         data.testCode,
         data.testName,
         data.testCategory,
-        data.description,
+        null, // test_sub_category
         data.specimenType,
+        null, // specimen_volume
+        false, // fasting_required
+        null, // normal_range_male
+        null, // normal_range_female
+        null, // normal_range_pediatric
+        null, // units
         data.turnaroundTime,
         data.price,
-        data.isActive ?? true,
-        data.referenceRanges ? JSON.stringify(data.referenceRanges) : null,
-        data.instructions
+        data.description, // clinical_significance
+        data.instructions, // preparation_instructions
+        [], // search_keywords
+        new Date(), // created_at
+        new Date()  // updated_at
       ]
       
       const result = await client.query(query, values)
@@ -68,7 +81,7 @@ export class LabTestModel {
   }
 
   static async findById(id: string): Promise<LabTest | null> {
-    const query = "SELECT * FROM lab_tests WHERE id = $1"
+    const query = "SELECT * FROM clinical_lab_tests WHERE id = $1"
     const result = await pool.query(query, [id])
     
     if (result.rows.length === 0) {
@@ -79,7 +92,7 @@ export class LabTestModel {
   }
 
   static async findByTestCode(testCode: string): Promise<LabTest | null> {
-    const query = "SELECT * FROM lab_tests WHERE test_code = $1"
+    const query = "SELECT * FROM clinical_lab_tests WHERE test_code = $1"
     const result = await pool.query(query, [testCode])
     
     if (result.rows.length === 0) {
@@ -90,7 +103,7 @@ export class LabTestModel {
   }
 
   static async findAll(activeOnly: boolean = true): Promise<LabTest[]> {
-    let query = "SELECT * FROM lab_tests"
+    let query = "SELECT * FROM clinical_lab_tests"
     const values: any[] = []
     
     if (activeOnly) {
@@ -104,7 +117,7 @@ export class LabTestModel {
   }
 
   static async findByCategory(category: string, activeOnly: boolean = true): Promise<LabTest[]> {
-    let query = "SELECT * FROM lab_tests WHERE test_category = $1"
+    let query = "SELECT * FROM clinical_lab_tests WHERE test_category = $1"
     const values: any[] = [category]
     
     if (activeOnly) {
@@ -119,8 +132,8 @@ export class LabTestModel {
 
   static async search(searchTerm: string, activeOnly: boolean = true): Promise<LabTest[]> {
     let query = `
-      SELECT * FROM lab_tests 
-      WHERE (test_name ILIKE $1 OR test_code ILIKE $1 OR description ILIKE $1)
+      SELECT * FROM clinical_lab_tests 
+      WHERE (test_name ILIKE $1 OR test_code ILIKE $1 OR clinical_significance ILIKE $1)
     `
     const values: any[] = [`%${searchTerm}%`]
     
@@ -202,7 +215,7 @@ export class LabTestModel {
       values.push(id)
       
       const query = `
-        UPDATE lab_tests 
+        UPDATE clinical_lab_tests 
         SET ${updateFields.join(", ")}
         WHERE id = $${paramCount}
         RETURNING *
@@ -225,24 +238,24 @@ export class LabTestModel {
   }
 
   static async delete(id: string): Promise<boolean> {
-    const query = "DELETE FROM lab_tests WHERE id = $1"
+    const query = "DELETE FROM clinical_lab_tests WHERE id = $1"
     const result = await pool.query(query, [id])
     return (result.rowCount ?? 0) > 0
   }
 
   static async getCategories(): Promise<string[]> {
-    const query = "SELECT DISTINCT test_category FROM lab_tests WHERE is_active = true ORDER BY test_category"
+    const query = "SELECT DISTINCT test_category FROM clinical_lab_tests WHERE is_active = true ORDER BY test_category"
     const result = await pool.query(query)
     return result.rows.map(row => row.test_category)
   }
 
   static async getAvailableTests(search?: string, category?: string): Promise<LabTest[]> {
-    let query = "SELECT * FROM lab_tests WHERE is_active = true"
+    let query = "SELECT * FROM clinical_lab_tests WHERE is_active = true"
     const values: any[] = []
     let paramCount = 1
     
     if (search) {
-      query += ` AND (test_name ILIKE $${paramCount} OR test_code ILIKE $${paramCount} OR description ILIKE $${paramCount})`
+      query += ` AND (test_name ILIKE $${paramCount} OR test_code ILIKE $${paramCount} OR clinical_significance ILIKE $${paramCount})`
       values.push(`%${search}%`)
       paramCount++
     }
@@ -265,20 +278,25 @@ export class LabTestModel {
       name: row.test_name,
       code: row.test_code,
       category: row.test_category,
-      turnaround_time: row.turnaround_time,
+      price: parseFloat(row.price),
+      turnaround_time: `${row.turnaround_time_hours} hours`,
       is_active: row.is_active,
       created_at: new Date(row.created_at),
       updated_at: new Date(row.updated_at),
       test_code: row.test_code,
       test_name: row.test_name,
       testCategory: row.test_category,
-      description: row.description,
+      description: row.clinical_significance,
       specimenType: row.specimen_type,
-      turnaroundTime: row.turnaround_time,
-      price: parseFloat(row.price),
+      turnaroundTime: `${row.turnaround_time_hours} hours`,
       isActive: row.is_active,
-      referenceRanges: row.reference_ranges ? JSON.parse(row.reference_ranges) : undefined,
-      instructions: row.instructions,
+      referenceRanges: {
+        male: row.normal_range_male,
+        female: row.normal_range_female,
+        pediatric: row.normal_range_pediatric,
+        units: row.units
+      },
+      instructions: row.preparation_instructions,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at)
     }

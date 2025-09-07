@@ -105,12 +105,26 @@ export default function PatientEncountersPage() {
   ]
 
   useEffect(() => {
-    fetchEncounters()
-  }, [])
+    if (accessToken) {
+      fetchEncounters()
+    } else {
+      setIsLoading(false)
+    }
+  }, [accessToken])
 
   const fetchEncounters = async () => {
     try {
       setIsLoading(true)
+      if (!accessToken) {
+        console.error("No access token available")
+        toast({
+          title: "Authentication Error",
+          description: "Please log in to access patient encounters data.",
+          variant: "destructive",
+        })
+        return
+      }
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/patient-encounters`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -119,6 +133,14 @@ export default function PatientEncountersPage() {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Authentication Error",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
+          })
+          return
+        }
         throw new Error(`Failed to fetch encounters: ${response.status}`)
       }
 
@@ -259,6 +281,24 @@ export default function PatientEncountersPage() {
       default:
         return <Clock className="h-4 w-4" />
     }
+  }
+
+  if (!accessToken) {
+    return (
+      <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE]}>
+        <div className="flex h-screen bg-slate-50 dark:bg-slate-900 items-center justify-center">
+          <div className="text-center">
+            <User className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+              Authentication Required
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400">
+              Please log in to access patient encounters data.
+            </p>
+          </div>
+        </div>
+      </ProtectedRoute>
+    )
   }
 
   return (
