@@ -265,6 +265,54 @@ export default function VisitsPage() {
     }
   }
 
+  const handleViewVisitDetails = (visit: any) => {
+    // For now, show visit details in an alert
+    // In a real implementation, this would open a detailed view modal
+    const details = `
+Visit Details:
+- Patient: ${visit.patientName}
+- Chief Complaint: ${visit.chiefComplaint}
+- Triage Category: ${visit.triageCategory}
+- Status: ${visit.status}
+- Created: ${new Date(visit.createdAt).toLocaleString()}
+- Updated: ${new Date(visit.updatedAt).toLocaleString()}
+    `
+    alert(details)
+  }
+
+  const handleEditVisit = (visit: any) => {
+    // For now, show a simple edit dialog
+    const newComplaint = prompt("Enter new chief complaint:", visit.chiefComplaint)
+    if (newComplaint && newComplaint !== visit.chiefComplaint) {
+      // Update the visit in local state
+      setVisits(visits.map(v => 
+        v.id === visit.id 
+          ? { ...v, chiefComplaint: newComplaint, updatedAt: new Date().toISOString() }
+          : v
+      ))
+      
+      toast({
+        title: "Success",
+        description: "Visit updated successfully",
+        variant: "default",
+      })
+    }
+  }
+
+  const handleDeleteVisit = (visit: any) => {
+    const confirmed = confirm(`Are you sure you want to delete this visit for ${visit.patientName}? This action cannot be undone.`)
+    
+    if (confirmed) {
+      setVisits(visits.filter(v => v.id !== visit.id))
+      
+      toast({
+        title: "Success",
+        description: "Visit deleted successfully",
+        variant: "default",
+      })
+    }
+  }
+
   const handleStatusUpdate = async (visitId: string, newStatus: string) => {
     try {
       // Check if user is authenticated
@@ -669,6 +717,7 @@ export default function VisitsPage() {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => handleViewVisitDetails(visit)}
                               className="border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300"
                             >
                               <Eye className="h-4 w-4 mr-1" />

@@ -4,7 +4,7 @@ interface StatsCardProps {
   change?: string
   changeType?: 'increase' | 'decrease' | 'neutral'
   icon?: React.ReactNode
-  color?: 'orange' | 'purple' | 'green' | 'red' | 'yellow'
+  color?: 'orange' | 'purple' | 'green' | 'red' | 'yellow' | 'blue'
 }
 
 export default function StatsCard({ 
@@ -20,7 +20,8 @@ export default function StatsCard({
     purple: 'bg-gradient-to-br from-purple-500 to-purple-600',
     green: 'bg-gradient-to-br from-green-500 to-green-600',
     red: 'bg-gradient-to-br from-red-500 to-red-600',
-    yellow: 'bg-gradient-to-br from-yellow-500 to-yellow-600'
+    yellow: 'bg-gradient-to-br from-yellow-500 to-yellow-600',
+    blue: 'bg-gradient-to-br from-blue-500 to-blue-600'
   }
 
   const changeColorClasses = {

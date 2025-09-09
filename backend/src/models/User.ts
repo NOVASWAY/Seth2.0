@@ -29,6 +29,9 @@ export interface UpdateUserData {
   role?: UserRole
   isActive?: boolean
   isLocked?: boolean
+  failedLoginAttempts?: number
+  passwordHash?: string
+  lastFailedLoginAt?: Date | null
 }
 
 export class UserModel {

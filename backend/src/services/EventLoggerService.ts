@@ -185,6 +185,45 @@ export class EventLoggerService {
   }
 
   /**
+   * Get recent events for sync dashboard
+   */
+  static async getRecentEvents(hours: number = 24, limit: number = 50): Promise<EventLog[]> {
+    try {
+      const startDate = new Date()
+      startDate.setHours(startDate.getHours() - hours)
+
+      const query = `
+        SELECT 
+          id,
+          event_type,
+          user_id,
+          username,
+          target_type,
+          target_id,
+          action,
+          details,
+          ip_address,
+          user_agent,
+          severity,
+          created_at
+        FROM event_logs 
+        WHERE created_at >= $1
+        ORDER BY created_at DESC
+        LIMIT $2
+      `
+      
+      const result = await pool.query(query, [startDate, limit])
+      return result.rows.map(row => ({
+        ...row,
+        details: row.details ? (typeof row.details === 'string' ? JSON.parse(row.details) : row.details) : null
+      }))
+    } catch (error) {
+      console.error('Error fetching recent events:', error)
+      throw error
+    }
+  }
+
+  /**
    * Get event statistics
    */
   static async getEventStats(days: number = 30): Promise<{

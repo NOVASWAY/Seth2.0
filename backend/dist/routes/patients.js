@@ -90,6 +90,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
     (0, express_validator_1.body)("age").optional().isInt({ min: 0, max: 150 }).withMessage("Invalid age"),
     (0, express_validator_1.body)("phoneNumber").optional().isMobilePhone("any").withMessage("Invalid phone number"),
     (0, express_validator_1.body)("dateOfBirth").optional().isISO8601().withMessage("Invalid date of birth"),
+    (0, express_validator_1.body)("registrationType").optional().isIn(["NEW_PATIENT", "IMPORT_PATIENT"]).withMessage("Invalid registration type"),
 ], async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
@@ -101,14 +102,26 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
             });
         }
         const patientData = req.body;
+        const registrationType = patientData.registrationType || 'NEW_PATIENT';
         if (patientData.dateOfBirth) {
             patientData.dateOfBirth = new Date(patientData.dateOfBirth);
         }
+        patientData.registrationType = registrationType;
+        patientData.registeredBy = req.user.id;
+        patientData.registrationDate = new Date();
         const patient = await Patient_1.PatientModel.create(patientData);
+        console.log(`Patient ${patient.id} registered via ${registrationType} by user ${req.user.id}`);
         res.status(201).json({
             success: true,
-            message: "Patient created successfully",
-            data: patient,
+            message: registrationType === 'NEW_PATIENT'
+                ? "New patient registered successfully"
+                : "Patient imported successfully",
+            data: {
+                ...patient,
+                registrationType,
+                registeredBy: req.user.id,
+                registrationDate: new Date()
+            },
         });
     }
     catch (error) {
@@ -164,6 +177,87 @@ router.put("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
         res.status(500).json({
             success: false,
             message: "Failed to update patient",
+        });
+    }
+});
+router.post("/import", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.RECEPTIONIST]), [
+    (0, express_validator_1.body)("patients").isArray().withMessage("Patients must be an array"),
+    (0, express_validator_1.body)("patients.*.op_number").trim().isLength({ min: 1 }).withMessage("OP number is required"),
+    (0, express_validator_1.body)("patients.*.first_name").trim().isLength({ min: 1 }).withMessage("First name is required"),
+    (0, express_validator_1.body)("patients.*.last_name").trim().isLength({ min: 1 }).withMessage("Last name is required"),
+    (0, express_validator_1.body)("patients.*.insurance_type").isIn(["SHA", "PRIVATE", "CASH"]).withMessage("Invalid insurance type"),
+    (0, express_validator_1.body)("patients.*.age").optional().isInt({ min: 0, max: 150 }).withMessage("Invalid age"),
+    (0, express_validator_1.body)("patients.*.phone_number").optional().isString().withMessage("Phone number must be a string"),
+    (0, express_validator_1.body)("patients.*.date_of_birth").optional().isISO8601().withMessage("Invalid date of birth"),
+    (0, express_validator_1.body)("patients.*.area").optional().isString().withMessage("Area must be a string"),
+], async (req, res) => {
+    try {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                message: "Validation failed",
+                errors: errors.array(),
+            });
+        }
+        const { patients } = req.body;
+        const results = {
+            successful: [],
+            failed: [],
+            total: patients.length
+        };
+        for (const patientData of patients) {
+            try {
+                const existingPatient = await Patient_1.PatientModel.findByOpNumber(patientData.op_number);
+                if (existingPatient) {
+                    results.failed.push({
+                        op_number: patientData.op_number,
+                        name: `${patientData.first_name} ${patientData.last_name}`,
+                        error: "Patient with this OP number already exists"
+                    });
+                    continue;
+                }
+                if (patientData.date_of_birth) {
+                    patientData.date_of_birth = new Date(patientData.date_of_birth);
+                }
+                const patient = await Patient_1.PatientModel.create({
+                    opNumber: patientData.op_number,
+                    firstName: patientData.first_name,
+                    lastName: patientData.last_name,
+                    age: patientData.age,
+                    dateOfBirth: patientData.date_of_birth,
+                    area: patientData.area,
+                    phoneNumber: patientData.phone_number,
+                    insuranceType: patientData.insurance_type,
+                    gender: "OTHER",
+                    registrationType: "IMPORT_PATIENT",
+                    registeredBy: req.user.id,
+                    registrationDate: new Date()
+                });
+                results.successful.push({
+                    op_number: patient.opNumber,
+                    name: `${patient.firstName} ${patient.lastName}`,
+                    id: patient.id
+                });
+            }
+            catch (error) {
+                results.failed.push({
+                    op_number: patientData.op_number,
+                    name: `${patientData.first_name} ${patientData.last_name}`,
+                    error: error.message || "Failed to create patient"
+                });
+            }
+        }
+        res.json({
+            success: true,
+            message: `Import completed. ${results.successful.length} successful, ${results.failed.length} failed.`,
+            data: results
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Failed to import patients",
         });
     }
 });

@@ -23,6 +23,7 @@ interface AuthState {
   refreshAccessToken: () => Promise<boolean>
   setUser: (user: AuthUser | null) => void
   setTokens: (accessToken: string, refreshToken: string) => void
+  initialize: () => void
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
@@ -90,7 +91,7 @@ export const useAuthStore = create<AuthState>()(
         accessToken: null,
         refreshToken: null,
         isAuthenticated: false,
-        isLoading: false,
+        isLoading: true, // Start with loading true to prevent premature redirects
 
         login: async (username: string, password: string) => {
           console.log('🔐 login() function called with:', username)
@@ -131,7 +132,19 @@ export const useAuthStore = create<AuthState>()(
             if (getIsTestMode()) {
               throw error
             }
-            throw new Error(error.response?.data?.message || "Login failed")
+            
+            // Handle specific error types
+            if (error.response?.status === 429) {
+              throw new Error("Too many login attempts. Please wait 15 minutes before trying again.")
+            } else if (error.response?.status === 401) {
+              throw new Error("Invalid username or password. Please check your credentials.")
+            } else if (error.response?.status === 403) {
+              throw new Error("Account is locked or inactive. Please contact an administrator.")
+            } else if (error.response?.status >= 500) {
+              throw new Error("Server error. Please try again later.")
+            }
+            
+            throw new Error(error.response?.data?.message || "Login failed. Please try again.")
           }
         },
 
@@ -200,6 +213,19 @@ export const useAuthStore = create<AuthState>()(
 
         setTokens: (accessToken: string, refreshToken: string) => {
           set({ accessToken, refreshToken })
+        },
+
+        // Initialize authentication state from localStorage
+        initialize: () => {
+          console.log('🔧 Initializing auth state from localStorage')
+          const state = get()
+          if (state.accessToken && state.user) {
+            console.log('✅ Auth state restored from localStorage')
+            set({ isAuthenticated: true, isLoading: false })
+          } else {
+            console.log('❌ No valid auth state found in localStorage')
+            set({ isAuthenticated: false, isLoading: false })
+          }
         },
       }
     },

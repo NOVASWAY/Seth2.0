@@ -306,6 +306,55 @@ export default function LabTestsPage() {
     }
   }
 
+  const handleViewTestDetails = (test: any) => {
+    // For now, show test details in an alert
+    // In a real implementation, this would open a detailed view modal
+    const details = `
+Lab Test Details:
+- Patient: ${test.patientName}
+- Test Type: ${test.testType}
+- Status: ${test.status}
+- Requested Date: ${new Date(test.requestedDate).toLocaleString()}
+- Results: ${test.results || 'Not available'}
+- Notes: ${test.notes || 'None'}
+- Created: ${new Date(test.created_at).toLocaleString()}
+    `
+    alert(details)
+  }
+
+  const handleEditTest = (test: any) => {
+    // For now, show a simple edit dialog
+    const newTestType = prompt("Enter new test type:", test.testType)
+    if (newTestType && newTestType !== test.testType) {
+      // Update the test in local state
+      setLabTests(labTests.map(t => 
+        t.id === test.id 
+          ? { ...t, testType: newTestType, updated_at: new Date().toISOString() }
+          : t
+      ))
+      
+      toast({
+        title: "Success",
+        description: "Test updated successfully",
+        variant: "default",
+      })
+    }
+  }
+
+  const handleDeleteTest = (test: any) => {
+    const confirmed = confirm(`Are you sure you want to delete this lab test for ${test.patientName}? This action cannot be undone.`)
+    
+    if (confirmed) {
+      setLabTests(labTests.filter(t => t.id !== test.id))
+      
+      toast({
+        title: "Success",
+        description: "Lab test deleted successfully",
+        variant: "default",
+      })
+    }
+  }
+
   const handleStatusUpdate = async (testId: string, newStatus: string) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/lab-tests/${testId}`, {

@@ -9,11 +9,11 @@ export default function PatientRegisterPage() {
   const router = useRouter()
 
   const handleSuccess = (patient: any) => {
-    router.push("/dashboard")
+    router.push("/patients")
   }
 
   const handleCancel = () => {
-    router.push("/dashboard")
+    router.push("/patients")
   }
 
   return (

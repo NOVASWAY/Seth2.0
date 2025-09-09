@@ -318,9 +318,9 @@ export function SHAInvoiceManagerEnhanced() {
   }
 
   const FilterSection = () => (
-    <Card className="mb-6">
+    <Card className="mb-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
           <Filter className="h-5 w-5" />
           Filters & Search
         </CardTitle>
@@ -328,34 +328,36 @@ export function SHAInvoiceManagerEnhanced() {
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
-            <Label htmlFor="patientName">Patient Name</Label>
+            <Label htmlFor="patientName" className="text-sm font-medium text-gray-700 dark:text-gray-200">Patient Name</Label>
             <Input
               id="patientName"
               placeholder="Search by name..."
               value={filters.patientName}
               onChange={(e) => setFilters(prev => ({ ...prev, patientName: e.target.value }))}
+              className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
             />
           </div>
           <div>
-            <Label htmlFor="opNumber">OP Number</Label>
+            <Label htmlFor="opNumber" className="text-sm font-medium text-gray-700 dark:text-gray-200">OP Number</Label>
             <Input
               id="opNumber"
               placeholder="OP Number..."
               value={filters.opNumber}
               onChange={(e) => setFilters(prev => ({ ...prev, opNumber: e.target.value }))}
+              className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
             />
           </div>
           <div>
-            <Label htmlFor="status">Status</Label>
+            <Label htmlFor="status" className="text-sm font-medium text-gray-700 dark:text-gray-200">Status</Label>
             <Select
               value={filters.status}
               onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
             >
-              <SelectTrigger>
+              <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All statuses</SelectItem>
+                <SelectItem value="all">All statuses</SelectItem>
                 <SelectItem value="generated">Ready for Review</SelectItem>
                 <SelectItem value="printed">Printed</SelectItem>
                 <SelectItem value="submitted">Submitted</SelectItem>
@@ -364,26 +366,28 @@ export function SHAInvoiceManagerEnhanced() {
             </Select>
           </div>
           <div>
-            <Label htmlFor="dateFrom">Date From</Label>
+            <Label htmlFor="dateFrom" className="text-sm font-medium text-gray-700 dark:text-gray-200">Date From</Label>
             <Input
               id="dateFrom"
               type="date"
               value={filters.dateFrom}
               onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+              className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
             />
           </div>
           <div>
-            <Label htmlFor="dateTo">Date To</Label>
+            <Label htmlFor="dateTo" className="text-sm font-medium text-gray-700 dark:text-gray-200">Date To</Label>
             <Input
               id="dateTo"
               type="date"
               value={filters.dateTo}
               onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+              className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
             />
           </div>
         </div>
         <div className="flex items-center gap-2 mt-4">
-          <Button onClick={loadInvoices} variant="outline" size="sm">
+          <Button onClick={loadInvoices} variant="outline" size="sm" className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
             <Search className="h-4 w-4 mr-2" />
             Apply Filters
           </Button>
@@ -391,10 +395,11 @@ export function SHAInvoiceManagerEnhanced() {
             onClick={() => setFilters({ dateFrom: '', dateTo: '', status: '', patientName: '', opNumber: '' })}
             variant="ghost"
             size="sm"
+            className="text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             Clear
           </Button>
-          <Button onClick={loadInvoices} variant="ghost" size="sm">
+          <Button onClick={loadInvoices} variant="ghost" size="sm" className="text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
@@ -618,11 +623,11 @@ export function SHAInvoiceManagerEnhanced() {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-white dark:bg-gray-900 min-h-screen p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">SHA Invoice Management</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">SHA Invoice Management</h2>
+          <p className="text-gray-600 dark:text-gray-300">
             Comprehensive invoice management with full SHA compliance
           </p>
         </div>

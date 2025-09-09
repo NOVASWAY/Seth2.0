@@ -13,7 +13,11 @@ import { Label } from "../../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/dialog"
 import { Textarea } from "../../components/ui/textarea"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
 import { useToast } from "../../hooks/use-toast"
+import { SHADocumentManager } from "../../components/sha/SHADocumentManager"
+import { SHAExportSystem } from "../../components/sha/SHAExportSystem"
+import { PatientClinicalData } from "../../components/sha/PatientClinicalData"
 import { 
   Shield, 
   Plus, 
@@ -27,7 +31,8 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  DollarSign
+  DollarSign,
+  Download
 } from "lucide-react"
 import { format } from "date-fns"
 
@@ -66,7 +71,7 @@ interface SHABatch {
 }
 
 export default function SHAPage() {
-  const { accessToken } = useAuthStore()
+  const { accessToken, isAuthenticated, user, logout } = useAuthStore()
   const { toast } = useToast()
   const [claims, setClaims] = useState<SHAClaim[]>([])
   const [batches, setBatches] = useState<SHABatch[]>([])
@@ -74,6 +79,8 @@ export default function SHAPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isBatchDialogOpen, setIsBatchDialogOpen] = useState(false)
   const [selectedClaim, setSelectedClaim] = useState<SHAClaim | null>(null)
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null)
+  const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -123,11 +130,16 @@ export default function SHAPage() {
   ]
 
   useEffect(() => {
-    if (accessToken) {
+    if (isAuthenticated && accessToken) {
+      console.log("User authenticated, fetching SHA data...")
       fetchClaims()
       fetchBatches()
+    } else {
+      console.log("User not authenticated, skipping data fetch")
+      console.log("Authentication state:", { isAuthenticated, hasToken: !!accessToken, user })
+      setIsLoading(false)
     }
-  }, [accessToken])
+  }, [isAuthenticated, accessToken])
 
   const fetchClaims = async () => {
     try {
@@ -158,6 +170,9 @@ export default function SHAPage() {
             description: "Your session has expired. Please log in again.",
             variant: "destructive",
           })
+          // Logout and redirect to login
+          await logout()
+          window.location.href = '/login'
           return
         } else if (response.status === 404) {
           // SHA claims API endpoint not implemented yet
@@ -192,8 +207,16 @@ export default function SHAPage() {
       // Check if user is authenticated
       if (!accessToken) {
         console.error("No access token available for SHA batches")
+        console.log("Authentication state:", { isAuthenticated, user, accessToken: !!accessToken })
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to view SHA batches.",
+          variant: "destructive",
+        })
         return
       }
+
+      console.log("Fetching SHA batches with token:", accessToken.substring(0, 20) + "...")
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/sha-batches`, {
         headers: {
@@ -204,16 +227,36 @@ export default function SHAPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setBatches(data.batches || [])
+        setBatches(data.data?.batches || [])
+      } else if (response.status === 401) {
+        console.error("Authentication error when fetching SHA batches")
+        toast({
+          title: "Authentication Error",
+          description: "Your session has expired. Please log in again.",
+          variant: "destructive",
+        })
+        // Logout and redirect to login
+        await logout()
+        window.location.href = '/login'
       } else if (response.status === 404) {
         // SHA batches API endpoint not implemented yet
         console.log("SHA batches API endpoint not yet implemented in backend")
         setBatches([]) // Set empty array for now
-      } else if (response.status === 401) {
-        console.error("Authentication error when fetching SHA batches")
+      } else {
+        console.error(`HTTP error ${response.status} when fetching SHA batches`)
+        toast({
+          title: "Error",
+          description: `Failed to fetch SHA batches (${response.status}). Please try again.`,
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error("Error fetching SHA batches:", error)
+      toast({
+        title: "Network Error",
+        description: "Failed to connect to the server. Please check your connection.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -361,6 +404,43 @@ export default function SHAPage() {
     }
   }
 
+  const handleGenerateInvoice = async (claimId: string) => {
+    try {
+      setIsSubmitting(true)
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/sha-invoices/generate-comprehensive/${claimId}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        }
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        toast({
+          title: "Success",
+          description: "Comprehensive SHA invoice generated successfully",
+          variant: "default",
+        })
+        
+        // Optionally show invoice details or download
+        console.log("Generated invoice:", result.data)
+      } else {
+        throw new Error("Failed to generate invoice")
+      }
+    } catch (error) {
+      console.error("Error generating invoice:", error)
+      toast({
+        title: "Error",
+        description: "Failed to generate invoice. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const filteredClaims = claims.filter(claim => {
     const matchesSearch = 
       claim.patient?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -427,6 +507,11 @@ export default function SHAPage() {
                 <div>
                   <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">SHA Claims</h1>
                   <p className="text-slate-600 dark:text-slate-400">Manage Social Health Authority claims and batches</p>
+                  {!isAuthenticated && (
+                    <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+                      ⚠️ Please log in to access all features
+                    </p>
+                  )}
                 </div>
                 
                 <div className="flex gap-2">
@@ -781,10 +866,33 @@ export default function SHAPage() {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => {
+                                setSelectedPatientId(claim.patient_id)
+                                setSelectedVisitId(claim.visit_id)
+                              }}
+                              className="border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300"
+                            >
+                              <User className="h-4 w-4 mr-1" />
+                              View Patient Data
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
                               className="border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300"
                             >
                               <Eye className="h-4 w-4 mr-1" />
                               View Details
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleGenerateInvoice(claim.id)}
+                              className="border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300"
+                            >
+                              <DollarSign className="h-4 w-4 mr-1" />
+                              Generate Invoice
                             </Button>
                             
                             <Button
@@ -803,6 +911,115 @@ export default function SHAPage() {
                 )}
               </div>
             )}
+          </div>
+
+          {/* Patient Clinical Data Section */}
+          {selectedPatientId && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
+                      <User className="h-8 w-8 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Patient Clinical Data</h2>
+                      <p className="text-slate-600 dark:text-slate-400">Comprehensive patient information for SHA claims</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedPatientId(null)
+                      setSelectedVisitId(null)
+                    }}
+                    className="border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300"
+                  >
+                    Close
+                  </Button>
+                </div>
+                
+                {!accessToken ? (
+                  <div className="text-center py-8">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">Authentication Required</h3>
+                    <p className="text-slate-600 dark:text-slate-400">Please log in to access patient clinical data.</p>
+                  </div>
+                ) : (
+                  <PatientClinicalData
+                    patientId={selectedPatientId}
+                    visitId={selectedVisitId || undefined}
+                    accessToken={accessToken}
+                    onDataLoaded={(data) => {
+                      console.log('Patient clinical data loaded:', data)
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Document Management Section */}
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="p-3 bg-gradient-to-br from-green-500 to-blue-600 rounded-xl">
+                  <FileText className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Document Management</h2>
+                  <p className="text-slate-600 dark:text-slate-400">Manage documents for SHA claims</p>
+                </div>
+              </div>
+              
+              {!accessToken ? (
+                <div className="text-center py-8">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">Authentication Required</h3>
+                  <p className="text-slate-600 dark:text-slate-400">Please log in to access document management.</p>
+                </div>
+              ) : (
+                <SHADocumentManager 
+                  claimId={claims.length > 0 ? claims[0].id : undefined}
+                  onDocumentUploaded={(doc) => {
+                    toast({
+                      title: "Success",
+                      description: "Document uploaded successfully",
+                      variant: "default"
+                    })
+                  }}
+                  onDocumentDeleted={(docId) => {
+                    toast({
+                      title: "Success", 
+                      description: "Document deleted successfully",
+                      variant: "default"
+                    })
+                  }}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Export System Section */}
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl">
+                  <Download className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Export System</h2>
+                  <p className="text-slate-600 dark:text-slate-400">Export SHA data in various formats</p>
+                </div>
+              </div>
+              
+              {!accessToken ? (
+                <div className="text-center py-8">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">Authentication Required</h3>
+                  <p className="text-slate-600 dark:text-slate-400">Please log in to access export system.</p>
+                </div>
+              ) : (
+                <SHAExportSystem />
+              )}
+            </div>
           </div>
         </div>
       </div>

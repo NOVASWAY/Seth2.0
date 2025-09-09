@@ -38,6 +38,7 @@ interface PatientRegistrationFormProps {
 export function PatientRegistrationForm({ onSuccess, onCancel }: PatientRegistrationFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [registrationType, setRegistrationType] = useState<'NEW_PATIENT' | 'IMPORT_PATIENT'>('NEW_PATIENT')
 
   const {
     register,
@@ -123,9 +124,25 @@ export function PatientRegistrationForm({ onSuccess, onCancel }: PatientRegistra
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <UserPlus className="h-5 w-5" />
-          Patient Registration
+          New Patient Registration
         </CardTitle>
-        <CardDescription>Register a new patient and create today's visit</CardDescription>
+        <CardDescription>
+          Register a completely new patient who has never been in the system before.
+          This will generate a new OP number and create their first visit record.
+        </CardDescription>
+        
+        {/* Registration Type Indicator */}
+        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+              New Patient Registration Mode
+            </span>
+          </div>
+          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+            For bulk importing existing patients, use the Import Patients feature in the main patients page.
+          </p>
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

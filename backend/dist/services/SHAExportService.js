@@ -378,7 +378,11 @@ class SHAExportService {
         doc.text(`Claim Number: ${invoice.claim_number}`);
         doc.text(`Invoice Date: ${invoice.invoice_date}`);
         doc.text(`Status: ${invoice.status}`);
-        doc.text(`Total Amount: KES ${Number.parseFloat(invoice.total_amount).toLocaleString()}`);
+        doc.text(`Total Amount: ${new Intl.NumberFormat('en-KE', {
+            style: 'currency',
+            currency: 'KES',
+            minimumFractionDigits: 2
+        }).format(Number.parseFloat(invoice.total_amount))}`);
         doc.moveDown();
     }
     addPatientInfo(doc, invoice) {
@@ -401,8 +405,16 @@ class SHAExportService {
                 item.service_description,
                 item.service_code,
                 item.quantity.toString(),
-                `KES ${Number.parseFloat(item.unit_price).toLocaleString()}`,
-                `KES ${Number.parseFloat(item.total_amount).toLocaleString()}`
+                new Intl.NumberFormat('en-KE', {
+                    style: 'currency',
+                    currency: 'KES',
+                    minimumFractionDigits: 2
+                }).format(Number.parseFloat(item.unit_price)),
+                new Intl.NumberFormat('en-KE', {
+                    style: 'currency',
+                    currency: 'KES',
+                    minimumFractionDigits: 2
+                }).format(Number.parseFloat(item.total_amount))
             ])
         };
         doc.fontSize(9);
@@ -439,7 +451,11 @@ class SHAExportService {
         doc.text(`Batch Date: ${batch.batch_date}`);
         doc.text(`Status: ${batch.status}`);
         doc.text(`Total Claims: ${batch.total_claims}`);
-        doc.text(`Total Amount: KES ${Number.parseFloat(batch.total_amount).toLocaleString()}`);
+        doc.text(`Total Amount: ${new Intl.NumberFormat('en-KE', {
+            style: 'currency',
+            currency: 'KES',
+            minimumFractionDigits: 2
+        }).format(Number.parseFloat(batch.total_amount))}`);
         doc.moveDown();
     }
     addBatchClaimsList(doc, claims) {
@@ -447,7 +463,11 @@ class SHAExportService {
         doc.moveDown();
         doc.fontSize(9);
         claims.forEach((claim, index) => {
-            doc.text(`${index + 1}. ${claim.claim_number} - ${claim.patient_name} - KES ${Number.parseFloat(claim.claim_amount).toLocaleString()}`);
+            doc.text(`${index + 1}. ${claim.claim_number} - ${claim.patient_name} - ${new Intl.NumberFormat('en-KE', {
+                style: 'currency',
+                currency: 'KES',
+                minimumFractionDigits: 2
+            }).format(Number.parseFloat(claim.claim_amount))}`);
         });
         doc.moveDown();
     }

@@ -271,22 +271,22 @@ router.get("/dashboard", auth_1.authenticateToken, (0, auth_1.requireRole)([type
         const revenueResult = await database_1.pool.query(`
         SELECT COALESCE(SUM(amount), 0) as today_revenue
         FROM payments 
-        WHERE payment_date >= $1 AND payment_date < $2
+        WHERE received_at >= $1 AND received_at < $2
       `, [startOfDay, endOfDay]);
         const receivablesResult = await database_1.pool.query(`
         SELECT 
-          COALESCE(SUM(CASE WHEN aging_bucket = '0-30' THEN amount ELSE 0 END), 0) as current,
-          COALESCE(SUM(CASE WHEN aging_bucket = '31-60' THEN amount ELSE 0 END), 0) as thirty_days,
-          COALESCE(SUM(CASE WHEN aging_bucket = '61-90' THEN amount ELSE 0 END), 0) as sixty_days,
-          COALESCE(SUM(CASE WHEN aging_bucket = '90+' THEN amount ELSE 0 END), 0) as ninety_plus
+          COALESCE(SUM(CASE WHEN aging_bucket = '0-30' THEN remaining_amount ELSE 0 END), 0) as current,
+          COALESCE(SUM(CASE WHEN aging_bucket = '31-60' THEN remaining_amount ELSE 0 END), 0) as thirty_days,
+          COALESCE(SUM(CASE WHEN aging_bucket = '61-90' THEN remaining_amount ELSE 0 END), 0) as sixty_days,
+          COALESCE(SUM(CASE WHEN aging_bucket = '90+' THEN remaining_amount ELSE 0 END), 0) as ninety_plus
         FROM accounts_receivable 
-        WHERE status != 'paid'
+        WHERE status != 'SETTLED'
       `);
         const transactionsResult = await database_1.pool.query(`
         SELECT p.*, i.invoice_number, i.op_number
         FROM payments p
         LEFT JOIN invoices i ON p.invoice_id = i.id
-        ORDER BY p.payment_date DESC
+        ORDER BY p.received_at DESC
         LIMIT 10
       `);
         res.json({

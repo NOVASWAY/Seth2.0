@@ -8,7 +8,76 @@ const express_validator_1 = require("express-validator");
 const Prescription_1 = require("../models/Prescription");
 const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
+const database_1 = __importDefault(require("../config/database"));
 const router = express_1.default.Router();
+router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST]), async (req, res) => {
+    try {
+        const { limit = 50, offset = 0, status, patientId } = req.query;
+        let whereClause = "";
+        let queryParams = [];
+        let paramIndex = 1;
+        if (status) {
+            whereClause += `WHERE status = $${paramIndex}`;
+            queryParams.push(status);
+            paramIndex++;
+        }
+        if (patientId) {
+            const condition = whereClause ? "AND" : "WHERE";
+            whereClause += ` ${condition} patient_id = $${paramIndex}`;
+            queryParams.push(patientId);
+            paramIndex++;
+        }
+        const countQuery = `SELECT COUNT(*) as total FROM prescriptions ${whereClause}`;
+        const countResult = await database_1.default.query(countQuery, queryParams);
+        const total = parseInt(countResult.rows[0].total);
+        const prescriptionsQuery = `
+        SELECT id, consultation_id as "consultationId", visit_id as "visitId", 
+               patient_id as "patientId", prescribed_by as "prescribedBy", 
+               status, created_at as "createdAt", updated_at as "updatedAt"
+        FROM prescriptions 
+        ${whereClause}
+        ORDER BY created_at DESC
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `;
+        queryParams.push(parseInt(limit), parseInt(offset));
+        const prescriptionsResult = await database_1.default.query(prescriptionsQuery, queryParams);
+        const prescriptions = prescriptionsResult.rows;
+        const prescriptionsWithItems = [];
+        for (const prescription of prescriptions) {
+            const itemsQuery = `
+          SELECT id, prescription_id as "prescriptionId", inventory_item_id as "inventoryItemId",
+                 item_name as "itemName", dosage, frequency, duration,
+                 quantity_prescribed as "quantityPrescribed", quantity_dispensed as "quantityDispensed",
+                 instructions
+          FROM prescription_items 
+          WHERE prescription_id = $1
+        `;
+            const itemsResult = await database_1.default.query(itemsQuery, [prescription.id]);
+            const items = itemsResult.rows;
+            prescriptionsWithItems.push({
+                ...prescription,
+                items,
+            });
+        }
+        res.json({
+            success: true,
+            data: prescriptionsWithItems,
+            pagination: {
+                total,
+                limit: parseInt(limit),
+                offset: parseInt(offset),
+                has_more: prescriptions.length === parseInt(limit),
+            },
+        });
+    }
+    catch (error) {
+        console.error("Error fetching prescriptions:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch prescriptions",
+        });
+    }
+});
 router.get("/patient/:patientId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST]), async (req, res) => {
     try {
         const { patientId } = req.params;

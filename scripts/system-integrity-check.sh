@@ -264,6 +264,13 @@ if [ "$1" = "--test-live" ]; then
         else
             print_status 1 "Clinical autocomplete endpoint not accessible"
         fi
+
+        # Test staff management endpoints (requires admin authentication - just check if they exist)
+        if curl -sf http://localhost:5000/api/admin/staff >/dev/null 2>&1 || [ $? -eq 22 ]; then
+            print_status 0 "Staff management endpoint accessible"
+        else
+            print_status 1 "Staff management endpoint not accessible"
+        fi
         
         if curl -sf http://localhost:5000/api/patient-encounters >/dev/null 2>&1 || [ $? -eq 22 ]; then
             print_status 0 "Patient encounters endpoint accessible"

@@ -4,11 +4,15 @@ export interface CreateVisitData {
     opNumber: string;
     chiefComplaint?: string;
     triageCategory?: "EMERGENCY" | "URGENT" | "NORMAL";
+    paymentType?: "SHA" | "PRIVATE" | "CASH" | "NHIF" | "OTHER";
+    paymentReference?: string;
 }
 export interface UpdateVisitData {
     status?: VisitStatus;
     chiefComplaint?: string;
     triageCategory?: "EMERGENCY" | "URGENT" | "NORMAL";
+    paymentType?: "SHA" | "PRIVATE" | "CASH" | "NHIF" | "OTHER";
+    paymentReference?: string;
 }
 export declare class VisitModel {
     static findById(id: string): Promise<Visit | null>;

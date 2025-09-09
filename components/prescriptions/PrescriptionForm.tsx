@@ -15,6 +15,7 @@ import { Badge } from "../ui/badge"
 import { Loader2, Plus, Trash2, Save, Clock, AlertTriangle, CheckCircle } from "lucide-react"
 import { useToast } from "../../hooks/use-toast"
 import { useAuthStore } from "../../lib/auth"
+import { MedicationAutocomplete } from "../clinical/ClinicalAutocomplete"
 import type { Patient, InventoryItem } from "../../types"
 
 const prescriptionItemSchema = z.object({

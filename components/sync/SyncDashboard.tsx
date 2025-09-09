@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useSync } from "@/hooks/useSync"
-import { useAuthStore } from "@/stores/authStore"
+import { useAuthStore } from "@/lib/auth"
 import { 
   Users, 
   Bell, 
@@ -101,100 +101,110 @@ export default function SyncDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Connection Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 dark:text-white">
-            {isConnected ? (
-              <Wifi className="h-5 w-5 text-green-600" />
-            ) : (
-              <WifiOff className="h-5 w-5 text-red-600" />
-            )}
+      <Card className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-xl font-bold text-slate-800 dark:text-slate-100">
+            <div className={`p-2 rounded-full ${isConnected ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+              {isConnected ? (
+                <Wifi className="h-6 w-6 text-green-600 dark:text-green-400" />
+              ) : (
+                <WifiOff className="h-6 w-6 text-red-600 dark:text-red-400" />
+              )}
+            </div>
             System Synchronization Status
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="text-center p-4 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+              <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
                 {connectedUsersCount}
               </div>
-              <div className="text-sm text-muted-foreground">Connected Users</div>
+              <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">Connected Users</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <div className="text-center p-4 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
                 {stats.activeUsers}
               </div>
-              <div className="text-sm text-muted-foreground">Active Users</div>
+              <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">Active Users</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            <div className="text-center p-4 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
                 {syncEvents.length}
               </div>
-              <div className="text-sm text-muted-foreground">Recent Sync Events</div>
+              <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">Recent Sync Events</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+            <div className="text-center p-4 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+              <div className="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-2">
                 {unreadNotificationsCount}
               </div>
-              <div className="text-sm text-muted-foreground">Unread Notifications</div>
+              <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">Unread Notifications</div>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Connected Users */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between dark:text-white">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
+      <Card className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center justify-between text-xl font-bold text-slate-800 dark:text-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
               Connected Users ({connectedUsers.length})
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowDetails(!showDetails)}
-              className="dark:border-gray-600 dark:text-white dark:hover:bg-gray-700"
+              className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold px-4 py-2"
             >
-              {showDetails ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showDetails ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
               {showDetails ? 'Hide Details' : 'Show Details'}
             </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {connectedUsers.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">
-              No users currently connected
+            <div className="text-center py-8">
+              <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-700 w-fit mx-auto mb-4">
+                <Users className="h-8 w-8 text-slate-400 dark:text-slate-500" />
+              </div>
+              <p className="text-lg font-semibold text-slate-600 dark:text-slate-400">No users currently connected</p>
+              <p className="text-sm text-slate-500 dark:text-slate-500 mt-2">Users will appear here when they connect to the system</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {connectedUsers.slice(0, showDetails ? connectedUsers.length : 5).map((user) => (
                 <div
                   key={user.userId}
-                  className="flex items-center justify-between p-3 border rounded-lg dark:border-gray-600 dark:bg-gray-800/50"
+                  className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50/50 dark:bg-slate-700/50 hover:bg-slate-100/50 dark:hover:bg-slate-700/70 transition-colors duration-200"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-4">
                     <div className="relative">
-                      <User className="h-8 w-8 text-muted-foreground" />
-                      <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+                      <div className="p-2 rounded-full bg-slate-200 dark:bg-slate-600">
+                        <User className="h-6 w-6 text-slate-600 dark:text-slate-400" />
+                      </div>
+                      <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-slate-800 ${
                         user.status === 'online' ? 'bg-green-500' :
                         user.status === 'away' ? 'bg-yellow-500' :
                         user.status === 'busy' ? 'bg-red-500' : 'bg-gray-500'
                       }`} />
                     </div>
                     <div>
-                      <div className="font-medium dark:text-white">{user.username}</div>
-                      <div className="text-sm text-muted-foreground">{user.role}</div>
+                      <div className="font-semibold text-slate-800 dark:text-slate-100 text-lg">{user.username}</div>
+                      <div className="text-sm font-medium text-slate-600 dark:text-slate-400">{user.role}</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={getStatusColor(user.status)}>
+                  <div className="flex items-center gap-3">
+                    <Badge className={`${getStatusColor(user.status)} font-semibold px-3 py-1`}>
                       {user.status}
                     </Badge>
                     {user.current_activity && (
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-600 px-3 py-1 rounded-full">
                         {user.current_activity}
                       </div>
                     )}
@@ -202,8 +212,13 @@ export default function SyncDashboard() {
                 </div>
               ))}
               {!showDetails && connectedUsers.length > 5 && (
-                <div className="text-center text-sm text-muted-foreground">
-                  +{connectedUsers.length - 5} more users
+                <div className="text-center py-4">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-full">
+                    <Users className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                    <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+                      +{connectedUsers.length - 5} more users
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
@@ -212,35 +227,43 @@ export default function SyncDashboard() {
       </Card>
 
       {/* Recent Sync Events */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 dark:text-white">
-            <Activity className="h-5 w-5" />
+      <Card className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-xl font-bold text-slate-800 dark:text-slate-100">
+            <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900/30">
+              <Activity className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            </div>
             Recent Sync Events
           </CardTitle>
         </CardHeader>
         <CardContent>
           {syncEvents.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">
-              No recent sync events
+            <div className="text-center py-8">
+              <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-700 w-fit mx-auto mb-4">
+                <Activity className="h-8 w-8 text-slate-400 dark:text-slate-500" />
+              </div>
+              <p className="text-lg font-semibold text-slate-600 dark:text-slate-400">No recent sync events</p>
+              <p className="text-sm text-slate-500 dark:text-slate-500 mt-2">System events will appear here as they occur</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {syncEvents.slice(0, 10).map((event, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-3 p-3 border rounded-lg dark:border-gray-600 dark:bg-gray-800/50"
+                  className="flex items-center gap-4 p-4 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50/50 dark:bg-slate-700/50 hover:bg-slate-100/50 dark:hover:bg-slate-700/70 transition-colors duration-200"
                 >
-                  {getActionIcon(event.action)}
+                  <div className="p-2 rounded-full bg-slate-200 dark:bg-slate-600">
+                    {getActionIcon(event.action)}
+                  </div>
                   <div className="flex-1">
-                    <div className="font-medium dark:text-white">
+                    <div className="font-semibold text-slate-800 dark:text-slate-100 text-lg">
                       {event.username} {event.action} {event.entityType}
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
                       {new Date(event.timestamp).toLocaleString()}
                     </div>
                   </div>
-                  <Badge variant="outline" className="dark:border-gray-600 dark:text-white">
+                  <Badge variant="outline" className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-semibold px-3 py-1">
                     {event.entityType}
                   </Badge>
                 </div>
@@ -251,34 +274,42 @@ export default function SyncDashboard() {
       </Card>
 
       {/* Recent Notifications */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 dark:text-white">
-            <Bell className="h-5 w-5" />
+      <Card className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-xl font-bold text-slate-800 dark:text-slate-100">
+            <div className="p-2 rounded-full bg-orange-100 dark:bg-orange-900/30">
+              <Bell className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+            </div>
             Recent Notifications
           </CardTitle>
         </CardHeader>
         <CardContent>
           {notifications.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">
-              No recent notifications
+            <div className="text-center py-8">
+              <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-700 w-fit mx-auto mb-4">
+                <Bell className="h-8 w-8 text-slate-400 dark:text-slate-500" />
+              </div>
+              <p className="text-lg font-semibold text-slate-600 dark:text-slate-400">No recent notifications</p>
+              <p className="text-sm text-slate-500 dark:text-slate-500 mt-2">System notifications will appear here</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {notifications.slice(0, 10).map((notification) => (
                 <div
                   key={notification.id}
-                  className="flex items-start gap-3 p-3 border rounded-lg dark:border-gray-600 dark:bg-gray-800/50"
+                  className="flex items-start gap-4 p-4 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50/50 dark:bg-slate-700/50 hover:bg-slate-100/50 dark:hover:bg-slate-700/70 transition-colors duration-200"
                 >
-                  <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 mt-1">
+                    <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
                   <div className="flex-1">
-                    <div className="font-medium dark:text-white">{notification.title}</div>
-                    <div className="text-sm text-muted-foreground">{notification.message}</div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge className={getPriorityColor(notification.priority)}>
+                    <div className="font-semibold text-slate-800 dark:text-slate-100 text-lg mb-1">{notification.title}</div>
+                    <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">{notification.message}</div>
+                    <div className="flex items-center gap-3">
+                      <Badge className={`${getPriorityColor(notification.priority)} font-semibold px-3 py-1`}>
                         {notification.priority}
                       </Badge>
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                      <div className="text-xs font-medium text-slate-500 dark:text-slate-500 flex items-center gap-1 bg-slate-100 dark:bg-slate-600 px-2 py-1 rounded-full">
                         <Clock className="h-3 w-3" />
                         {new Date(notification.timestamp).toLocaleString()}
                       </div>

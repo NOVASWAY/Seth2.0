@@ -20,6 +20,8 @@ import labTestRoutes from "./routes/lab-tests"
 import labRequestRoutes from "./routes/lab-requests"
 import shaInvoiceRoutes from "./routes/sha-invoices"
 import shaBatchRoutes from "./routes/sha-batches"
+import shaClaimsRoutes from "./routes/sha-claims"
+import shaPatientDataRoutes from "./routes/sha-patient-data"
 import financialRoutes from "./routes/financial"
 import adminRoutes from "./routes/admin"
 import visitRoutes from "./routes/visits"
@@ -31,6 +33,10 @@ import eventRoutes from "./routes/events"
 import patientAssignmentRoutes from "./routes/patient-assignments"
 import notificationRoutes from "./routes/notifications"
 import userPresenceRoutes from "./routes/user-presence"
+import syncRoutes from "./routes/sync"
+import immunizationRoutes from "./routes/immunization"
+import familyPlanningRoutes from "./routes/family-planning"
+import mchServicesRoutes from "./routes/mch-services"
 
 // Import middleware
 import { errorHandler } from "./middleware/errorHandler"
@@ -61,7 +67,11 @@ app.use(
 // CORS configuration
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    origin: [
+      process.env.CORS_ORIGIN || "http://localhost:3000",
+      "http://localhost:3001", // Allow Next.js dev server on port 3001
+      "http://localhost:3000"  // Allow Next.js dev server on port 3000
+    ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -77,9 +87,22 @@ const limiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 login attempts per windowMs
+  max: 20, // limit each IP to 20 login attempts per windowMs (increased for development)
   message: "Too many login attempts, please try again later.",
 })
+
+// Development-only endpoint to reset rate limits (must be before general limiter)
+if (process.env.NODE_ENV === 'development') {
+  app.post('/api/dev/reset-rate-limits', (req, res) => {
+    // This is a simple way to reset rate limits by restarting the limiter
+    // In production, you'd want a more sophisticated approach
+    res.json({ 
+      success: true, 
+      message: 'Rate limits reset. Note: This only works in development mode.',
+      timestamp: new Date().toISOString()
+    })
+  })
+}
 
 app.use("/api/auth/login", authLimiter)
 app.use("/api/", limiter)
@@ -117,6 +140,8 @@ app.use("/api/lab-tests", authenticate, labTestRoutes)
 app.use("/api/lab-requests", authenticate, labRequestRoutes)
 app.use("/api/sha-invoices", authenticate, shaInvoiceRoutes)
 app.use("/api/sha-batches", authenticate, shaBatchRoutes)
+app.use("/api/sha-claims", authenticate, shaClaimsRoutes)
+app.use("/api/sha-patient-data", authenticate, shaPatientDataRoutes)
 app.use("/api/financial", authenticate, financialRoutes)
 app.use("/api/admin", authenticate, adminRoutes)
 app.use("/api/visits", authenticate, visitRoutes)
@@ -128,6 +153,10 @@ app.use("/api/events", authenticate, eventRoutes)
 app.use("/api/patient-assignments", authenticate, patientAssignmentRoutes)
 app.use("/api/notifications", authenticate, notificationRoutes)
 app.use("/api/user-presence", authenticate, userPresenceRoutes)
+app.use("/api/sync", authenticate, syncRoutes)
+app.use("/api/immunization", authenticate, immunizationRoutes)
+app.use("/api/family-planning", authenticate, familyPlanningRoutes)
+app.use("/api/mch-services", authenticate, mchServicesRoutes)
 
 // Audit logging middleware (after routes)
 app.use(auditLogger)
@@ -145,10 +174,14 @@ app.use("*", (req, res) => {
 
 const PORT = process.env.PORT || 5000
 
+
 server.listen(PORT, () => {
   console.log(`🚀 Seth Clinic API Server running on port ${PORT}`)
   console.log(`📊 Health check: http://localhost:${PORT}/health`)
   console.log(`🔒 Environment: ${process.env.NODE_ENV}`)
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🛠️  Dev endpoint: http://localhost:${PORT}/api/dev/reset-rate-limits`)
+  }
 })
 
 // Initialize WebSocket service

@@ -13,6 +13,7 @@ import { Badge } from "../ui/badge"
 import { useToast } from "../../hooks/use-toast"
 import { useAuthStore } from "../../lib/auth"
 import { Loader2, Plus, Trash2, Search, Clock, AlertTriangle, Save } from "lucide-react"
+import { LabTestAutocomplete } from "../clinical/ClinicalAutocomplete"
 import type { Patient, AvailableTest, DiagnosticsFormData } from "../../types"
 
 // Validation schemas
@@ -167,14 +168,13 @@ export function DiagnosticsForm({ consultationId, visitId, patientId, onSuccess,
     loadAvailableTests()
   }, [loadAvailableTests])
 
-  // Handle test selection
-  const handleTestSelect = (index: number, testId: string) => {
-    const selectedTest = availableTests.find(test => test.id === testId)
+  // Handle test selection from autocomplete
+  const handleTestSelect = (index: number, selectedTest: any) => {
     if (selectedTest) {
       setValue(`items.${index}.testId`, selectedTest.id)
-      setValue(`items.${index}.testName`, selectedTest.testName)
-      setValue(`items.${index}.testCode`, selectedTest.testCode)
-      setValue(`items.${index}.specimenType`, selectedTest.specimenType)
+      setValue(`items.${index}.testName`, selectedTest.name)
+      setValue(`items.${index}.testCode`, selectedTest.code)
+      setValue(`items.${index}.specimenType`, selectedTest.specimenType || "Blood")
     }
   }
 
@@ -259,9 +259,9 @@ export function DiagnosticsForm({ consultationId, visitId, patientId, onSuccess,
   const categories = Array.from(new Set(availableTests.map(test => test.testCategory)))
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-white dark:bg-gray-900 min-h-screen p-6">
       {/* Auto-save status */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
         <Save className="h-4 w-4" />
         <span>
           {autoSaveStatus === "saving" && "Saving..."}
@@ -272,21 +272,21 @@ export function DiagnosticsForm({ consultationId, visitId, patientId, onSuccess,
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Clinical Notes */}
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Clinical Information</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-gray-900 dark:text-white">Clinical Information</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-300">
               Provide clinical context for the laboratory tests
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="clinicalNotes">Clinical Notes</Label>
+              <Label htmlFor="clinicalNotes" className="text-sm font-medium text-gray-700 dark:text-gray-200">Clinical Notes</Label>
               <Textarea
                 id="clinicalNotes"
                 placeholder="Enter clinical notes, differential diagnosis, or specific instructions..."
                 {...register("clinicalNotes")}
-                className="mt-1"
+                className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
               />
               {errors.clinicalNotes && (
                 <p className="text-sm text-red-500 mt-1">{errors.clinicalNotes.message}</p>
@@ -294,12 +294,12 @@ export function DiagnosticsForm({ consultationId, visitId, patientId, onSuccess,
             </div>
 
             <div>
-              <Label htmlFor="urgency">Urgency Level</Label>
+              <Label htmlFor="urgency" className="text-sm font-medium text-gray-700 dark:text-gray-200">Urgency Level</Label>
               <Select
                 value={watch("urgency")}
                 onValueChange={(value) => setValue("urgency", value as any)}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                   <SelectValue placeholder="Select urgency level" />
                 </SelectTrigger>
                 <SelectContent>
@@ -331,10 +331,10 @@ export function DiagnosticsForm({ consultationId, visitId, patientId, onSuccess,
         </Card>
 
         {/* Test Selection */}
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Laboratory Tests</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-gray-900 dark:text-white">Laboratory Tests</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-300">
               Select the tests to be performed
             </CardDescription>
           </CardHeader>
@@ -345,11 +345,11 @@ export function DiagnosticsForm({ consultationId, visitId, patientId, onSuccess,
                 <Input
                   placeholder="Search tests..."
                   onChange={(e) => handleTestSearch(e.target.value)}
-                  className="w-full"
+                  className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                 />
               </div>
               <Select onValueChange={handleCategoryFilter}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-48 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
@@ -370,35 +370,21 @@ export function DiagnosticsForm({ consultationId, visitId, patientId, onSuccess,
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label>Test</Label>
-                      <Select
-                        value={watch(`items.${index}.testId`)}
-                        onValueChange={(value) => handleTestSelect(index, value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select a test" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {testsLoading ? (
-                            <SelectItem value="" disabled>
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Loading tests...
-                              </div>
-                            </SelectItem>
-                          ) : (
-                            availableTests.map((test) => (
-                              <SelectItem key={test.id} value={test.id}>
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{test.testName}</span>
-                                  <span className="text-sm text-muted-foreground">
-                                    {test.testCode} • {test.specimenType} • {test.turnaroundTime}h
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                      <LabTestAutocomplete
+                        value={availableTests.find(test => test.id === watch(`items.${index}.testId`)) ? {
+                          id: watch(`items.${index}.testId`),
+                          code: watch(`items.${index}.testCode`),
+                          name: watch(`items.${index}.testName`),
+                          description: "",
+                          isActive: true
+                        } : null}
+                        onSelect={(test) => handleTestSelect(index, test)}
+                        placeholder="Search and select a lab test..."
+                        className="mt-1"
+                        showCode={true}
+                        showCategory={true}
+                        showFavorites={true}
+                      />
                       {errors.items?.[index]?.testId && (
                         <p className="text-sm text-red-500 mt-1">
                           {errors.items[index]?.testId?.message}

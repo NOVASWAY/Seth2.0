@@ -1,514 +1,270 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
-const database_1 = require("../config/database");
-const auth_1 = require("../middleware/auth");
+const express_1 = __importDefault(require("express"));
 const express_validator_1 = require("express-validator");
-const multer_1 = __importDefault(require("multer"));
-const path_1 = __importDefault(require("path"));
+const User_1 = require("../models/User");
+const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
 const bcrypt_1 = __importDefault(require("bcrypt"));
-const XLSX = __importStar(require("xlsx"));
-const crypto_1 = __importDefault(require("crypto"));
-const router = (0, express_1.Router)();
-const upload = (0, multer_1.default)({
-    dest: "uploads/",
-    fileFilter: (req, file, cb) => {
-        const allowedTypes = [".xlsx", ".xls", ".csv"];
-        const ext = path_1.default.extname(file.originalname).toLowerCase();
-        if (allowedTypes.includes(ext)) {
-            cb(null, true);
-        }
-        else {
-            cb(new Error("Only Excel and CSV files are allowed"));
-        }
-    },
-    limits: {
-        fileSize: 10 * 1024 * 1024,
-    },
-});
-router.get("/dashboard", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req, res) => {
+const AuditLog_1 = require("../models/AuditLog");
+const router = express_1.default.Router();
+router.get("/staff", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
-        const today = new Date();
-        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
-        const stats = await Promise.all([
-            database_1.pool.query("SELECT COUNT(*) as count FROM patients"),
-            database_1.pool.query("SELECT COUNT(*) as count FROM visits WHERE created_at >= $1 AND created_at < $2", [
-                startOfDay,
-                endOfDay,
-            ]),
-            database_1.pool.query("SELECT COUNT(*) as count FROM users WHERE is_active = true"),
-            database_1.pool.query("SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE payment_date >= $1 AND payment_date < $2", [startOfDay, endOfDay]),
-            database_1.pool.query(`
-        SELECT COUNT(*) as count 
-        FROM inventory_items ii
-        JOIN (
-          SELECT item_id, SUM(quantity) as total_qty
-          FROM inventory_batches 
-          WHERE expiry_date > NOW()
-          GROUP BY item_id
-        ) ib ON ii.id = ib.item_id
-        WHERE ib.total_qty <= ii.reorder_level
-      `),
-            database_1.pool.query("SELECT COUNT(*) as count FROM claims WHERE status = 'ready_to_submit'"),
-            database_1.pool.query(`
-        SELECT al.*, u.username 
-        FROM audit_logs al
-        LEFT JOIN users u ON al.user_id = u.id
-        ORDER BY al.created_at DESC
-        LIMIT 10
-      `),
-        ]);
-        const [totalPatients, todayVisits, activeUsers, todayRevenue, lowStockItems, pendingClaims, recentAuditLogs] = stats;
-        res.json({
-            success: true,
-            data: {
-                total_patients: Number.parseInt(totalPatients.rows[0].count),
-                today_visits: Number.parseInt(todayVisits.rows[0].count),
-                active_users: Number.parseInt(activeUsers.rows[0].count),
-                today_revenue: Number.parseFloat(todayRevenue.rows[0].total),
-                low_stock_items: Number.parseInt(lowStockItems.rows[0].count),
-                pending_claims: Number.parseInt(pendingClaims.rows[0].count),
-                recent_audit_logs: recentAuditLogs.rows,
-            },
-        });
-    }
-    catch (error) {
-        console.error("Error fetching admin dashboard:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch dashboard data",
-        });
-    }
-});
-router.get("/users", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req, res) => {
-    try {
-        const result = await database_1.pool.query(`
-      SELECT id, username, email, first_name, last_name, role, is_active, 
-             is_locked, failed_login_attempts, last_login, created_at
-      FROM users
-      ORDER BY created_at DESC
-    `);
-        res.json({
-            success: true,
-            data: result.rows,
-        });
-    }
-    catch (error) {
-        console.error("Error fetching users:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch users",
-        });
-    }
-});
-router.post("/users", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), [
-    (0, express_validator_1.body)("username").isLength({ min: 3 }).withMessage("Username must be at least 3 characters"),
-    (0, express_validator_1.body)("email").isEmail().withMessage("Valid email is required"),
-    (0, express_validator_1.body)("first_name").notEmpty().withMessage("First name is required"),
-    (0, express_validator_1.body)("last_name").notEmpty().withMessage("Last name is required"),
-    (0, express_validator_1.body)("role")
-        .isIn(["admin", "receptionist", "nurse", "clinical_officer", "pharmacist", "inventory_manager", "claims_manager"])
-        .withMessage("Invalid role"),
-], async (req, res) => {
-    try {
-        const errors = (0, express_validator_1.validationResult)(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-        const { username, email, first_name, last_name, role } = req.body;
-        const existingUser = await database_1.pool.query("SELECT id FROM users WHERE username = $1 OR email = $2", [username, email]);
-        if (existingUser.rows.length > 0) {
-            return res.status(400).json({
-                success: false,
-                message: "Username or email already exists",
-            });
-        }
-        const tempPassword = Math.random().toString(36).slice(-8);
-        const hashedPassword = await bcrypt_1.default.hash(tempPassword, 10);
-        const result = await database_1.pool.query(`
-        INSERT INTO users (
-          id, username, email, password_hash, first_name, last_name, role,
-          is_active, is_locked, failed_login_attempts, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-        RETURNING id, username, email, first_name, last_name, role, is_active
-      `, [
-            crypto_1.default.randomUUID(),
-            username,
-            email,
-            hashedPassword,
-            first_name,
-            last_name,
-            role,
-            true,
-            false,
-            0,
-            new Date(),
-            new Date(),
-        ]);
-        await database_1.pool.query(`
-        INSERT INTO audit_logs (
-          id, user_id, action, target_type, target_id, details, ip_address, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      `, [
-            crypto_1.default.randomUUID(),
-            req.user.id,
-            "create_user",
-            "user",
-            result.rows[0].id,
-            JSON.stringify({ username, role }),
-            req.ip,
-            new Date(),
-        ]);
-        res.status(201).json({
-            success: true,
-            data: {
-                user: result.rows[0],
-                temp_password: tempPassword,
-            },
-        });
-    }
-    catch (error) {
-        console.error("Error creating user:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to create user",
-        });
-    }
-});
-router.put("/users/:id", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), [
-    (0, express_validator_1.body)("first_name").optional().notEmpty().withMessage("First name cannot be empty"),
-    (0, express_validator_1.body)("last_name").optional().notEmpty().withMessage("Last name cannot be empty"),
-    (0, express_validator_1.body)("role")
-        .optional()
-        .isIn(["admin", "receptionist", "nurse", "clinical_officer", "pharmacist", "inventory_manager", "claims_manager"])
-        .withMessage("Invalid role"),
-    (0, express_validator_1.body)("is_active").optional().isBoolean().withMessage("is_active must be boolean"),
-], async (req, res) => {
-    try {
-        const errors = (0, express_validator_1.validationResult)(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-        const { id } = req.params;
-        const { first_name, last_name, role, is_active } = req.body;
-        const updates = [];
-        const values = [];
-        let paramCount = 0;
-        if (first_name !== undefined) {
-            paramCount++;
-            updates.push(`first_name = $${paramCount}`);
-            values.push(first_name);
-        }
-        if (last_name !== undefined) {
-            paramCount++;
-            updates.push(`last_name = $${paramCount}`);
-            values.push(last_name);
-        }
-        if (role !== undefined) {
-            paramCount++;
-            updates.push(`role = $${paramCount}`);
-            values.push(role);
-        }
-        if (is_active !== undefined) {
-            paramCount++;
-            updates.push(`is_active = $${paramCount}`);
-            values.push(is_active);
-        }
-        if (updates.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: "No fields to update",
-            });
-        }
-        paramCount++;
-        updates.push(`updated_at = $${paramCount}`);
-        values.push(new Date());
-        paramCount++;
-        values.push(id);
-        const result = await database_1.pool.query(`
-        UPDATE users 
-        SET ${updates.join(", ")}
-        WHERE id = $${paramCount}
-        RETURNING id, username, email, first_name, last_name, role, is_active
-      `, values);
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found",
-            });
-        }
-        await database_1.pool.query(`
-        INSERT INTO audit_logs (
-          id, user_id, action, target_type, target_id, details, ip_address, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      `, [crypto_1.default.randomUUID(), req.user.id, "update_user", "user", id, JSON.stringify(req.body), req.ip, new Date()]);
-        res.json({
-            success: true,
-            data: result.rows[0],
-        });
-    }
-    catch (error) {
-        console.error("Error updating user:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to update user",
-        });
-    }
-});
-router.post("/users/:id/reset-password", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req, res) => {
-    try {
-        const { id } = req.params;
-        const tempPassword = Math.random().toString(36).slice(-8);
-        const hashedPassword = await bcrypt_1.default.hash(tempPassword, 10);
-        const result = await database_1.pool.query(`
-      UPDATE users 
-      SET password_hash = $1, failed_login_attempts = 0, is_locked = false, updated_at = $2
-      WHERE id = $3
-      RETURNING username
-    `, [hashedPassword, new Date(), id]);
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found",
-            });
-        }
-        await database_1.pool.query(`
-      INSERT INTO audit_logs (
-        id, user_id, action, target_type, target_id, details, ip_address, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    `, [
-            crypto_1.default.randomUUID(),
-            req.user.id,
-            "reset_password",
-            "user",
-            id,
-            JSON.stringify({ username: result.rows[0].username }),
-            req.ip,
-            new Date(),
-        ]);
-        res.json({
-            success: true,
-            data: {
-                temp_password: tempPassword,
-            },
-        });
-    }
-    catch (error) {
-        console.error("Error resetting password:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to reset password",
-        });
-    }
-});
-router.post("/patients/upload", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), upload.single("file"), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                message: "No file uploaded",
-            });
-        }
-        const workbook = XLSX.readFile(req.file.path);
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const data = XLSX.utils.sheet_to_json(worksheet);
-        const importResults = {
-            total: data.length,
-            imported: 0,
-            skipped: 0,
-            errors: [],
+        const result = await User_1.UserModel.findAll();
+        const staff = result.users;
+        const stats = {
+            total: staff.length,
+            active: staff.filter(u => u.isActive && !u.isLocked).length,
+            locked: staff.filter(u => u.isLocked).length,
+            inactive: staff.filter(u => !u.isActive).length,
+            recentLogins: staff.filter(u => {
+                if (!u.lastLoginAt)
+                    return false;
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                return new Date(u.lastLoginAt) > oneWeekAgo;
+            }).length
         };
-        const client = await database_1.pool.connect();
-        try {
-            await client.query("BEGIN");
-            for (let i = 0; i < data.length; i++) {
-                const row = data[i];
-                try {
-                    if (!row.op_number || !row.first_name || !row.last_name) {
-                        importResults.errors.push({
-                            row: i + 1,
-                            error: "Missing required fields (op_number, first_name, last_name)",
-                            data: row,
-                        });
-                        importResults.skipped++;
-                        continue;
-                    }
-                    const existingPatient = await client.query("SELECT id FROM patients WHERE op_number = $1", [row.op_number]);
-                    if (existingPatient.rows.length > 0) {
-                        await client.query(`
-                UPDATE patients 
-                SET first_name = $1, last_name = $2, date_of_birth = $3, 
-                    gender = $4, phone_number = $5, address = $6, 
-                    insurance_provider = $7, insurance_number = $8, updated_at = $9
-                WHERE op_number = $10
-              `, [
-                            row.first_name,
-                            row.last_name,
-                            row.date_of_birth ? new Date(row.date_of_birth) : null,
-                            row.gender,
-                            row.phone_number,
-                            row.address,
-                            row.insurance_provider,
-                            row.insurance_number,
-                            new Date(),
-                            row.op_number,
-                        ]);
-                    }
-                    else {
-                        await client.query(`
-                INSERT INTO patients (
-                  id, op_number, first_name, last_name, date_of_birth, gender,
-                  phone_number, address, insurance_provider, insurance_number,
-                  created_at, updated_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-              `, [
-                            crypto_1.default.randomUUID(),
-                            row.op_number,
-                            row.first_name,
-                            row.last_name,
-                            row.date_of_birth ? new Date(row.date_of_birth) : null,
-                            row.gender,
-                            row.phone_number,
-                            row.address,
-                            row.insurance_provider,
-                            row.insurance_number,
-                            new Date(),
-                            new Date(),
-                        ]);
-                    }
-                    importResults.imported++;
-                }
-                catch (error) {
-                    importResults.errors.push({
-                        row: i + 1,
-                        error: error instanceof Error ? error.message : "Unknown error",
-                        data: row,
-                    });
-                    importResults.skipped++;
+        const safeStaff = staff.map(user => ({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            firstName: user.username,
+            lastName: '',
+            role: user.role,
+            isActive: user.isActive,
+            isLocked: user.isLocked,
+            failedLoginAttempts: user.failedLoginAttempts,
+            lastLoginAt: user.lastLoginAt,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            lastFailedLoginAt: null
+        }));
+        res.json({
+            success: true,
+            data: {
+                staff: safeStaff,
+                stats
+            }
+        });
+    }
+    catch (error) {
+        console.error('Error fetching staff:', error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch staff data"
+        });
+    }
+});
+router.post("/staff/:userId/unlock", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const adminId = req.user?.id;
+        const user = await User_1.UserModel.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+        await User_1.UserModel.update(userId, {
+            isLocked: false,
+            failedLoginAttempts: 0,
+            lastFailedLoginAt: null
+        });
+        await AuditLog_1.AuditLogModel.create({
+            userId: adminId,
+            action: 'UNLOCK_USER',
+            resource: 'USER',
+            resourceId: userId,
+            details: `Unlocked user account: ${user.username}`,
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent')
+        });
+        res.json({
+            success: true,
+            message: "User account unlocked successfully"
+        });
+    }
+    catch (error) {
+        console.error('Error unlocking user:', error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to unlock user account"
+        });
+    }
+});
+router.post("/staff/:userId/toggle-status", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
+    (0, express_validator_1.body)("isActive").isBoolean().withMessage("isActive must be a boolean")
+], async (req, res) => {
+    try {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                message: "Validation failed",
+                errors: errors.array()
+            });
+        }
+        const { userId } = req.params;
+        const { isActive } = req.body;
+        const adminId = req.user?.id;
+        const user = await User_1.UserModel.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+        if (userId === adminId && !isActive) {
+            return res.status(400).json({
+                success: false,
+                message: "You cannot deactivate your own account"
+            });
+        }
+        await User_1.UserModel.update(userId, { isActive });
+        await AuditLog_1.AuditLogModel.create({
+            userId: adminId,
+            action: isActive ? 'ACTIVATE_USER' : 'DEACTIVATE_USER',
+            resource: 'USER',
+            resourceId: userId,
+            details: `${isActive ? 'Activated' : 'Deactivated'} user account: ${user.username}`,
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent')
+        });
+        res.json({
+            success: true,
+            message: `User account ${isActive ? 'activated' : 'deactivated'} successfully`
+        });
+    }
+    catch (error) {
+        console.error('Error updating user status:', error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update user status"
+        });
+    }
+});
+router.post("/staff/:userId/reset-password", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const adminId = req.user?.id;
+        const user = await User_1.UserModel.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+        const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+        const hashedPassword = await bcrypt_1.default.hash(tempPassword, 10);
+        await User_1.UserModel.update(userId, {
+            passwordHash: hashedPassword,
+            isLocked: false,
+            failedLoginAttempts: 0,
+            lastFailedLoginAt: null
+        });
+        await AuditLog_1.AuditLogModel.create({
+            userId: adminId,
+            action: 'RESET_PASSWORD',
+            resource: 'USER',
+            resourceId: userId,
+            details: `Reset password for user: ${user.username}`,
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent')
+        });
+        res.json({
+            success: true,
+            message: "Password reset successfully",
+            data: {
+                tempPassword,
+                username: user.username
+            }
+        });
+    }
+    catch (error) {
+        console.error('Error resetting password:', error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to reset password"
+        });
+    }
+});
+router.get("/staff/:userId/credentials", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const adminId = req.user?.id;
+        const user = await User_1.UserModel.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+        await AuditLog_1.AuditLogModel.create({
+            userId: adminId,
+            action: 'VIEW_CREDENTIALS',
+            resource: 'USER',
+            resourceId: userId,
+            details: `Viewed credentials for user: ${user.username}`,
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent')
+        });
+        res.json({
+            success: true,
+            data: {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                firstName: user.username,
+                lastName: '',
+                role: user.role,
+                isActive: user.isActive,
+                isLocked: user.isLocked,
+                failedLoginAttempts: user.failedLoginAttempts,
+                lastLoginAt: user.lastLoginAt,
+                lastFailedLoginAt: null,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt
+            }
+        });
+    }
+    catch (error) {
+        console.error('Error fetching user credentials:', error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch user credentials"
+        });
+    }
+});
+router.get("/audit-logs", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const offset = (page - 1) * limit;
+        const logs = await AuditLog_1.AuditLogModel.findAll(limit, offset);
+        const total = await AuditLog_1.AuditLogModel.count();
+        res.json({
+            success: true,
+            data: {
+                logs,
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit)
                 }
             }
-            await client.query("COMMIT");
-            await database_1.pool.query(`
-          INSERT INTO audit_logs (
-            id, user_id, action, target_type, details, ip_address, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-        `, [
-                crypto_1.default.randomUUID(),
-                req.user.id,
-                "import_patients",
-                "patient",
-                JSON.stringify(importResults),
-                req.ip,
-                new Date(),
-            ]);
-            res.json({
-                success: true,
-                data: importResults,
-            });
-        }
-        catch (error) {
-            await client.query("ROLLBACK");
-            throw error;
-        }
-        finally {
-            client.release();
-        }
-    }
-    catch (error) {
-        console.error("Error importing patients:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to import patients",
-        });
-    }
-});
-router.get("/audit-logs", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req, res) => {
-    try {
-        const { action, target_type, user_id, limit = 100, offset = 0 } = req.query;
-        let query = `
-      SELECT al.*, u.username, u.first_name, u.last_name
-      FROM audit_logs al
-      LEFT JOIN users u ON al.user_id = u.id
-      WHERE 1=1
-    `;
-        const params = [];
-        let paramCount = 0;
-        if (action) {
-            paramCount++;
-            query += ` AND al.action = $${paramCount}`;
-            params.push(action);
-        }
-        if (target_type) {
-            paramCount++;
-            query += ` AND al.target_type = $${paramCount}`;
-            params.push(target_type);
-        }
-        if (user_id) {
-            paramCount++;
-            query += ` AND al.user_id = $${paramCount}`;
-            params.push(user_id);
-        }
-        query += ` ORDER BY al.created_at DESC`;
-        if (limit) {
-            paramCount++;
-            query += ` LIMIT $${paramCount}`;
-            params.push(Number.parseInt(limit));
-        }
-        if (offset) {
-            paramCount++;
-            query += ` OFFSET $${paramCount}`;
-            params.push(Number.parseInt(offset));
-        }
-        const result = await database_1.pool.query(query, params);
-        res.json({
-            success: true,
-            data: result.rows,
         });
     }
     catch (error) {
-        console.error("Error fetching audit logs:", error);
+        console.error('Error fetching audit logs:', error);
         res.status(500).json({
             success: false,
-            message: "Failed to fetch audit logs",
+            message: "Failed to fetch audit logs"
         });
     }
 });

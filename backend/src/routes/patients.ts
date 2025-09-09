@@ -96,7 +96,7 @@ router.get(
   },
 )
 
-// Create new patient
+// Create new patient (Registration)
 router.post(
   "/",
   authorize([UserRole.ADMIN, UserRole.RECEPTIONIST]),
@@ -108,6 +108,7 @@ router.post(
     body("age").optional().isInt({ min: 0, max: 150 }).withMessage("Invalid age"),
     body("phoneNumber").optional().isMobilePhone("any").withMessage("Invalid phone number"),
     body("dateOfBirth").optional().isISO8601().withMessage("Invalid date of birth"),
+    body("registrationType").optional().isIn(["NEW_PATIENT", "IMPORT_PATIENT"]).withMessage("Invalid registration type"),
   ],
   async (req: AuthenticatedRequest, res) => {
     try {
@@ -121,18 +122,34 @@ router.post(
       }
 
       const patientData = req.body
+      const registrationType = patientData.registrationType || 'NEW_PATIENT'
 
       // Convert date string to Date object if provided
       if (patientData.dateOfBirth) {
         patientData.dateOfBirth = new Date(patientData.dateOfBirth)
       }
 
+      // Add registration metadata
+      patientData.registrationType = registrationType
+      patientData.registeredBy = req.user!.id
+      patientData.registrationDate = new Date()
+
       const patient = await PatientModel.create(patientData)
+
+      // Log the registration type for audit purposes
+      console.log(`Patient ${patient.id} registered via ${registrationType} by user ${req.user!.id}`)
 
       res.status(201).json({
         success: true,
-        message: "Patient created successfully",
-        data: patient,
+        message: registrationType === 'NEW_PATIENT' 
+          ? "New patient registered successfully" 
+          : "Patient imported successfully",
+        data: {
+          ...patient,
+          registrationType,
+          registeredBy: req.user!.id,
+          registrationDate: new Date()
+        },
       })
     } catch (error: any) {
       if (error.code === "23505") {
@@ -258,7 +275,7 @@ router.post(
             patientData.date_of_birth = new Date(patientData.date_of_birth)
           }
 
-          // Create patient
+          // Create patient with import metadata
           const patient = await PatientModel.create({
             opNumber: patientData.op_number,
             firstName: patientData.first_name,
@@ -268,12 +285,15 @@ router.post(
             area: patientData.area,
             phoneNumber: patientData.phone_number,
             insuranceType: patientData.insurance_type,
-            gender: "OTHER" // Default gender since it's not provided in CSV
+            gender: "OTHER", // Default gender since it's not provided in CSV
+            registrationType: "IMPORT_PATIENT",
+            registeredBy: req.user!.id,
+            registrationDate: new Date()
           })
 
           results.successful.push({
             op_number: patient.opNumber,
-            name: `${patient.firstName} ${patient.lastName}`,
+            name: `${patient.first_name} ${patient.last_name}`,
             id: patient.id
           })
         } catch (error: any) {

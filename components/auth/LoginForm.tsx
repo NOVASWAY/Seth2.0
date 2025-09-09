@@ -83,7 +83,17 @@ export default function LoginForm() {
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm text-center" data-testid="error-message">
+            <div className={`text-sm text-center p-3 rounded-lg border ${
+              error.includes('Too many login attempts') 
+                ? 'text-amber-800 bg-amber-50 border-amber-200 dark:text-amber-200 dark:bg-amber-900/20 dark:border-amber-800' 
+                : 'text-red-600 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800'
+            }`} data-testid="error-message">
+              {error.includes('Too many login attempts') && (
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <span className="text-amber-600 dark:text-amber-400">⏰</span>
+                  <span className="font-medium">Rate Limit Exceeded</span>
+                </div>
+              )}
               {error}
             </div>
           )}

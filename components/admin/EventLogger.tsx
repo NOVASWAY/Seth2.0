@@ -277,28 +277,28 @@ export function EventLogger({ onEventLogged }: EventLoggerProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-white dark:bg-gray-900 min-h-screen p-6">
       <div>
-        <h2 className="text-2xl font-bold">Event Logger</h2>
-        <p className="text-muted-foreground">Monitor system events, user activities, and security logs</p>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Event Logger</h2>
+        <p className="text-gray-600 dark:text-gray-300">Monitor system events, user activities, and security logs</p>
       </div>
 
       {/* Statistics Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
                 <Activity className="h-5 w-5 text-blue-500" />
                 <div>
                   <div className="text-2xl font-bold text-blue-500">{stats.total_events}</div>
-                  <div className="text-sm text-muted-foreground">Total Events (30d)</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Total Events (30d)</div>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-red-500" />
@@ -306,13 +306,13 @@ export function EventLogger({ onEventLogged }: EventLoggerProps) {
                   <div className="text-2xl font-bold text-red-500">
                     {stats.events_by_severity.CRITICAL || 0}
                   </div>
-                  <div className="text-sm text-muted-foreground">Critical Events</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Critical Events</div>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
                 <User className="h-5 w-5 text-green-500" />
@@ -320,13 +320,13 @@ export function EventLogger({ onEventLogged }: EventLoggerProps) {
                   <div className="text-2xl font-bold text-green-500">
                     {stats.events_by_type.LOGIN || 0}
                   </div>
-                  <div className="text-sm text-muted-foreground">Login Events</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Login Events</div>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-orange-500" />
@@ -334,7 +334,7 @@ export function EventLogger({ onEventLogged }: EventLoggerProps) {
                   <div className="text-2xl font-bold text-orange-500">
                     {stats.events_by_severity.HIGH || 0}
                   </div>
-                  <div className="text-sm text-muted-foreground">High Severity</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">High Severity</div>
                 </div>
               </div>
             </CardContent>
@@ -343,9 +343,9 @@ export function EventLogger({ onEventLogged }: EventLoggerProps) {
       )}
 
       {/* Filters */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
             <Filter className="h-5 w-5" />
             Filters & Search
           </CardTitle>
@@ -353,13 +353,13 @@ export function EventLogger({ onEventLogged }: EventLoggerProps) {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="event_type">Event Type</Label>
+              <Label htmlFor="event_type" className="text-sm font-medium text-gray-700 dark:text-gray-200">Event Type</Label>
               <Select value={filters.event_type} onValueChange={(value) => handleFilterChange("event_type", value)}>
-                <SelectTrigger className="dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+                <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   {eventTypes.map(type => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
@@ -368,13 +368,13 @@ export function EventLogger({ onEventLogged }: EventLoggerProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="severity">Severity</Label>
+              <Label htmlFor="severity" className="text-sm font-medium text-gray-700 dark:text-gray-200">Severity</Label>
               <Select value={filters.severity} onValueChange={(value) => handleFilterChange("severity", value)}>
-                <SelectTrigger className="dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+                <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                   <SelectValue placeholder="All severities" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Severities</SelectItem>
+                  <SelectItem value="all">All Severities</SelectItem>
                   <SelectItem value="LOW">Low</SelectItem>
                   <SelectItem value="MEDIUM">Medium</SelectItem>
                   <SelectItem value="HIGH">High</SelectItem>
@@ -384,35 +384,35 @@ export function EventLogger({ onEventLogged }: EventLoggerProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="start_date">Start Date</Label>
+              <Label htmlFor="start_date" className="text-sm font-medium text-gray-700 dark:text-gray-200">Start Date</Label>
               <Input
                 id="start_date"
                 type="date"
                 value={filters.start_date}
                 onChange={(e) => handleFilterChange("start_date", e.target.value)}
-                className="dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="end_date">End Date</Label>
+              <Label htmlFor="end_date" className="text-sm font-medium text-gray-700 dark:text-gray-200">End Date</Label>
               <Input
                 id="end_date"
                 type="date"
                 value={filters.end_date}
                 onChange={(e) => handleFilterChange("end_date", e.target.value)}
-                className="dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <Button onClick={fetchEvents} disabled={loading} className="dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+            <Button onClick={fetchEvents} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-600 dark:text-white font-medium">
               {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               Search
             </Button>
             
-            <Button onClick={exportEvents} variant="outline" className="dark:border-gray-600 dark:text-white dark:hover:bg-gray-700">
+            <Button onClick={exportEvents} variant="outline" className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
               <Download className="h-4 w-4" />
               Export CSV
             </Button>
@@ -421,7 +421,7 @@ export function EventLogger({ onEventLogged }: EventLoggerProps) {
               onClick={handleCleanup} 
               disabled={cleanupLoading}
               variant="destructive"
-              className="dark:bg-red-900 dark:text-white dark:hover:bg-red-800"
+              className="bg-red-600 hover:bg-red-700 text-white dark:bg-red-700 dark:hover:bg-red-600"
             >
               {cleanupLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
               Cleanup Old Events
@@ -431,48 +431,48 @@ export function EventLogger({ onEventLogged }: EventLoggerProps) {
       </Card>
 
       {/* Events List */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>Events ({pagination.total})</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-white">Events ({pagination.total})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {events.map((event) => (
               <div
                 key={event.id}
-                className="flex items-start justify-between p-4 border rounded-lg dark:border-gray-600 dark:bg-gray-800/50"
+                className="flex items-start justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     {getEventTypeIcon(event.event_type)}
-                    <div className="font-medium dark:text-white">
+                    <div className="font-semibold text-gray-900 dark:text-white">
                       {event.action.replace("_", " ").toUpperCase()}
                     </div>
                     {getSeverityBadge(event.severity)}
-                    <Badge variant="outline" className="dark:border-gray-600 dark:text-white">
+                    <Badge variant="outline" className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
                       {event.event_type}
                     </Badge>
                   </div>
                   
-                  <div className="text-sm text-muted-foreground space-y-1">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                     {event.username && (
-                      <div>User: <span className="font-medium">{event.username}</span></div>
+                      <div>User: <span className="font-medium text-gray-900 dark:text-white">{event.username}</span></div>
                     )}
                     {event.target_type && (
-                      <div>Target: <span className="font-medium">{event.target_type}</span></div>
+                      <div>Target: <span className="font-medium text-gray-900 dark:text-white">{event.target_type}</span></div>
                     )}
                     {event.ip_address && (
-                      <div>IP: <span className="font-medium">{event.ip_address}</span></div>
+                      <div>IP: <span className="font-medium text-gray-900 dark:text-white">{event.ip_address}</span></div>
                     )}
                     {event.details && (
-                      <div className="text-xs bg-muted/50 p-2 rounded mt-2">
+                      <div className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded mt-2 text-gray-800 dark:text-gray-200">
                         <pre className="whitespace-pre-wrap">{JSON.stringify(event.details, null, 2)}</pre>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="text-sm text-muted-foreground flex items-center gap-1">
+                <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   {new Date(event.created_at).toLocaleString()}
                 </div>
@@ -480,15 +480,15 @@ export function EventLogger({ onEventLogged }: EventLoggerProps) {
             ))}
 
             {events.length === 0 && !loading && (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-gray-600 dark:text-gray-400">
                 No events found matching your criteria
               </div>
             )}
 
             {loading && (
               <div className="text-center py-8">
-                <RefreshCw className="h-6 w-6 animate-spin mx-auto" />
-                <div className="mt-2 text-muted-foreground">Loading events...</div>
+                <RefreshCw className="h-6 w-6 animate-spin mx-auto text-gray-600 dark:text-gray-400" />
+                <div className="mt-2 text-gray-600 dark:text-gray-400">Loading events...</div>
               </div>
             )}
           </div>
@@ -496,7 +496,7 @@ export function EventLogger({ onEventLogged }: EventLoggerProps) {
           {/* Pagination */}
           {pagination.total > 0 && (
             <div className="flex items-center justify-between mt-6">
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
                 Showing {filters.offset + 1} to {Math.min(filters.offset + filters.limit, pagination.total)} of {pagination.total} events
               </div>
               
@@ -506,7 +506,7 @@ export function EventLogger({ onEventLogged }: EventLoggerProps) {
                   size="sm"
                   onClick={() => handlePageChange(Math.max(0, filters.offset - filters.limit))}
                   disabled={filters.offset === 0}
-                  className="dark:border-gray-600 dark:text-white dark:hover:bg-gray-700"
+                  className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Previous
                 </Button>
@@ -516,7 +516,7 @@ export function EventLogger({ onEventLogged }: EventLoggerProps) {
                   size="sm"
                   onClick={() => handlePageChange(filters.offset + filters.limit)}
                   disabled={!pagination.has_more}
-                  className="dark:border-gray-600 dark:text-white dark:hover:bg-gray-700"
+                  className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Next
                 </Button>

@@ -1,79 +1,125 @@
 import express from "express"
 import { body, validationResult } from "express-validator"
-import { authenticateToken, requireRole } from "../middleware/auth"
 import { UserModel } from "../models/User"
-import { EventLoggerService } from "../services/EventLoggerService"
+import { authorize, type AuthenticatedRequest } from "../middleware/auth"
 import { UserRole } from "../types"
-import type { AuthenticatedRequest } from "../types"
-import pool from "../config/database"
-import bcrypt from "bcryptjs"
-import crypto from "crypto"
+import bcrypt from "bcrypt"
+import { AuditLogModel } from "../models/AuditLog"
 
 const router = express.Router()
 
-// Get all users (Admin only)
-router.get("/users", authenticateToken, requireRole([UserRole.ADMIN]), async (req: AuthenticatedRequest, res) => {
-  try {
-    const { limit = 50, offset = 0 } = req.query
-    const result = await UserModel.findAll(parseInt(limit as string), parseInt(offset as string))
+// Get all staff members with statistics
+router.get(
+  "/staff",
+  authorize([UserRole.ADMIN]),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const result = await UserModel.findAll()
+      const staff = result.users
+      
+      // Calculate statistics
+      const stats = {
+        total: staff.length,
+        active: staff.filter(u => u.isActive && !u.isLocked).length,
+        locked: staff.filter(u => u.isLocked).length,
+        inactive: staff.filter(u => !u.isActive).length,
+        recentLogins: staff.filter(u => {
+          if (!u.lastLoginAt) return false
+          const oneWeekAgo = new Date()
+          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+          return new Date(u.lastLoginAt) > oneWeekAgo
+        }).length
+      }
+
+      // Remove sensitive data
+      const safeStaff = staff.map(user => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        firstName: user.username, // Use username as display name since we don't have firstName
+        lastName: '', // Empty since we don't have lastName
+        role: user.role,
+        isActive: user.isActive,
+        isLocked: user.isLocked,
+        failedLoginAttempts: user.failedLoginAttempts,
+        lastLoginAt: user.lastLoginAt,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        lastFailedLoginAt: null // This field doesn't exist in the current schema
+      }))
 
     res.json({
       success: true,
-      data: result.users,
-      pagination: {
-        total: result.total,
-        limit: parseInt(limit as string),
-        offset: parseInt(offset as string),
-      },
+      data: {
+          staff: safeStaff,
+          stats
+        }
     })
   } catch (error) {
-    console.error("Error fetching users:", error)
+      console.error('Error fetching staff:', error)
     res.status(500).json({
       success: false,
-      message: "Failed to fetch users",
-    })
-  }
-})
-
-// Get user by ID (Admin only)
-router.get("/users/:id", authenticateToken, requireRole([UserRole.ADMIN]), async (req: AuthenticatedRequest, res) => {
-  try {
-    const { id } = req.params
-    const user = await UserModel.findById(id)
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
+        message: "Failed to fetch staff data"
       })
     }
-
-    // Remove password hash from response
-    const { passwordHash, ...userResponse } = user
-
-    res.json({
-      success: true,
-      data: userResponse,
-    })
-  } catch (error) {
-    console.error("Error fetching user:", error)
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch user",
-    })
   }
-})
+)
 
-// Update user (Admin only)
-router.put(
-  "/users/:id",
-  authenticateToken,
-  requireRole([UserRole.ADMIN]),
+// Unlock a user account
+router.post(
+  "/staff/:userId/unlock",
+  authorize([UserRole.ADMIN]),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const { userId } = req.params
+      const adminId = req.user?.id
+
+      const user = await UserModel.findById(userId)
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        })
+      }
+
+      // Unlock the account and reset failed attempts
+      await UserModel.update(userId, {
+        isLocked: false,
+        failedLoginAttempts: 0,
+        lastFailedLoginAt: null
+      })
+
+      // Log the action
+      await AuditLogModel.create({
+        userId: adminId!,
+        action: 'UNLOCK_USER',
+        resource: 'USER',
+        resourceId: userId,
+        details: `Unlocked user account: ${user.username}`,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      })
+
+      res.json({
+        success: true,
+        message: "User account unlocked successfully"
+      })
+    } catch (error) {
+      console.error('Error unlocking user:', error)
+      res.status(500).json({
+        success: false,
+        message: "Failed to unlock user account"
+      })
+    }
+  }
+)
+
+// Toggle user active status
+router.post(
+  "/staff/:userId/toggle-status",
+  authorize([UserRole.ADMIN]),
   [
-    body("email").optional().isEmail().withMessage("Invalid email format"),
-    body("role").optional().isIn(Object.values(UserRole)).withMessage("Invalid role"),
-    body("isActive").optional().isBoolean().withMessage("isActive must be boolean"),
-    body("isLocked").optional().isBoolean().withMessage("isLocked must be boolean"),
+    body("isActive").isBoolean().withMessage("isActive must be a boolean")
   ],
   async (req: AuthenticatedRequest, res) => {
     try {
@@ -82,248 +128,204 @@ router.put(
         return res.status(400).json({
           success: false,
           message: "Validation failed",
-          errors: errors.array(),
+          errors: errors.array()
         })
       }
 
-      const { id } = req.params
-      const { email, role, isActive, isLocked } = req.body
+      const { userId } = req.params
+      const { isActive } = req.body
+      const adminId = req.user?.id
 
-      const user = await UserModel.update(id, {
-        email,
-        role,
-        isActive,
-        isLocked,
-      })
-
+      const user = await UserModel.findById(userId)
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: "User not found",
+          message: "User not found"
         })
       }
 
-      // Log the user update event
-      await EventLoggerService.logEvent({
-        event_type: "USER",
-        user_id: req.user.id,
-        username: req.user.username,
-        target_type: "user",
-        target_id: id,
-        action: "update",
-        details: { email, role, isActive, isLocked },
-        ip_address: req.ip,
-        user_agent: req.get("User-Agent"),
-        severity: "MEDIUM",
-      })
+      // Prevent admin from deactivating themselves
+      if (userId === adminId && !isActive) {
+        return res.status(400).json({
+          success: false,
+          message: "You cannot deactivate your own account"
+        })
+      }
 
-      // Remove password hash from response
-      const { passwordHash, ...userResponse } = user
+      await UserModel.update(userId, { isActive })
+
+      // Log the action
+      await AuditLogModel.create({
+        userId: adminId!,
+        action: isActive ? 'ACTIVATE_USER' : 'DEACTIVATE_USER',
+        resource: 'USER',
+        resourceId: userId,
+        details: `${isActive ? 'Activated' : 'Deactivated'} user account: ${user.username}`,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      })
 
       res.json({
         success: true,
-        message: "User updated successfully",
-        data: userResponse,
+        message: `User account ${isActive ? 'activated' : 'deactivated'} successfully`
       })
     } catch (error) {
-      console.error("Error updating user:", error)
+      console.error('Error updating user status:', error)
       res.status(500).json({
         success: false,
-        message: "Failed to update user",
+        message: "Failed to update user status"
       })
     }
   }
 )
 
-// Unlock user account (Admin only)
-router.post("/users/:id/unlock", authenticateToken, requireRole([UserRole.ADMIN]), async (req: AuthenticatedRequest, res) => {
-  try {
-    const { id } = req.params
+// Reset user password
+router.post(
+  "/staff/:userId/reset-password",
+  authorize([UserRole.ADMIN]),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const { userId } = req.params
+      const adminId = req.user?.id
 
-    // Get user details for logging
-    const user = await UserModel.findById(id)
-    if (!user) {
+      const user = await UserModel.findById(userId)
+      if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+          message: "User not found"
+        })
+      }
+
+      // Generate a temporary password
+      const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)
+      const hashedPassword = await bcrypt.hash(tempPassword, 10)
+
+      // Update password and unlock account
+      await UserModel.update(userId, {
+        passwordHash: hashedPassword,
+        isLocked: false,
+        failedLoginAttempts: 0,
+        lastFailedLoginAt: null
       })
-    }
 
-    // Unlock the account and reset failed login attempts
-    const result = await pool.query(
-      `
-      UPDATE users 
-      SET is_locked = false, failed_login_attempts = 0, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
-      RETURNING username, is_locked, failed_login_attempts
-    `,
-      [id]
-    )
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
+      // Log the action
+      await AuditLogModel.create({
+        userId: adminId!,
+        action: 'RESET_PASSWORD',
+        resource: 'USER',
+        resourceId: userId,
+        details: `Reset password for user: ${user.username}`,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
       })
-    }
-
-    // Log the unlock event
-    await EventLoggerService.logEvent({
-      event_type: "SECURITY",
-      user_id: req.user.id,
-      username: req.user.username,
-      target_type: "user",
-      target_id: id,
-      action: "unlock_account",
-      details: { 
-        target_username: user.username,
-        previous_attempts: user.failedLoginAttempts,
-        previous_locked: user.isLocked
-      },
-      ip_address: req.ip,
-      user_agent: req.get("User-Agent"),
-      severity: "HIGH",
-    })
 
     res.json({
       success: true,
-      message: "Account unlocked successfully",
+        message: "Password reset successfully",
       data: {
-        username: result.rows[0].username,
-        is_locked: result.rows[0].is_locked,
-        failed_login_attempts: result.rows[0].failed_login_attempts,
-      },
+          tempPassword, // In production, this should be sent via email
+          username: user.username
+        }
     })
   } catch (error) {
-    console.error("Error unlocking account:", error)
+      console.error('Error resetting password:', error)
+    res.status(500).json({
+        success: false,
+        message: "Failed to reset password"
+      })
+    }
+  }
+)
+
+// Get user credentials (for admin viewing)
+router.get(
+  "/staff/:userId/credentials",
+  authorize([UserRole.ADMIN]),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const { userId } = req.params
+      const adminId = req.user?.id
+
+      const user = await UserModel.findById(userId)
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        })
+      }
+
+      // Log the action
+      await AuditLogModel.create({
+        userId: adminId!,
+        action: 'VIEW_CREDENTIALS',
+        resource: 'USER',
+        resourceId: userId,
+        details: `Viewed credentials for user: ${user.username}`,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      })
+
+      res.json({
+        success: true,
+        data: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          firstName: user.username, // Use username as display name
+          lastName: '', // Empty since we don't have lastName
+          role: user.role,
+          isActive: user.isActive,
+          isLocked: user.isLocked,
+          failedLoginAttempts: user.failedLoginAttempts,
+          lastLoginAt: user.lastLoginAt,
+          lastFailedLoginAt: null, // This field doesn't exist in the current schema
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
+        }
+      })
+    } catch (error) {
+      console.error('Error fetching user credentials:', error)
     res.status(500).json({
       success: false,
-      message: "Failed to unlock account",
-    })
+        message: "Failed to fetch user credentials"
+      })
+    }
   }
-})
+)
 
-// Reset user password (Admin only)
-router.post("/users/:id/reset-password", authenticateToken, requireRole([UserRole.ADMIN]), async (req: AuthenticatedRequest, res) => {
-  try {
-    const { id } = req.params
+// Get audit logs for admin actions
+router.get(
+  "/audit-logs",
+  authorize([UserRole.ADMIN]),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1
+      const limit = parseInt(req.query.limit as string) || 50
+      const offset = (page - 1) * limit
 
-    // Get user details for logging
-    const user = await UserModel.findById(id)
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
-
-    // Generate new temporary password
-    const tempPassword = Math.random().toString(36).slice(-8)
-    const hashedPassword = await bcrypt.hash(tempPassword, 10)
-
-    const result = await pool.query(
-      `
-      UPDATE users 
-      SET password_hash = $1, failed_login_attempts = 0, is_locked = false, updated_at = $2
-      WHERE id = $3
-      RETURNING username
-    `,
-      [hashedPassword, new Date(), id]
-    )
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      })
-    }
-
-    // Log the password reset event
-    await EventLoggerService.logEvent({
-      event_type: "SECURITY",
-      user_id: req.user.id,
-      username: req.user.username,
-      target_type: "user",
-      target_id: id,
-      action: "reset_password",
-      details: { 
-        target_username: user.username,
-        previous_attempts: user.failedLoginAttempts,
-        previous_locked: user.isLocked,
-        temp_password_length: tempPassword.length
-      },
-      ip_address: req.ip,
-      user_agent: req.get("User-Agent"),
-      severity: "CRITICAL",
-    })
+      const logs = await AuditLogModel.findAll(limit, offset)
+      const total = await AuditLogModel.count()
 
     res.json({
       success: true,
-      message: "Password reset successfully",
-      data: {
-        temp_password: tempPassword,
-        username: result.rows[0].username,
-      },
+        data: {
+          logs,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit)
+          }
+        }
     })
   } catch (error) {
-    console.error("Error resetting password:", error)
+      console.error('Error fetching audit logs:', error)
     res.status(500).json({
       success: false,
-      message: "Failed to reset password",
+        message: "Failed to fetch audit logs"
     })
+    }
   }
-})
-
-// Get dashboard data (Admin only)
-router.get("/dashboard", authenticateToken, requireRole([UserRole.ADMIN]), async (req: AuthenticatedRequest, res) => {
-  try {
-    // Get basic statistics
-    const statsQuery = `
-      SELECT 
-        (SELECT COUNT(*) FROM patients) as total_patients,
-        (SELECT COUNT(*) FROM visits WHERE DATE(created_at) = CURRENT_DATE) as today_visits,
-        (SELECT COUNT(*) FROM users WHERE is_active = true) as active_users,
-        (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE DATE(created_at) = CURRENT_DATE) as today_revenue,
-        (SELECT COUNT(*) FROM inventory_items WHERE stock_quantity <= reorder_level) as low_stock_items,
-        (SELECT COUNT(*) FROM sha_claims WHERE status = 'PENDING') as pending_claims
-    `
-    
-    const statsResult = await pool.query(statsQuery)
-    const stats = statsResult.rows[0]
-
-    // Get recent audit logs
-    const auditQuery = `
-      SELECT 
-        al.id, al.action, al.target_type, al.details, al.created_at,
-        u.username
-      FROM audit_logs al
-      LEFT JOIN users u ON al.user_id = u.id
-      ORDER BY al.created_at DESC
-      LIMIT 10
-    `
-    
-    const auditResult = await pool.query(auditQuery)
-    const recent_audit_logs = auditResult.rows
-
-    res.json({
-      success: true,
-      data: {
-        total_patients: parseInt(stats.total_patients),
-        today_visits: parseInt(stats.today_visits),
-        active_users: parseInt(stats.active_users),
-        today_revenue: parseFloat(stats.today_revenue),
-        low_stock_items: parseInt(stats.low_stock_items),
-        pending_claims: parseInt(stats.pending_claims),
-        recent_audit_logs,
-      },
-    })
-  } catch (error) {
-    console.error("Error fetching dashboard data:", error)
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch dashboard data",
-    })
-  }
-})
+)
 
 export default router

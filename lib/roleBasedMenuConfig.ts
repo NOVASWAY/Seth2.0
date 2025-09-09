@@ -94,6 +94,13 @@ export const getMenuItemsForRole = (userRole: string): MenuItem[] => {
       roles: ["ADMIN", "CLINICAL_OFFICER", "LAB_TECHNICIAN", "DOCTOR", "NURSE"]
     },
     {
+      id: "lab-requests",
+      title: "Lab Requests",
+      href: "/lab-requests",
+      icon: "🔬",
+      roles: ["ADMIN", "CLINICAL_OFFICER", "LAB_TECHNICIAN"]
+    },
+    {
       id: "sha",
       title: "SHA",
       href: "/sha",

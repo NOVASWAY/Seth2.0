@@ -24,6 +24,9 @@ export interface UpdateUserData {
     role?: UserRole;
     isActive?: boolean;
     isLocked?: boolean;
+    failedLoginAttempts?: number;
+    passwordHash?: string;
+    lastFailedLoginAt?: Date | null;
 }
 export declare class UserModel {
     static findById(id: string): Promise<User | null>;

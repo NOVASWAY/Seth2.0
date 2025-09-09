@@ -298,12 +298,12 @@ export function SHAInvoiceManager() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-white dark:bg-gray-900 min-h-screen p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">SHA Invoice Management</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">SHA Invoice Management</h1>
+          <p className="text-gray-600 dark:text-gray-300">
             Manage SHA insurance invoices, printing, and submission
           </p>
         </div>
@@ -311,7 +311,7 @@ export function SHAInvoiceManager() {
           <Button
             variant="outline"
             onClick={() => getInvoicesReadyForPrinting("weekly")}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             <Calendar className="h-4 w-4" />
             Weekly Batch
@@ -319,7 +319,7 @@ export function SHAInvoiceManager() {
           <Button
             variant="outline"
             onClick={() => getInvoicesReadyForPrinting("monthly")}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             <Calendar className="h-4 w-4" />
             Monthly Batch
@@ -327,7 +327,7 @@ export function SHAInvoiceManager() {
           {selectedInvoices.length > 0 && (
             <Button
               onClick={bulkPrint}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-600 dark:text-white font-medium"
             >
               <Printer className="h-4 w-4" />
               Print Selected ({selectedInvoices.length})
@@ -338,24 +338,24 @@ export function SHAInvoiceManager() {
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <FileText className="h-8 w-8 text-blue-600" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Invoices</p>
-                <p className="text-2xl font-bold">{pagination.total}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Invoices</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{pagination.total}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <Printer className="h-8 w-8 text-green-600" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Ready to Print</p>
-                <p className="text-2xl font-bold">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ready to Print</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {invoices.filter(inv => inv.status === "generated").length}
                 </p>
               </div>
@@ -410,7 +410,7 @@ export function SHAInvoiceManager() {
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="all">All statuses</SelectItem>
                   <SelectItem value="generated">Generated</SelectItem>
                   <SelectItem value="printed">Printed</SelectItem>
                   <SelectItem value="submitted">Submitted</SelectItem>

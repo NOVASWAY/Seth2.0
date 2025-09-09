@@ -123,17 +123,61 @@ export default function AppointmentsPage() {
   }
 
   const handleEditAppointment = (appointmentId: string) => {
-    // TODO: Implement edit functionality
-    console.log('Edit appointment:', appointmentId)
+    const appointment = appointments.find(apt => apt.id === appointmentId)
+    if (!appointment) {
+      toast({
+        title: "Error",
+        description: "Appointment not found",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // For now, show a simple edit dialog
+    const newDate = prompt("Enter new date (YYYY-MM-DD):", appointment.date)
+    const newTime = prompt("Enter new time (HH:MM):", appointment.time)
+    
+    if (newDate && newTime) {
+      // Update the appointment in local state
+      setAppointments(appointments.map(apt => 
+        apt.id === appointmentId 
+          ? { ...apt, date: newDate, time: newTime, updated_at: new Date().toISOString() }
+          : apt
+      ))
+      
+      toast({
+        title: "Success",
+        description: "Appointment updated successfully",
+        variant: "default",
+      })
+    }
   }
 
   const handleCancelAppointment = (appointmentId: string) => {
-    if (confirm('Are you sure you want to cancel this appointment?')) {
+    const appointment = appointments.find(apt => apt.id === appointmentId)
+    if (!appointment) {
+      toast({
+        title: "Error",
+        description: "Appointment not found",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const confirmed = confirm(`Are you sure you want to cancel the appointment for ${appointment.patientName} on ${appointment.date} at ${appointment.time}?`)
+    
+    if (confirmed) {
       setAppointments(appointments.map(apt => 
         apt.id === appointmentId 
-          ? { ...apt, status: 'cancelled' as const }
+          ? { ...apt, status: 'cancelled' as const, updated_at: new Date().toISOString() }
           : apt
       ))
+      
+      toast({
+        title: "Success",
+        description: "Appointment cancelled successfully",
+        variant: "default",
+      })
     }
   }
 

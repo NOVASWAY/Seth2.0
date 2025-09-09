@@ -247,6 +247,23 @@ export class UserPresenceModel {
     return result.rowCount || 0
   }
 
+  /**
+   * Get all active users (online, away, busy)
+   */
+  static async getActiveUsers(): Promise<UserPresence[]> {
+    const query = `
+      SELECT up.*, u.username, u.role
+      FROM user_presence up
+      LEFT JOIN users u ON up.user_id = u.id
+      WHERE up.status IN ('online', 'away', 'busy')
+      AND up.last_seen > NOW() - INTERVAL '5 minutes'
+      ORDER BY up.last_seen DESC
+    `
+    
+    const result = await pool.query(query)
+    return result.rows.map(this.mapRowToUserPresence)
+  }
+
   private static mapRowToUserPresence(row: any): UserPresence {
     return {
       id: row.id,

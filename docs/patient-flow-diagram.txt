@@ -1,0 +1,148 @@
+                    🏥 SETH CLINIC PATIENT FLOW DIAGRAM 🏥
+                    ======================================
+
+    PATIENT ARRIVES
+           │
+           ▼
+    ┌─────────────────┐
+    │   RECEPTIONIST  │ ◄─── Register/Verify Patient
+    │                 │      Generate OP Number
+    │                 │      Collect Payment Info
+    └─────────────────┘
+           │
+           ▼
+    ┌─────────────────┐
+    │  TRIAGE NURSE   │ ◄─── Assess Chief Complaint
+    │                 │      Determine Priority
+    │                 │      Record Vital Signs
+    └─────────────────┘
+           │
+           ▼
+    ┌─────────────────┐
+    │  WAITING ROOM   │ ◄─── Queue Management
+    │                 │      Real-time Updates
+    │                 │      Priority-based Queue
+    └─────────────────┘
+           │
+           ▼
+    ┌─────────────────┐
+    │ CLINICAL OFFICER│ ◄─── Consultation
+    │    / DOCTOR     │      Diagnosis
+    │                 │      Prescriptions
+    └─────────────────┘
+           │
+           ▼
+    ┌─────────────────┐
+    │ LAB TECHNICIAN  │ ◄─── Process Lab Tests
+    │   (if needed)   │      Record Results
+    │                 │      Generate Reports
+    └─────────────────┘
+           │
+           ▼
+    ┌─────────────────┐
+    │   PHARMACIST    │ ◄─── Review Prescriptions
+    │                 │      Dispense Medications
+    │                 │      Provide Counseling
+    └─────────────────┘
+           │
+           ▼
+    ┌─────────────────┐
+    │ SPECIALIZED     │ ◄─── Immunization Services
+    │   SERVICES      │      Family Planning
+    │                 │      MCH Services
+    └─────────────────┘
+           │
+           ▼
+    ┌─────────────────┐
+    │   CASHIER/      │ ◄─── Process Payment
+    │ BILLING CLERK   │      Generate Receipt
+    │                 │      Update Payment Status
+    └─────────────────┘
+           │
+           ▼
+    ┌─────────────────┐
+    │   DISCHARGE     │ ◄─── Complete Summary
+    │                 │      Schedule Follow-up
+    │                 │      Generate Instructions
+    └─────────────────┘
+           │
+           ▼
+    PATIENT LEAVES CLINIC
+
+    ======================================
+    🔄 REAL-TIME FEATURES:
+    ======================================
+    
+    • Live Patient Queue Display
+    • User Presence Indicators
+    • Typing Indicators
+    • Conflict Resolution
+    • Push Notifications
+    • Audit Trail Logging
+    
+    ======================================
+    👥 STAFF ROLES & RESPONSIBILITIES:
+    ======================================
+    
+    RECEPTIONIST:
+    • Patient Registration
+    • OP Number Assignment
+    • Payment Collection
+    • Appointment Scheduling
+    
+    TRIAGE NURSE:
+    • Initial Assessment
+    • Priority Classification
+    • Vital Signs Recording
+    • Queue Management
+    
+    CLINICAL OFFICER/DOCTOR:
+    • Medical Consultation
+    • Diagnosis & Treatment
+    • Prescription Writing
+    • Lab Test Orders
+    
+    LAB TECHNICIAN:
+    • Sample Processing
+    • Test Result Recording
+    • Report Generation
+    • Quality Control
+    
+    PHARMACIST:
+    • Prescription Review
+    • Medication Dispensing
+    • Drug Interaction Checks
+    • Patient Counseling
+    
+    SPECIALISTS:
+    • Immunization Services
+    • Family Planning Counseling
+    • MCH Care Services
+    • Specialized Treatments
+    
+    CASHIER/BILLING:
+    • Payment Processing
+    • Insurance Claims
+    • Receipt Generation
+    • Financial Records
+    
+    ======================================
+    💰 PAYMENT TYPES SUPPORTED:
+    ======================================
+    
+    • CASH - Direct payment
+    • INSURANCE - Private insurance
+    • SHA - Social Health Insurance
+    • NHIF - National Hospital Insurance Fund
+    • OTHER - Alternative payment methods
+    
+    ======================================
+    📊 SYSTEM INTEGRATION:
+    ======================================
+    
+    • Real-time Synchronization
+    • Role-based Access Control
+    • Comprehensive Audit Trail
+    • Multi-user Collaboration
+    • Data Integrity Protection
+    • Scalable Architecture

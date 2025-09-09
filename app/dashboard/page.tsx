@@ -20,9 +20,22 @@ export default function Dashboard() {
   const { theme, colors } = useTheme()
   
   // Real data state
-  const [stats, setStats] = useState([])
+  const [stats, setStats] = useState({
+    total_patients: 0,
+    today_visits: 0,
+    active_users: 0,
+    today_revenue: 0,
+    low_stock_items: 0,
+    pending_claims: 0
+  })
   const [activities, setActivities] = useState([])
   const [patients, setPatients] = useState([])
+  const [syncStats, setSyncStats] = useState({
+    connectedUsers: 0,
+    activeUsers: 0,
+    recentSyncEvents: 0,
+    pendingNotifications: 0
+  })
   const [dataLoading, setDataLoading] = useState(true)
 
   // Get role-based quick actions
@@ -32,11 +45,62 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       setDataLoading(true)
-      // TODO: Replace with real API calls
-      // For now, using empty arrays to show clean state
-      setStats([])
-      setActivities([])
-      setPatients([])
+      const { accessToken } = useAuthStore.getState()
+      
+      if (!accessToken) {
+        console.log('No access token available for dashboard data')
+        return
+      }
+
+      // Fetch admin dashboard data
+      const adminResponse = await fetch('http://localhost:5000/api/admin/dashboard', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (adminResponse.ok) {
+        const adminData = await adminResponse.json()
+        if (adminData.success) {
+          setStats(adminData.data)
+          setActivities(adminData.data.recent_audit_logs || [])
+        }
+      }
+
+      // Fetch sync statistics
+      const syncResponse = await fetch('http://localhost:5000/api/sync/stats', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (syncResponse.ok) {
+        const syncData = await syncResponse.json()
+        if (syncData.success) {
+          setSyncStats(syncData.data)
+        }
+      }
+
+      // Fetch recent patients
+      const patientsResponse = await fetch('http://localhost:5000/api/patients?limit=5', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (patientsResponse.ok) {
+        const patientsData = await patientsResponse.json()
+        if (patientsData.success) {
+          // Backend returns { data: { patients: [...], pagination: {...} } }
+          const raw = patientsData.data?.patients || patientsData.data || []
+          const list = Array.isArray(raw) ? raw : []
+          setPatients(list)
+        }
+      }
+
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
@@ -121,27 +185,74 @@ export default function Dashboard() {
               </div>
             ) : (
               <>
-                <div className="text-center py-12">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">
-                    Welcome to Seth Clinic Management System
-                  </h2>
-                  <p className="text-slate-600 dark:text-slate-400 mb-8">
-                    Your system is ready! Start by adding patients, staff, and configuring your clinic settings.
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
-                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700">
-                      <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">👥 Add Patients</h3>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">Register new patients to start managing their care</p>
-                    </div>
-                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700">
-                      <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">👨‍⚕️ Manage Staff</h3>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">Add staff members and assign roles</p>
-                    </div>
-                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700">
-                      <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">⚙️ Configure Settings</h3>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">Set up your clinic preferences and settings</p>
-                    </div>
-                  </div>
+                {/* Statistics Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <StatsCard
+                    title="Total Patients"
+                    value={stats.total_patients}
+                    icon="👥"
+                    color="blue"
+                  />
+                  <StatsCard
+                    title="Today's Visits"
+                    value={stats.today_visits}
+                    icon="🏥"
+                    color="green"
+                  />
+                  <StatsCard
+                    title="Active Users"
+                    value={syncStats.activeUsers}
+                    icon="👨‍⚕️"
+                    color="purple"
+                  />
+                  <StatsCard
+                    title="Today's Revenue"
+                    value={`KES ${stats.today_revenue.toLocaleString()}`}
+                    icon="💰"
+                    color="yellow"
+                  />
+                  <StatsCard
+                    title="Low Stock Items"
+                    value={stats.low_stock_items}
+                    icon="📦"
+                    color="red"
+                  />
+                  <StatsCard
+                    title="Pending Claims"
+                    value={stats.pending_claims}
+                    icon="📋"
+                    color="orange"
+                  />
+                  <StatsCard
+                    title="Connected Users"
+                    value={syncStats.connectedUsers}
+                    icon="🔗"
+                    color="green"
+                  />
+                  <StatsCard
+                    title="Unread Notifications"
+                    value={syncStats.pendingNotifications}
+                    icon="🔔"
+                    color="purple"
+                  />
+                </div>
+
+                {/* Quick Actions */}
+                <QuickActions actions={quickActions} />
+
+                {/* Recent Activity and Patient Queue */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <RecentActivity activities={activities || []} />
+                  <PatientQueue patients={(patients || []).map((p: any) => ({
+                    id: p.id || p.patient_id || crypto?.randomUUID?.() || String(Math.random()),
+                    name: [p.firstName || p.first_name, p.lastName || p.last_name].filter(Boolean).join(' ') || p.name || 'Unknown',
+                    age: p.age ?? (p.dateOfBirth || p.date_of_birth ? Math.max(0, new Date().getFullYear() - new Date(p.dateOfBirth || p.date_of_birth).getFullYear()) : 0),
+                    gender: ((p.gender || 'other').toString().toLowerCase() as 'male' | 'female' | 'other'),
+                    priority: 'medium',
+                    status: 'waiting',
+                    waitTime: 10,
+                    department: 'General'
+                  }))} />
                 </div>
               </>
             )}

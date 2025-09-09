@@ -87,4 +87,30 @@ export class AuditLog {
 
     return result.rows
   }
+
+  static async findAll(limit = 50, offset = 0) {
+    const result = await pool.query(
+      `
+      SELECT al.*, u.username, u.full_name
+      FROM audit_logs al
+      LEFT JOIN users u ON al.user_id = u.id
+      ORDER BY al.created_at DESC
+      LIMIT $1 OFFSET $2
+      `,
+      [limit, offset],
+    )
+
+    return result.rows
+  }
+
+  static async count() {
+    const result = await pool.query(
+      `SELECT COUNT(*) FROM audit_logs`
+    )
+
+    return parseInt(result.rows[0].count)
+  }
 }
+
+// Export as AuditLogModel for consistency with other models
+export const AuditLogModel = AuditLog

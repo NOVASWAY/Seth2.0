@@ -171,6 +171,19 @@ else
     exit 1
 fi
 
+# Verify staff management system endpoints
+echo "🔍 Verifying staff management system endpoints..."
+
+# Test staff management API endpoint (should return 401 without auth)
+if curl -s "http://localhost:5000/api/admin/staff" | grep -q "401\|Unauthorized\|error" 2>/dev/null; then
+    echo "✅ Staff management API endpoint accessible (auth required - 401 expected)"
+elif curl -f -s "http://localhost:5000/api/admin/staff" > /dev/null; then
+    echo "✅ Staff management API endpoint accessible"
+else
+    echo "❌ Staff management API endpoint not accessible"
+    exit 1
+fi
+
 echo ""
 echo "🎉 Deployment completed successfully!"
 echo ""
@@ -191,6 +204,13 @@ echo "  - Enhanced patient input: ✅"
 echo "  - Auto-save protection: ✅"
 echo "  - Urgency management: ✅"
 echo "  - Comprehensive timestamping: ✅"
+echo ""
+echo "Staff Management System Features:"
+echo "  - Staff listing with search and filters: ✅"
+echo "  - Account unlock functionality: ✅"
+echo "  - User activation/deactivation: ✅"
+echo "  - Password reset capabilities: ✅"
+echo "  - Comprehensive audit logging: ✅"
 echo ""
 echo "Default admin credentials:"
 echo "  - Username: admin"

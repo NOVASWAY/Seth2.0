@@ -3,6 +3,7 @@
 import { useAuthStore } from '../../lib/auth'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import Sidebar from '../../components/dashboard/Sidebar'
 import { useToast } from '../../components/ui/use-toast'
 import { Button } from '../../components/ui/button'
@@ -12,7 +13,7 @@ import { Label } from '../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
 import { Badge } from '../../components/ui/badge'
-import { Upload, FileText, CheckCircle, AlertCircle, X, Eye, Download } from 'lucide-react'
+import { Upload, FileText, CheckCircle, AlertCircle, X, Eye, Download, UserPlus, Database } from 'lucide-react'
 
 interface Patient {
   id: string
@@ -100,7 +101,8 @@ export default function PatientsPage() {
   const { user, isAuthenticated, isLoading, accessToken } = useAuthStore()
   const router = useRouter()
   const { toast } = useToast()
-  const [patients, setPatients] = useState<Patient[]>(mockPatients)
+  const [patients, setPatients] = useState<Patient[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -112,11 +114,57 @@ export default function PatientsPage() {
   const [isImporting, setIsImporting] = useState(false)
   const [defaultInsuranceType, setDefaultInsuranceType] = useState<'SHA' | 'PRIVATE' | 'CASH'>('CASH')
 
+  // Fetch patients from backend
+  const fetchPatients = async () => {
+    if (!accessToken) return
+
+    try {
+      setLoading(true)
+      const response = await fetch('http://localhost:5000/api/patients', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          // Backend returns { data: { patients: [...], pagination: {...} } }
+          const patientsData = result.data?.patients || result.data || []
+          setPatients(Array.isArray(patientsData) ? patientsData : [])
+        } else {
+          throw new Error(result.message || 'Failed to fetch patients')
+        }
+      } else if (response.status === 401) {
+        toast({
+          title: "Authentication Error",
+          description: "Your session has expired. Please log in again.",
+          variant: "destructive"
+        })
+        router.push('/login')
+      } else {
+        throw new Error('Failed to fetch patients')
+      }
+    } catch (error) {
+      console.error('Error fetching patients:', error)
+      toast({
+        title: "Error",
+        description: "Failed to fetch patients. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
       router.push('/login')
+    } else if (isAuthenticated && accessToken) {
+      fetchPatients()
     }
-  }, [isAuthenticated, isLoading, router])
+  }, [isAuthenticated, isLoading, accessToken, router])
 
   // Process age string to calculate date of birth
   const processAge = (ageString: string): { age: number; dateOfBirth: string } => {
@@ -366,7 +414,7 @@ export default function PatientsPage() {
     }
   }
 
-  const filteredPatients = patients.filter(patient => {
+  const filteredPatients = (patients || []).filter(patient => {
     const fullName = `${patient.first_name} ${patient.last_name}`.toLowerCase()
     const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
                          patient.op_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -379,14 +427,78 @@ export default function PatientsPage() {
     setShowAddPatient(true)
   }
 
-  const handleEditPatient = (patientId: string) => {
-    // TODO: Implement edit functionality
-    console.log('Edit patient:', patientId)
+  const handleEditPatient = async (patientId: string) => {
+    try {
+      const patient = (patients || []).find(p => p.id === patientId)
+      if (!patient) {
+        toast({
+          title: "Error",
+          description: "Patient not found",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // For now, we'll show a simple edit dialog
+      // In a real implementation, this would open a proper edit form
+      const newFirstName = prompt("Enter new first name:", patient.first_name)
+      const newLastName = prompt("Enter new last name:", patient.last_name)
+      
+      if (newFirstName && newLastName) {
+        // Update the patient in the local state
+        setPatients((patients || []).map(p => 
+          p.id === patientId 
+            ? { ...p, first_name: newFirstName, last_name: newLastName, updated_at: new Date().toISOString() }
+            : p
+        ))
+        
+        toast({
+          title: "Success",
+          description: "Patient updated successfully",
+          variant: "default",
+        })
+      }
+    } catch (error) {
+      console.error('Error editing patient:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update patient",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleDeletePatient = (patientId: string) => {
-    if (confirm('Are you sure you want to delete this patient?')) {
-      setPatients(patients.filter(p => p.id !== patientId))
+  const handleDeletePatient = async (patientId: string) => {
+    try {
+      const patient = (patients || []).find(p => p.id === patientId)
+      if (!patient) {
+        toast({
+          title: "Error",
+          description: "Patient not found",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const confirmed = confirm(`Are you sure you want to delete ${patient.first_name} ${patient.last_name}? This action cannot be undone.`)
+      
+      if (confirmed) {
+        // In a real implementation, this would make an API call to delete the patient
+        setPatients((patients || []).filter(p => p.id !== patientId))
+        
+        toast({
+          title: "Success",
+          description: "Patient deleted successfully",
+          variant: "default",
+        })
+      }
+    } catch (error) {
+      console.error('Error deleting patient:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete patient",
+        variant: "destructive",
+      })
     }
   }
 
@@ -422,18 +534,39 @@ export default function PatientsPage() {
                 <h1 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Patient Registration & Management</h1>
               </div>
               <div className="flex items-center space-x-4">
+                {/* New Patient Registration Button */}
+                <Link href="/patients/register">
+                  <Button className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    Register New Patient
+                  </Button>
+                </Link>
+                
+                {/* Import Patients Button */}
+                <Link href="/patients/import">
+                  <Button 
+                    variant="outline"
+                    className="border-blue-600 text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Import Patients
+                  </Button>
+                </Link>
+                
+                {/* Legacy Import Dialog (keeping for backward compatibility) */}
                 <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
                   <DialogTrigger asChild>
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
-                      <Upload className="h-4 w-4" />
-                      Register Patients
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <Database className="h-4 w-4" />
+                      Legacy Import
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Register Patients from CSV</DialogTitle>
+                      <DialogTitle>Legacy Patient Import (Deprecated)</DialogTitle>
                       <DialogDescription>
-                        Upload a CSV file with patient data to register multiple patients at once. Required columns: NAME, AGE, RESIDENCE, NUMBER, PHONE NUMBER
+                        This is the legacy import method. For new imports, please use the dedicated Import Patients page.
+                        Required columns: NAME, AGE, RESIDENCE, NUMBER, PHONE NUMBER
                       </DialogDescription>
                     </DialogHeader>
                     
@@ -691,20 +824,40 @@ export default function PatientsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
-                  {filteredPatients.map((patient) => (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center">
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                          <span className="ml-2 text-gray-600 dark:text-gray-400">Loading patients...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredPatients.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center">
+                        <div className="text-gray-500 dark:text-gray-400">
+                          <div className="text-4xl mb-4">👥</div>
+                          <p className="text-lg font-medium">No patients found</p>
+                          <p className="text-sm">Start by adding your first patient</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredPatients.map((patient) => (
                     <tr key={patient.id} className="hover:bg-gray-50 dark:hover:bg-slate-700">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
                             <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-slate-600 flex items-center justify-center">
                               <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
-                                {patient.first_name[0]}{patient.last_name[0]}
+                                {(patient.first_name || 'F')[0]}{(patient.last_name || 'L')[0]}
                               </span>
                             </div>
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-slate-100">
-                              {patient.first_name} {patient.last_name}
+                              {patient.first_name || 'Unknown'} {patient.last_name || 'Patient'}
                             </div>
                             <div className="text-sm text-gray-500 dark:text-slate-400">
                               OP: {patient.op_number} • {patient.age ? `${patient.age} years` : 'Age N/A'} • {patient.gender || 'Gender N/A'}
@@ -751,7 +904,8 @@ export default function PatientsPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

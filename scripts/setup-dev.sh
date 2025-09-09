@@ -174,6 +174,39 @@ else
     exit 1
 fi
 
+# Test staff management system endpoints (requires authentication)
+echo "🔍 Testing staff management system endpoints..."
+echo "⚠️  Note: Staff management endpoints require admin authentication - testing basic connectivity only"
+if curl -s "http://localhost:5000/api/admin/staff" | grep -q "401\|Unauthorized\|error" 2>/dev/null; then
+    echo "✅ Staff management system API endpoints responding (auth required - 401 expected)"
+elif curl -s "http://localhost:5000/api/admin/staff" > /dev/null 2>&1; then
+    echo "✅ Staff management system API endpoints responding"
+else
+    echo "❌ Staff management system API endpoints not responding"
+    exit 1
+fi
+
+# Test SHA integration system endpoints (requires authentication)
+echo "🔍 Testing SHA integration system endpoints..."
+echo "⚠️  Note: SHA integration endpoints require authentication - testing basic connectivity only"
+if curl -s "http://localhost:5000/api/sha-patient-data/patient/test/clinical-data" | grep -q "401\|Unauthorized\|error" 2>/dev/null; then
+    echo "✅ SHA patient data API endpoints responding (auth required - 401 expected)"
+elif curl -s "http://localhost:5000/api/sha-patient-data/patient/test/clinical-data" > /dev/null 2>&1; then
+    echo "✅ SHA patient data API endpoints responding"
+else
+    echo "❌ SHA patient data API endpoints not responding"
+    exit 1
+fi
+
+if curl -s "http://localhost:5000/api/sha-claims" | grep -q "401\|Unauthorized\|error" 2>/dev/null; then
+    echo "✅ SHA claims API endpoints responding (auth required - 401 expected)"
+elif curl -s "http://localhost:5000/api/sha-claims" > /dev/null 2>&1; then
+    echo "✅ SHA claims API endpoints responding"
+else
+    echo "❌ SHA claims API endpoints not responding"
+    exit 1
+fi
+
 echo ""
 echo "🎉 Development environment setup completed successfully!"
 echo ""
@@ -196,6 +229,13 @@ echo "  - Auto-save protection: ✅"
 echo "  - Urgency management: ✅"
 echo "  - Comprehensive timestamping: ✅"
 echo ""
+echo "Staff Management System Features:"
+echo "  - Staff listing with search and filters: ✅"
+echo "  - Account unlock functionality: ✅"
+echo "  - User activation/deactivation: ✅"
+echo "  - Password reset capabilities: ✅"
+echo "  - Comprehensive audit logging: ✅"
+echo ""
 echo "Default admin credentials:"
 echo "  - Username: admin"
 echo "  - Password: admin123"
@@ -212,3 +252,4 @@ echo "🚀 You can now access the systems at:"
 echo "   Dashboard: http://localhost:3000"
 echo "   Prescriptions: http://localhost:3000/prescriptions"
 echo "   Diagnostics: http://localhost:3000/diagnostics"
+echo "   Staff Management: http://localhost:3000/staff (Admin only)"

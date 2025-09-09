@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback } from 'react'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStore } from '@/lib/auth'
 import { useToast } from '@/hooks/use-toast'
+import { io, Socket } from 'socket.io-client'
 
 interface SyncEvent {
   type: string
@@ -62,8 +63,7 @@ export const useSync = () => {
     if (!accessToken || !user) return
 
     const initializeSocket = () => {
-      // Import socket.io-client dynamically to avoid SSR issues
-      import('socket.io-client').then(({ io }) => {
+      try {
         const newSocket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', {
           auth: {
             token: accessToken
@@ -170,7 +170,14 @@ export const useSync = () => {
         })
 
         setSocket(newSocket)
-      })
+      } catch (error) {
+        console.error('Failed to initialize socket:', error)
+        toast({
+          title: 'Connection Error',
+          description: 'Failed to connect to sync service',
+          variant: 'destructive'
+        })
+      }
     }
 
     initializeSocket()

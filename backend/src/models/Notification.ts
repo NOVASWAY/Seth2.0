@@ -211,6 +211,45 @@ export class NotificationModel {
     }
   }
 
+  /**
+   * Get unread notifications count for a user
+   */
+  static async getUnreadCount(userId: string): Promise<number> {
+    const result = await pool.query(
+      'SELECT COUNT(*) as count FROM notifications WHERE user_id = $1 AND is_read = false',
+      [userId]
+    )
+    return parseInt(result.rows[0].count)
+  }
+
+  /**
+   * Get user notifications with optional filtering
+   */
+  static async getUserNotifications(
+    userId: string, 
+    options: { limit?: number; unreadOnly?: boolean } = {}
+  ): Promise<Notification[]> {
+    const { limit = 50, unreadOnly = false } = options
+    
+    let query = `
+      SELECT n.*, u.username
+      FROM notifications n
+      LEFT JOIN users u ON n.user_id = u.id
+      WHERE n.user_id = $1
+    `
+    const params: any[] = [userId]
+    
+    if (unreadOnly) {
+      query += ' AND n.is_read = false'
+    }
+    
+    query += ' ORDER BY n.created_at DESC LIMIT $2'
+    params.push(limit)
+    
+    const result = await pool.query(query, params)
+    return result.rows.map(this.mapRowToNotification)
+  }
+
   private static mapRowToNotification(row: any): Notification {
     return {
       id: row.id,

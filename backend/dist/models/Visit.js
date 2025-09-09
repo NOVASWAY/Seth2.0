@@ -10,7 +10,8 @@ class VisitModel {
         const query = `
       SELECT id, patient_id as "patientId", op_number as "opNumber",
              visit_date as "visitDate", status, chief_complaint as "chiefComplaint",
-             triage_category as "triageCategory", created_at as "createdAt",
+             triage_category as "triageCategory", payment_type as "paymentType",
+             payment_reference as "paymentReference", created_at as "createdAt",
              updated_at as "updatedAt"
       FROM visits WHERE id = $1
     `;
@@ -21,7 +22,8 @@ class VisitModel {
         const query = `
       SELECT id, patient_id as "patientId", op_number as "opNumber",
              visit_date as "visitDate", status, chief_complaint as "chiefComplaint",
-             triage_category as "triageCategory", created_at as "createdAt",
+             triage_category as "triageCategory", payment_type as "paymentType",
+             payment_reference as "paymentReference", created_at as "createdAt",
              updated_at as "updatedAt"
       FROM visits 
       WHERE patient_id = $1
@@ -35,7 +37,8 @@ class VisitModel {
         const query = `
       SELECT id, patient_id as "patientId", op_number as "opNumber",
              visit_date as "visitDate", status, chief_complaint as "chiefComplaint",
-             triage_category as "triageCategory", created_at as "createdAt",
+             triage_category as "triageCategory", payment_type as "paymentType",
+             payment_reference as "paymentReference", created_at as "createdAt",
              updated_at as "updatedAt"
       FROM visits 
       WHERE visit_date = CURRENT_DATE
@@ -91,11 +94,12 @@ class VisitModel {
     }
     static async create(visitData) {
         const query = `
-      INSERT INTO visits (patient_id, op_number, chief_complaint, triage_category)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO visits (patient_id, op_number, chief_complaint, triage_category, payment_type, payment_reference)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id, patient_id as "patientId", op_number as "opNumber",
                 visit_date as "visitDate", status, chief_complaint as "chiefComplaint",
-                triage_category as "triageCategory", created_at as "createdAt",
+                triage_category as "triageCategory", payment_type as "paymentType",
+                payment_reference as "paymentReference", created_at as "createdAt",
                 updated_at as "updatedAt"
     `;
         const result = await database_1.default.query(query, [
@@ -103,6 +107,8 @@ class VisitModel {
             visitData.opNumber,
             visitData.chiefComplaint,
             visitData.triageCategory || "NORMAL",
+            visitData.paymentType || null,
+            visitData.paymentReference || null,
         ]);
         return result.rows[0];
     }
@@ -125,6 +131,16 @@ class VisitModel {
             values.push(visitData.triageCategory);
             paramCount++;
         }
+        if (visitData.paymentType !== undefined) {
+            fields.push(`payment_type = $${paramCount}`);
+            values.push(visitData.paymentType);
+            paramCount++;
+        }
+        if (visitData.paymentReference !== undefined) {
+            fields.push(`payment_reference = $${paramCount}`);
+            values.push(visitData.paymentReference);
+            paramCount++;
+        }
         if (fields.length === 0) {
             return this.findById(id);
         }
@@ -135,7 +151,8 @@ class VisitModel {
       WHERE id = $${paramCount}
       RETURNING id, patient_id as "patientId", op_number as "opNumber",
                 visit_date as "visitDate", status, chief_complaint as "chiefComplaint",
-                triage_category as "triageCategory", created_at as "createdAt",
+                triage_category as "triageCategory", payment_type as "paymentType",
+                payment_reference as "paymentReference", created_at as "createdAt",
                 updated_at as "updatedAt"
     `;
         const result = await database_1.default.query(query, values);

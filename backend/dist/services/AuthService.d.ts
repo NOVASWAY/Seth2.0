@@ -18,7 +18,7 @@ export declare class AuthService {
     private static readonly ACCESS_TOKEN_EXPIRES_IN;
     private static readonly REFRESH_TOKEN_EXPIRES_IN;
     private static readonly MAX_LOGIN_ATTEMPTS;
-    static login(credentials: LoginCredentials): Promise<{
+    static login(credentials: LoginCredentials, ipAddress?: string, userAgent?: string): Promise<{
         user: AuthUser;
         tokens: AuthTokens;
     } | null>;

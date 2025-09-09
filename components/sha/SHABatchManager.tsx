@@ -322,32 +322,32 @@ export function SHABatchManager() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-white dark:bg-gray-900 min-h-screen p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">SHA Batch Management</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">SHA Batch Management</h1>
+          <p className="text-gray-600 dark:text-gray-300">
             Create and manage SHA insurance claim batches
           </p>
         </div>
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
+            <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-600 dark:text-white font-medium">
               <Plus className="h-4 w-4" />
               Create Batch
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600">
             <DialogHeader>
-              <DialogTitle>Create New SHA Batch</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-gray-900 dark:text-white">Create New SHA Batch</DialogTitle>
+              <DialogDescription className="text-gray-600 dark:text-gray-300">
                 Create a new batch of SHA claims for submission
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Batch Type</Label>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Batch Type</Label>
                 <Select
                   value={createForm.batchType}
                   onValueChange={(value) => setCreateForm(prev => ({ 
@@ -355,7 +355,7 @@ export function SHABatchManager() {
                     batchType: value as "weekly" | "monthly" | "custom" 
                   }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -440,20 +440,20 @@ export function SHABatchManager() {
       )}
 
       {/* Filters */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardContent className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-200">Status</Label>
               <Select
                 value={filters.status || ""}
                 onValueChange={(value) => applyFilters({ ...filters, status: value || undefined })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="all">All statuses</SelectItem>
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem value="submitted">Submitted</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
@@ -471,7 +471,7 @@ export function SHABatchManager() {
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All types</SelectItem>
+                  <SelectItem value="all">All types</SelectItem>
                   <SelectItem value="weekly">Weekly</SelectItem>
                   <SelectItem value="monthly">Monthly</SelectItem>
                   <SelectItem value="custom">Custom</SelectItem>

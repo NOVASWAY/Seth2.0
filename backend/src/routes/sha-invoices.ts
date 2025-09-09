@@ -5,6 +5,7 @@ import { UserRole } from "../types"
 import { pool } from "../config/database"
 import { generateInvoiceNumber, formatSHACurrency, calculateInvoiceDueDate } from "../utils/invoiceUtils"
 import { SHAService } from "../services/SHAService"
+import crypto from "crypto"
 
 const router = express.Router()
 const shaService = new SHAService()
@@ -526,6 +527,230 @@ router.get(
       res.status(500).json({
         success: false,
         message: "Failed to fetch audit trail"
+      })
+    }
+  }
+)
+
+// Generate comprehensive SHA invoice with patient clinical data
+router.post(
+  "/generate-comprehensive/:claimId",
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER]),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const { claimId } = req.params
+
+      // Get claim details
+      const claimResult = await pool.query(
+        `SELECT 
+          c.*,
+          p.op_number, p.first_name, p.last_name, p.insurance_number, p.phone_number,
+          p.date_of_birth, p.gender, p.area,
+          u.username as created_by_username
+         FROM sha_claims c
+         JOIN patients p ON c.patient_id = p.id
+         JOIN users u ON c.created_by = u.id
+         WHERE c.id = $1`,
+        [claimId]
+      )
+
+      if (claimResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "SHA claim not found"
+        })
+      }
+
+      const claim = claimResult.rows[0]
+
+      // Get comprehensive patient clinical data
+      const clinicalDataQuery = `
+        SELECT 
+          -- Patient encounters
+          pe.id as encounter_id, pe.encounter_type, pe.encounter_date, pe.chief_complaint,
+          pe.department, pe.location, pe.sha_eligible,
+          -- Diagnoses
+          d.diagnosis_code, d.diagnosis_description, d.diagnosis_type,
+          -- Prescriptions
+          pr.id as prescription_id, pr.status as prescription_status,
+          pi.item_name, pi.dosage, pi.frequency, pi.duration, pi.quantity_prescribed,
+          -- Lab requests
+          lr.id as lab_request_id, lr.status as lab_status, lr.urgency,
+          lri.test_name, lri.test_code, lri.cost as test_cost, lri.result,
+          -- Services
+          s.service_name, s.service_code, s.cost as service_cost, s.quantity as service_quantity
+        FROM patient_encounters pe
+        LEFT JOIN encounter_diagnoses ed ON pe.id = ed.encounter_id
+        LEFT JOIN diagnoses d ON ed.diagnosis_id = d.id
+        LEFT JOIN prescriptions pr ON pe.id = pr.consultation_id
+        LEFT JOIN prescription_items pi ON pr.id = pi.prescription_id
+        LEFT JOIN lab_requests lr ON pe.visit_id = lr.visit_id
+        LEFT JOIN lab_request_items lri ON lr.id = lri.lab_request_id
+        LEFT JOIN encounter_services es ON pe.id = es.encounter_id
+        LEFT JOIN services s ON es.service_id = s.id
+        WHERE pe.patient_id = $1 AND pe.visit_id = $2
+        ORDER BY pe.encounter_date DESC
+      `
+
+      const clinicalResult = await pool.query(clinicalDataQuery, [claim.patient_id, claim.visit_id])
+      const clinicalData = clinicalResult.rows
+
+      // Organize clinical data for invoice
+      const invoiceData = {
+        // Patient Information
+        patient: {
+          name: `${claim.first_name} ${claim.last_name}`,
+          op_number: claim.op_number,
+          sha_number: claim.insurance_number,
+          phone_number: claim.phone_number,
+          date_of_birth: claim.date_of_birth,
+          gender: claim.gender,
+          area: claim.area
+        },
+        
+        // Claim Information
+        claim: {
+          id: claim.id,
+          claim_number: claim.claim_number,
+          visit_id: claim.visit_id,
+          visit_date: claim.visit_date,
+          primary_diagnosis_code: claim.primary_diagnosis_code,
+          primary_diagnosis_description: claim.primary_diagnosis_description,
+          secondary_diagnosis_codes: claim.secondary_diagnosis_codes,
+          secondary_diagnosis_descriptions: claim.secondary_diagnosis_descriptions,
+          claim_amount: claim.claim_amount,
+          status: claim.status,
+          created_at: claim.created_at
+        },
+
+        // Clinical Services
+        services: [],
+        diagnoses: [],
+        prescriptions: [],
+        lab_tests: [],
+
+        // Invoice Details
+        invoice: {
+          invoice_number: generateInvoiceNumber(),
+          generated_at: new Date().toISOString(),
+          due_date: calculateInvoiceDueDate(new Date()),
+          total_amount: 0,
+          provider_code: claim.provider_code,
+          provider_name: claim.provider_name,
+          facility_level: claim.facility_level
+        }
+      }
+
+      // Process clinical data
+      let totalAmount = 0
+      const processedServices = new Set()
+      const processedDiagnoses = new Set()
+      const processedPrescriptions = new Set()
+      const processedLabTests = new Set()
+
+      clinicalData.forEach(row => {
+        // Add services
+        if (row.service_name && !processedServices.has(row.service_name)) {
+          const serviceAmount = (parseFloat(row.service_cost) || 0) * (parseInt(row.service_quantity) || 1)
+          invoiceData.services.push({
+            service_name: row.service_name,
+            service_code: row.service_code,
+            amount_charged: serviceAmount,
+            quantity: row.service_quantity || 1
+          })
+          totalAmount += serviceAmount
+          processedServices.add(row.service_name)
+        }
+
+        // Add diagnoses
+        if (row.diagnosis_code && !processedDiagnoses.has(row.diagnosis_code)) {
+          invoiceData.diagnoses.push({
+            code: row.diagnosis_code,
+            description: row.diagnosis_description,
+            type: row.diagnosis_type
+          })
+          processedDiagnoses.add(row.diagnosis_code)
+        }
+
+        // Add prescriptions
+        if (row.prescription_id && !processedPrescriptions.has(row.prescription_id)) {
+          invoiceData.prescriptions.push({
+            prescription_id: row.prescription_id,
+            status: row.prescription_status,
+            items: [{
+              name: row.item_name,
+              dosage: row.dosage,
+              frequency: row.frequency,
+              duration: row.duration,
+              quantity: row.quantity_prescribed
+            }]
+          })
+          processedPrescriptions.add(row.prescription_id)
+        }
+
+        // Add lab tests
+        if (row.lab_request_id && !processedLabTests.has(row.lab_request_id)) {
+          const testAmount = parseFloat(row.test_cost) || 0
+          invoiceData.lab_tests.push({
+            lab_request_id: row.lab_request_id,
+            status: row.lab_status,
+            urgency: row.urgency,
+            tests: [{
+              name: row.test_name,
+              code: row.test_code,
+              cost: testAmount,
+              result: row.result
+            }]
+          })
+          totalAmount += testAmount
+          processedLabTests.add(row.lab_request_id)
+        }
+      })
+
+      // Update total amount
+      invoiceData.invoice.total_amount = totalAmount
+
+      // Create invoice record in database
+      const invoiceId = crypto.randomUUID()
+      const invoiceResult = await pool.query(
+        `INSERT INTO sha_invoices (
+          id, claim_id, invoice_number, patient_name, sha_beneficiary_id,
+          op_number, visit_date, service_given, amount_charged, diagnosis,
+          status, generated_at, generated_by, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        RETURNING *`,
+        [
+          invoiceId,
+          claimId,
+          invoiceData.invoice.invoice_number,
+          invoiceData.patient.name,
+          invoiceData.patient.sha_number,
+          invoiceData.patient.op_number,
+          claim.visit_date,
+          JSON.stringify(invoiceData.services),
+          totalAmount,
+          JSON.stringify(invoiceData.diagnoses),
+          'GENERATED',
+          new Date(),
+          req.user!.id,
+          new Date(),
+          new Date()
+        ]
+      )
+
+      res.json({
+        success: true,
+        data: {
+          invoice: invoiceResult.rows[0],
+          invoice_data: invoiceData,
+          message: "Comprehensive SHA invoice generated successfully"
+        }
+      })
+    } catch (error) {
+      console.error('Error generating comprehensive SHA invoice:', error)
+      res.status(500).json({
+        success: false,
+        message: "Failed to generate comprehensive SHA invoice"
       })
     }
   }

@@ -5,6 +5,7 @@ import { AdminDashboard } from "@/components/admin/AdminDashboard"
 import { UserManagement } from "@/components/admin/UserManagement"
 import { UserRecoveryForm } from "@/components/admin/UserRecoveryForm"
 import { EventLogger } from "@/components/admin/EventLogger"
+import { AuditLogViewer } from "@/components/admin/AuditLogViewer"
 import { Shield } from "lucide-react"
 
 export default function AdminPage() {
@@ -49,7 +50,7 @@ export default function AdminPage() {
         </TabsContent>
 
         <TabsContent value="audit">
-          <div className="text-center py-8 text-muted-foreground">Audit log viewer will be implemented here</div>
+          <AuditLogViewer />
         </TabsContent>
 
         <TabsContent value="reports">

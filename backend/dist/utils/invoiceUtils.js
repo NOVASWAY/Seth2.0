@@ -6,6 +6,9 @@ exports.generateClaimNumber = generateClaimNumber;
 exports.validateSHAMemberNumber = validateSHAMemberNumber;
 exports.getSHAServiceCode = getSHAServiceCode;
 exports.formatSHACurrency = formatSHACurrency;
+exports.formatCurrency = formatCurrency;
+exports.parseCurrency = parseCurrency;
+exports.isValidCurrencyAmount = isValidCurrencyAmount;
 exports.calculateInvoiceDueDate = calculateInvoiceDueDate;
 exports.generateInvoiceReference = generateInvoiceReference;
 exports.validateDiagnosisCode = validateDiagnosisCode;
@@ -93,6 +96,21 @@ function formatSHACurrency(amount) {
         currency: 'KES',
         minimumFractionDigits: 2
     }).format(amount);
+}
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-KE', {
+        style: 'currency',
+        currency: 'KES',
+        minimumFractionDigits: 2
+    }).format(amount);
+}
+function parseCurrency(currencyString) {
+    const cleaned = currencyString.replace(/[^\d.]/g, '');
+    return parseFloat(cleaned) || 0;
+}
+function isValidCurrencyAmount(value) {
+    const parsed = parseCurrency(value);
+    return !isNaN(parsed) && parsed >= 0;
 }
 function calculateInvoiceDueDate(invoiceDate, paymentTerms = 30) {
     const dueDate = new Date(invoiceDate);

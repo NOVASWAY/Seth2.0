@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+ import { useState, useEffect } from "react"
 import { useAuthStore } from "../../lib/auth"
 import { ProtectedRoute } from "../../components/auth/ProtectedRoute"
 import { UserRole } from "../../types"
@@ -121,6 +121,59 @@ export default function PrescriptionsPage() {
     return matchesSearch
   })
 
+  const handleNewPrescription = () => {
+    // For now, show a simple dialog
+    // In a real implementation, this would open a prescription form
+    alert("New Prescription functionality will be implemented here. This would open a form to create a new prescription.")
+  }
+
+  const handleViewPrescription = (prescription: Prescription) => {
+    // For now, show prescription details in an alert
+    const details = `
+Prescription Details:
+- Patient: ${prescription.patient?.first_name} ${prescription.patient?.last_name}
+- Prescribed By: ${prescription.prescribed_by}
+- Date: ${new Date(prescription.prescription_date).toLocaleString()}
+- Status: ${prescription.status}
+- Notes: ${prescription.notes || 'None'}
+- Items: ${prescription.items.length} medication(s)
+    `
+    alert(details)
+  }
+
+  const handleEditPrescription = (prescription: Prescription) => {
+    // For now, show a simple edit dialog
+    const newNotes = prompt("Enter new notes:", prescription.notes)
+    if (newNotes !== null && newNotes !== prescription.notes) {
+      // Update the prescription in local state
+      setPrescriptions(prescriptions.map(p => 
+        p.id === prescription.id 
+          ? { ...p, notes: newNotes, updated_at: new Date().toISOString() }
+          : p
+      ))
+      
+      toast({
+        title: "Success",
+        description: "Prescription updated successfully",
+        variant: "default",
+      })
+    }
+  }
+
+  const handleDeletePrescription = (prescription: Prescription) => {
+    const confirmed = confirm(`Are you sure you want to delete this prescription for ${prescription.patient?.first_name} ${prescription.patient?.last_name}? This action cannot be undone.`)
+    
+    if (confirmed) {
+      setPrescriptions(prescriptions.filter(p => p.id !== prescription.id))
+      
+      toast({
+        title: "Success",
+        description: "Prescription deleted successfully",
+        variant: "default",
+      })
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "active":
@@ -168,7 +221,7 @@ export default function PrescriptionsPage() {
                   <p className="text-slate-600 dark:text-slate-400">Manage patient prescriptions and medications</p>
                 </div>
                 
-                <Button className="flex items-center gap-2">
+                <Button onClick={handleNewPrescription} className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
                   New Prescription
                 </Button>
@@ -280,6 +333,7 @@ export default function PrescriptionsPage() {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => handleViewPrescription(prescription)}
                               className="border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300"
                             >
                               <Eye className="h-4 w-4 mr-1" />
@@ -289,6 +343,7 @@ export default function PrescriptionsPage() {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => handleEditPrescription(prescription)}
                               className="border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300"
                             >
                               <Edit className="h-4 w-4 mr-1" />

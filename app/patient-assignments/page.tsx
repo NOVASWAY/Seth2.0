@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { useAuthStore } from "@/stores/authStore"
+import { useAuthStore } from "@/lib/auth"
 import { 
   Plus, 
   Search, 
@@ -70,9 +70,9 @@ export default function PatientAssignmentsPage() {
 
   // Filters
   const [filters, setFilters] = useState({
-    status: "",
-    assignment_type: "",
-    priority: "",
+    status: "all",
+    assignment_type: "all",
+    priority: "all",
     assigned_to_user_id: "",
     search: ""
   })
@@ -305,47 +305,68 @@ export default function PatientAssignmentsPage() {
   }
 
   const filteredAssignments = assignments.filter(assignment => {
+    // Search filter
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase()
-      return (
+      const matchesSearch = (
         assignment.patient_name?.toLowerCase().includes(searchTerm) ||
         assignment.assigned_to_name?.toLowerCase().includes(searchTerm) ||
         assignment.assigned_by_name?.toLowerCase().includes(searchTerm) ||
         assignment.assignment_type.toLowerCase().includes(searchTerm)
       )
+      if (!matchesSearch) return false
     }
+
+    // Status filter
+    if (filters.status && filters.status !== "all") {
+      if (assignment.status !== filters.status) return false
+    }
+
+    // Assignment type filter
+    if (filters.assignment_type && filters.assignment_type !== "all") {
+      if (assignment.assignment_type !== filters.assignment_type) return false
+    }
+
+    // Priority filter
+    if (filters.priority && filters.priority !== "all") {
+      if (assignment.priority !== filters.priority) return false
+    }
+
     return true
   })
 
   if (!accessToken) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="text-center py-8">
-          <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
-          <p className="text-muted-foreground">Please log in to access patient assignments.</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="container mx-auto p-6">
+          <div className="text-center py-8">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Authentication Required</h2>
+            <p className="text-gray-600 dark:text-gray-300">Please log in to access patient assignments.</p>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Patient Assignments</h1>
-          <p className="text-muted-foreground">Manage patient assignments to staff members</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Patient Assignments</h1>
+          <p className="text-gray-600 dark:text-gray-300">Manage patient assignments to staff members</p>
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => { setEditingAssignment(null); resetForm(); }} className="dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+            <Button onClick={() => { setEditingAssignment(null); resetForm(); }} className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-600 dark:text-white font-medium">
               <Plus className="h-4 w-4 mr-2" />
               Assign Patient
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl dark:bg-gray-800 dark:border-gray-600">
+          <DialogContent className="max-w-2xl bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600">
             <DialogHeader>
-              <DialogTitle className="dark:text-white">
+              <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white">
                 {editingAssignment ? "Edit Assignment" : "Assign Patient"}
               </DialogTitle>
             </DialogHeader>
@@ -353,14 +374,18 @@ export default function PatientAssignmentsPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="patient_id" className="dark:text-white">Patient</Label>
+                  <Label htmlFor="patient_id" className="text-sm font-medium text-gray-700 dark:text-gray-200">Patient</Label>
                   <Select value={formData.patient_id} onValueChange={(value) => setFormData({...formData, patient_id: value})}>
-                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:border-gray-400 dark:hover:border-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
                       <SelectValue placeholder="Select patient" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 shadow-lg dark:shadow-2xl">
                       {patients.map(patient => (
-                        <SelectItem key={patient.id} value={patient.id}>
+                        <SelectItem 
+                          key={patient.id} 
+                          value={patient.id}
+                          className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer"
+                        >
                           {patient.first_name} {patient.last_name} ({patient.op_number})
                         </SelectItem>
                       ))}
@@ -369,14 +394,18 @@ export default function PatientAssignmentsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="assigned_to_user_id" className="dark:text-white">Assign To</Label>
+                  <Label htmlFor="assigned_to_user_id" className="text-sm font-medium text-gray-700 dark:text-gray-200">Assign To</Label>
                   <Select value={formData.assigned_to_user_id} onValueChange={(value) => setFormData({...formData, assigned_to_user_id: value})}>
-                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:border-gray-400 dark:hover:border-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
                       <SelectValue placeholder="Select user" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 shadow-lg dark:shadow-2xl">
                       {users.map(user => (
-                        <SelectItem key={user.id} value={user.id}>
+                        <SelectItem 
+                          key={user.id} 
+                          value={user.id}
+                          className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer"
+                        >
                           {user.username} ({user.role})
                         </SelectItem>
                       ))}
@@ -385,77 +414,77 @@ export default function PatientAssignmentsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="assignment_type" className="dark:text-white">Assignment Type</Label>
+                  <Label htmlFor="assignment_type" className="text-sm font-medium text-gray-700 dark:text-gray-200">Assignment Type</Label>
                   <Select value={formData.assignment_type} onValueChange={(value) => setFormData({...formData, assignment_type: value})}>
-                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:border-gray-400 dark:hover:border-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="GENERAL">General</SelectItem>
-                      <SelectItem value="PRIMARY_CARE">Primary Care</SelectItem>
-                      <SelectItem value="SPECIALIST">Specialist</SelectItem>
-                      <SelectItem value="NURSE">Nurse</SelectItem>
-                      <SelectItem value="PHARMACIST">Pharmacist</SelectItem>
-                      <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
-                      <SelectItem value="REFERRAL">Referral</SelectItem>
+                    <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 shadow-lg dark:shadow-2xl">
+                      <SelectItem value="GENERAL" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">General</SelectItem>
+                      <SelectItem value="PRIMARY_CARE" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Primary Care</SelectItem>
+                      <SelectItem value="SPECIALIST" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Specialist</SelectItem>
+                      <SelectItem value="NURSE" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Nurse</SelectItem>
+                      <SelectItem value="PHARMACIST" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Pharmacist</SelectItem>
+                      <SelectItem value="FOLLOW_UP" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Follow Up</SelectItem>
+                      <SelectItem value="REFERRAL" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Referral</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="priority" className="dark:text-white">Priority</Label>
+                  <Label htmlFor="priority" className="text-sm font-medium text-gray-700 dark:text-gray-200">Priority</Label>
                   <Select value={formData.priority} onValueChange={(value) => setFormData({...formData, priority: value})}>
-                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:border-gray-400 dark:hover:border-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="LOW">Low</SelectItem>
-                      <SelectItem value="NORMAL">Normal</SelectItem>
-                      <SelectItem value="HIGH">High</SelectItem>
-                      <SelectItem value="URGENT">Urgent</SelectItem>
+                    <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 shadow-lg dark:shadow-2xl">
+                      <SelectItem value="LOW" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Low</SelectItem>
+                      <SelectItem value="NORMAL" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Normal</SelectItem>
+                      <SelectItem value="HIGH" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">High</SelectItem>
+                      <SelectItem value="URGENT" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Urgent</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="due_date" className="dark:text-white">Due Date (Optional)</Label>
+                  <Label htmlFor="due_date" className="text-sm font-medium text-gray-700 dark:text-gray-200">Due Date (Optional)</Label>
                   <Input
                     id="due_date"
                     type="date"
                     value={formData.due_date}
                     onChange={(e) => setFormData({...formData, due_date: e.target.value})}
-                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="assignment_reason" className="dark:text-white">Assignment Reason</Label>
+                <Label htmlFor="assignment_reason" className="text-sm font-medium text-gray-700 dark:text-gray-200">Assignment Reason</Label>
                 <Input
                   id="assignment_reason"
                   value={formData.assignment_reason}
                   onChange={(e) => setFormData({...formData, assignment_reason: e.target.value})}
                   placeholder="Reason for assignment"
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes" className="dark:text-white">Notes (Optional)</Label>
+                <Label htmlFor="notes" className="text-sm font-medium text-gray-700 dark:text-gray-200">Notes (Optional)</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData({...formData, notes: e.target.value})}
                   placeholder="Additional notes"
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                 />
               </div>
 
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="dark:border-gray-600 dark:text-white dark:hover:bg-gray-700">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
                   Cancel
                 </Button>
-                <Button type="submit" className="dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-600 dark:text-white font-medium">
                   {editingAssignment ? "Update Assignment" : "Create Assignment"}
                 </Button>
               </div>
@@ -465,9 +494,9 @@ export default function PatientAssignmentsPage() {
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 dark:text-white">
+          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
             <Filter className="h-5 w-5" />
             Filters
           </CardTitle>
@@ -475,63 +504,63 @@ export default function PatientAssignmentsPage() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="search" className="dark:text-white">Search</Label>
+              <Label htmlFor="search" className="text-sm font-medium text-gray-700 dark:text-gray-200">Search</Label>
               <Input
                 id="search"
                 placeholder="Search assignments..."
                 value={filters.search}
                 onChange={(e) => setFilters({...filters, search: e.target.value})}
-                className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status" className="dark:text-white">Status</Label>
+              <Label htmlFor="status" className="text-sm font-medium text-gray-700 dark:text-gray-200">Status</Label>
               <Select value={filters.status} onValueChange={(value) => setFilters({...filters, status: value})}>
-                <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:border-gray-400 dark:hover:border-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                  <SelectItem value="TRANSFERRED">Transferred</SelectItem>
+                <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 shadow-lg dark:shadow-2xl">
+                  <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">All Statuses</SelectItem>
+                  <SelectItem value="ACTIVE" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Active</SelectItem>
+                  <SelectItem value="COMPLETED" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Completed</SelectItem>
+                  <SelectItem value="CANCELLED" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Cancelled</SelectItem>
+                  <SelectItem value="TRANSFERRED" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Transferred</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="assignment_type" className="dark:text-white">Type</Label>
+              <Label htmlFor="assignment_type" className="text-sm font-medium text-gray-700 dark:text-gray-200">Type</Label>
               <Select value={filters.assignment_type} onValueChange={(value) => setFilters({...filters, assignment_type: value})}>
-                <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:border-gray-400 dark:hover:border-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
-                  <SelectItem value="GENERAL">General</SelectItem>
-                  <SelectItem value="PRIMARY_CARE">Primary Care</SelectItem>
-                  <SelectItem value="SPECIALIST">Specialist</SelectItem>
-                  <SelectItem value="NURSE">Nurse</SelectItem>
-                  <SelectItem value="PHARMACIST">Pharmacist</SelectItem>
-                  <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
-                  <SelectItem value="REFERRAL">Referral</SelectItem>
+                <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 shadow-lg dark:shadow-2xl">
+                  <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">All Types</SelectItem>
+                  <SelectItem value="GENERAL" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">General</SelectItem>
+                  <SelectItem value="PRIMARY_CARE" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Primary Care</SelectItem>
+                  <SelectItem value="SPECIALIST" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Specialist</SelectItem>
+                  <SelectItem value="NURSE" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Nurse</SelectItem>
+                  <SelectItem value="PHARMACIST" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Pharmacist</SelectItem>
+                  <SelectItem value="FOLLOW_UP" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Follow Up</SelectItem>
+                  <SelectItem value="REFERRAL" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Referral</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="priority" className="dark:text-white">Priority</Label>
+              <Label htmlFor="priority" className="text-sm font-medium text-gray-700 dark:text-gray-200">Priority</Label>
               <Select value={filters.priority} onValueChange={(value) => setFilters({...filters, priority: value})}>
-                <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:border-gray-400 dark:hover:border-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
                   <SelectValue placeholder="All priorities" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Priorities</SelectItem>
-                  <SelectItem value="LOW">Low</SelectItem>
-                  <SelectItem value="NORMAL">Normal</SelectItem>
-                  <SelectItem value="HIGH">High</SelectItem>
-                  <SelectItem value="URGENT">Urgent</SelectItem>
+                <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 shadow-lg dark:shadow-2xl">
+                  <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">All Priorities</SelectItem>
+                  <SelectItem value="LOW" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Low</SelectItem>
+                  <SelectItem value="NORMAL" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Normal</SelectItem>
+                  <SelectItem value="HIGH" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">High</SelectItem>
+                  <SelectItem value="URGENT" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 cursor-pointer">Urgent</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -540,9 +569,9 @@ export default function PatientAssignmentsPage() {
       </Card>
 
       {/* Assignments List */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 dark:text-white">
+          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
             <Users className="h-5 w-5" />
             Assignments ({filteredAssignments.length})
           </CardTitle>
@@ -550,58 +579,58 @@ export default function PatientAssignmentsPage() {
         <CardContent>
           {loading ? (
             <div className="text-center py-8">
-              <RefreshCw className="h-6 w-6 animate-spin mx-auto" />
-              <div className="mt-2 text-muted-foreground">Loading assignments...</div>
+              <RefreshCw className="h-6 w-6 animate-spin mx-auto text-gray-600 dark:text-gray-400" />
+              <div className="mt-2 text-gray-600 dark:text-gray-400">Loading assignments...</div>
             </div>
           ) : (
             <div className="space-y-4">
               {filteredAssignments.map((assignment) => (
                 <div
                   key={assignment.id}
-                  className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-600 dark:bg-gray-800/50"
+                  className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="font-medium dark:text-white">
+                      <div className="font-semibold text-gray-900 dark:text-white">
                         {assignment.patient_name}
                       </div>
                       {getStatusBadge(assignment.status)}
                       {getPriorityBadge(assignment.priority)}
-                      <Badge variant="outline" className="dark:border-gray-600 dark:text-white">
+                      <Badge variant="outline" className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
                         {assignment.assignment_type.replace("_", " ")}
                       </Badge>
                     </div>
                     
-                    <div className="text-sm text-muted-foreground space-y-1">
+                    <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1">
                           <User className="h-3 w-3" />
-                          Assigned to: <span className="font-medium">{assignment.assigned_to_name}</span>
+                          Assigned to: <span className="font-medium text-gray-900 dark:text-white">{assignment.assigned_to_name}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <User className="h-3 w-3" />
-                          Assigned by: <span className="font-medium">{assignment.assigned_by_name}</span>
+                          Assigned by: <span className="font-medium text-gray-900 dark:text-white">{assignment.assigned_by_name}</span>
                         </div>
                       </div>
                       
                       {assignment.assignment_reason && (
-                        <div>Reason: {assignment.assignment_reason}</div>
+                        <div>Reason: <span className="text-gray-900 dark:text-white">{assignment.assignment_reason}</span></div>
                       )}
                       
                       {assignment.due_date && (
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          Due: {new Date(assignment.due_date).toLocaleDateString()}
+                          Due: <span className="text-gray-900 dark:text-white">{new Date(assignment.due_date).toLocaleDateString()}</span>
                         </div>
                       )}
                       
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        Assigned: {new Date(assignment.assigned_at).toLocaleString()}
+                        Assigned: <span className="text-gray-900 dark:text-white">{new Date(assignment.assigned_at).toLocaleString()}</span>
                       </div>
                       
                       {assignment.notes && (
-                        <div className="text-xs bg-muted/50 p-2 rounded mt-2">
+                        <div className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded mt-2 text-gray-800 dark:text-gray-200">
                           {assignment.notes}
                         </div>
                       )}
@@ -613,7 +642,7 @@ export default function PatientAssignmentsPage() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleEdit(assignment)}
-                      className="dark:border-gray-600 dark:text-white dark:hover:bg-gray-700"
+                      className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -622,7 +651,7 @@ export default function PatientAssignmentsPage() {
                       size="sm"
                       variant="destructive"
                       onClick={() => handleDelete(assignment.id)}
-                      className="dark:bg-red-900 dark:text-white dark:hover:bg-red-800"
+                      className="bg-red-600 hover:bg-red-700 text-white dark:bg-red-700 dark:hover:bg-red-600"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -631,7 +660,7 @@ export default function PatientAssignmentsPage() {
               ))}
 
               {filteredAssignments.length === 0 && !loading && (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-gray-600 dark:text-gray-400">
                   No assignments found matching your criteria
                 </div>
               )}
@@ -639,6 +668,7 @@ export default function PatientAssignmentsPage() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

@@ -9,6 +9,7 @@ interface SidebarProps {
   user?: any
   isCollapsed?: boolean
   onToggle?: () => void
+  currentPath?: string
 }
 
 export default function Sidebar({ user, isCollapsed = false, onToggle }: SidebarProps = {}) {

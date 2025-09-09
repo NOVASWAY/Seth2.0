@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AuditLog = void 0;
+exports.AuditLogModel = exports.AuditLog = void 0;
 const database_1 = require("../config/database");
 class AuditLog {
     static async query(text, params) {
@@ -56,6 +56,21 @@ class AuditLog {
       `, [userId, limit]);
         return result.rows;
     }
+    static async findAll(limit = 50, offset = 0) {
+        const result = await database_1.pool.query(`
+      SELECT al.*, u.username, u.full_name
+      FROM audit_logs al
+      LEFT JOIN users u ON al.user_id = u.id
+      ORDER BY al.created_at DESC
+      LIMIT $1 OFFSET $2
+      `, [limit, offset]);
+        return result.rows;
+    }
+    static async count() {
+        const result = await database_1.pool.query(`SELECT COUNT(*) FROM audit_logs`);
+        return parseInt(result.rows[0].count);
+    }
 }
 exports.AuditLog = AuditLog;
+exports.AuditLogModel = AuditLog;
 //# sourceMappingURL=AuditLog.js.map

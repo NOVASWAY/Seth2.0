@@ -11,6 +11,16 @@ export enum UserRole {
   CASHIER = 'CASHIER'
 }
 
+export interface AuthenticatedRequest {
+  user?: {
+    id: string
+    username: string
+    email?: string
+    role: UserRole
+    isActive: boolean
+  }
+}
+
 export interface User {
   id: string
   username: string
