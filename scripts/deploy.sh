@@ -28,6 +28,9 @@ required_vars=(
     # New prescription system variables
     "LOG_LEVEL"
     "ENABLE_AUDIT_LOGGING"
+    # Stock management system variables
+    "STOCK_ALERT_EMAIL"
+    "STOCK_REORDER_THRESHOLD"
     "AUTO_SAVE_INTERVAL"
 )
 

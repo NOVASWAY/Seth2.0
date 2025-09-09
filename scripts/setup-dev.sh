@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Seth Medical Clinic - Development Setup Script for Prescription System
+# Seth Medical Clinic - Development Setup Script for Comprehensive Clinic Management
 set -e
 
 echo "🏥 Seth Medical Clinic - Development Setup"
@@ -246,10 +246,11 @@ echo "  - Restart service: docker-compose restart [service]"
 echo "  - Stop all: docker-compose down"
 echo "  - Start all: docker-compose up -d"
 echo ""
-echo "📚 For more information, see PRESCRIPTION_SYSTEM_README.md and DIAGNOSTICS_SYSTEM_README.md"
+echo "📚 For more information, see PRESCRIPTION_SYSTEM_README.md, DIAGNOSTICS_SYSTEM_README.md, and docs/stock-management-system.md"
 echo ""
 echo "🚀 You can now access the systems at:"
 echo "   Dashboard: http://localhost:3000"
 echo "   Prescriptions: http://localhost:3000/prescriptions"
 echo "   Diagnostics: http://localhost:3000/diagnostics"
 echo "   Staff Management: http://localhost:3000/staff (Admin only)"
+echo "   Stock Management: http://localhost:3000/stock (Coming Soon)"

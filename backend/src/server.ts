@@ -37,6 +37,8 @@ import syncRoutes from "./routes/sync"
 import immunizationRoutes from "./routes/immunization"
 import familyPlanningRoutes from "./routes/family-planning"
 import mchServicesRoutes from "./routes/mch-services"
+import stockCategoryRoutes from "./routes/stock-categories"
+import stockItemRoutes from "./routes/stock-items"
 
 // Import middleware
 import { errorHandler } from "./middleware/errorHandler"
@@ -157,6 +159,8 @@ app.use("/api/sync", authenticate, syncRoutes)
 app.use("/api/immunization", authenticate, immunizationRoutes)
 app.use("/api/family-planning", authenticate, familyPlanningRoutes)
 app.use("/api/mch-services", authenticate, mchServicesRoutes)
+app.use("/api/stock-categories", authenticate, stockCategoryRoutes)
+app.use("/api/stock-items", authenticate, stockItemRoutes)
 
 // Audit logging middleware (after routes)
 app.use(auditLogger)

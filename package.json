@@ -39,6 +39,7 @@
     "staff:test": "node scripts/test-staff-management.js",
     "admin:test": "node scripts/test-admin-endpoints.js",
     "sha:test": "node scripts/test-sha-integration.js",
+    "stock:test": "node scripts/test-stock-management.js",
     "sha:dev": "npm run docker:dev && echo 'SHA Integration System starting...' && sleep 20 && echo 'Access at: http://localhost:3000/sha'",
     "update:production": "chmod +x scripts/production-update.sh && ./scripts/production-update.sh",
     "deploy:feature": "chmod +x scripts/feature-deployment.sh && ./scripts/feature-deployment.sh",

@@ -4,14 +4,14 @@
 # Seth Medical Clinic CMS - System Integrity Check
 # =============================================================================
 # This script verifies that all components of the enhanced system are working
-# correctly including the new SHA compliance features and clinical autocomplete
+# correctly including SHA compliance, clinical autocomplete, and stock management
 # =============================================================================
 
 set -e
 
 echo "🏥 Seth Medical Clinic CMS - System Integrity Check"
 echo "==============================================="
-echo "Checking enhanced system with SHA compliance & clinical autocomplete"
+echo "Checking enhanced system with SHA compliance, clinical autocomplete & stock management"
 echo ""
 
 # Colors for output
@@ -350,4 +350,4 @@ if [ "$1" = "--verbose" ]; then
 fi
 
 echo "🏥 Seth Medical Clinic CMS is ready for production use!"
-echo "   All SHA compliance features and clinical autocomplete are operational."
+echo "   All SHA compliance features, clinical autocomplete, and stock management are operational."
