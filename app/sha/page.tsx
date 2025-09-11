@@ -84,6 +84,9 @@ export default function SHAPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isMetaDialogOpen, setIsMetaDialogOpen] = useState(false)
+  const [metaClaimId, setMetaClaimId] = useState<string | null>(null)
+  const [metaForm, setMetaForm] = useState({ sha_reference: "", status: "" })
 
   // Form states
   const [formData, setFormData] = useState({
@@ -376,7 +379,7 @@ export default function SHAPage() {
   const handleStatusUpdate = async (claimId: string, newStatus: string) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/sha-claims/${claimId}`, {
-        method: "PATCH",
+        method: "PUT",
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json"
@@ -401,6 +404,40 @@ export default function SHAPage() {
         description: "Failed to update claim status. Please try again.",
         variant: "destructive",
       })
+    }
+  }
+
+  const handleUpdateShaMeta = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!metaClaimId) return
+    try {
+      setIsSubmitting(true)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/sha-claims/${metaClaimId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          sha_reference: metaForm.sha_reference || undefined,
+          status: metaForm.status || undefined
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to update SHA metadata: ${response.status}`)
+      }
+
+      toast({ title: "Success", description: "SHA status/reference updated." })
+      setIsMetaDialogOpen(false)
+      setMetaClaimId(null)
+      setMetaForm({ sha_reference: "", status: "" })
+      fetchClaims()
+    } catch (error) {
+      console.error("Error updating SHA metadata:", error)
+      toast({ title: "Error", description: "Failed to update SHA metadata.", variant: "destructive" })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -496,7 +533,7 @@ export default function SHAPage() {
   }
 
   return (
-    <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER]}>
+    <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER, UserRole.RECEPTIONIST]}>
       <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
         <Sidebar />
         
@@ -898,10 +935,45 @@ export default function SHAPage() {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => {
+                                setMetaClaimId(claim.id)
+                                setMetaForm({ sha_reference: "", status: claim.status })
+                                setIsMetaDialogOpen(true)
+                              }}
                               className="border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300"
                             >
                               <Edit className="h-4 w-4 mr-1" />
-                              Edit
+                              Update SHA Ref/Status
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const content = document.createElement('div')
+                                content.innerHTML = `
+                                  <div style=\"font-family: Arial; padding: 16px;\">
+                                    <h2>SHA Invoice Summary</h2>
+                                    <p><strong>Claim Number:</strong> ${claim.claim_number}</p>
+                                    <p><strong>Patient:</strong> ${(claim.patient?.first_name || '')} ${(claim.patient?.last_name || '')}</p>
+                                    <p><strong>Amount:</strong> KES ${claim.amount?.toLocaleString?.() || claim.amount}</p>
+                                    <p><strong>Status:</strong> ${claim.status}</p>
+                                    <p><strong>Submitted:</strong> ${claim.submitted_date ? new Date(claim.submitted_date).toLocaleString() : '-'}</p>
+                                    <p><strong>Processed:</strong> ${claim.processed_date ? new Date(claim.processed_date).toLocaleString() : '-'}</p>
+                                  </div>
+                                `
+                                const w = window.open('', '_blank')
+                                if (w) {
+                                  w.document.write(content.outerHTML)
+                                  w.document.close()
+                                  w.focus()
+                                  w.print()
+                                }
+                              }}
+                              className="border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300"
+                            >
+                              <FileText className="h-4 w-4 mr-1" />
+                              Print/Export
                             </Button>
                           </div>
                         </div>

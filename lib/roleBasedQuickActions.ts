@@ -40,6 +40,24 @@ export const getQuickActionsForRole = (userRole: string): QuickAction[] => {
       roles: ["ADMIN", "CLAIMS_MANAGER", "RECEPTIONIST"]
     },
     {
+      id: "3b",
+      title: "Financial Management",
+      description: "Record payments, create invoices, and manage finances",
+      icon: "💳",
+      href: "/financial",
+      color: "green",
+      roles: ["ADMIN", "PHARMACIST", "RECEPTIONIST", "CLAIMS_MANAGER"]
+    },
+    {
+      id: "3c",
+      title: "Record Visit",
+      description: "Record a new visit for existing patients",
+      icon: "📝",
+      href: "/visits/record",
+      color: "blue",
+      roles: ["ADMIN", "RECEPTIONIST", "CLINICAL_OFFICER", "NURSE"]
+    },
+    {
       id: "4",
       title: "View Reports",
       description: "Access system reports",
@@ -86,21 +104,12 @@ export const getQuickActionsForRole = (userRole: string): QuickAction[] => {
     },
     {
       id: "9",
-      title: "SHA Documents",
-      description: "Manage SHA documentation",
+      title: "SHA Claims",
+      description: "Manage SHA claims and documentation",
       icon: "🏥",
       href: "/sha",
       color: "red",
-      roles: ["ADMIN", "CLINICAL_OFFICER", "CLAIMS_MANAGER", "DOCTOR"]
-    },
-    {
-      id: "10",
-      title: "Insurance Claims",
-      description: "Process insurance claims",
-      icon: "📋",
-      href: "/claims",
-      color: "green",
-      roles: ["ADMIN", "CLAIMS_MANAGER"]
+      roles: ["ADMIN", "CLINICAL_OFFICER", "CLAIMS_MANAGER", "DOCTOR", "RECEPTIONIST"]
     }
   ]
 

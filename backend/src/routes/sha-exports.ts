@@ -14,7 +14,7 @@ const exportService = new SHAExportService()
 // Export single invoice as PDF
 router.post(
   "/invoice/:invoiceId/pdf",
-  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER]),
+  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER, UserRole.RECEPTIONIST]),
   [
     body("reason").notEmpty().withMessage("Export reason is required"),
     body("complianceApproved").optional().isBoolean(),
@@ -242,7 +242,7 @@ router.post(
 // Download exported file
 router.get(
   "/download/:exportId",
-  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER]),
+  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER, UserRole.RECEPTIONIST]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { exportId } = req.params

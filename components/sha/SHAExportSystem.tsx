@@ -119,7 +119,9 @@ export function SHAExportSystem() {
       if (response.ok) {
         const result = await response.json()
         if (result.success) {
-          setExportHistory(result.data || [])
+          // Ensure result.data is an array
+          const historyData = Array.isArray(result.data) ? result.data : []
+          setExportHistory(historyData)
         } else {
           throw new Error(result.message || "Failed to fetch export history")
         }
@@ -134,6 +136,8 @@ export function SHAExportSystem() {
       }
     } catch (error) {
       console.error("Error fetching export history:", error)
+      // Ensure exportHistory is always an array even on error
+      setExportHistory([])
       toast({
         title: "Error",
         description: "Failed to fetch export history. Please try again.",
@@ -389,7 +393,7 @@ export function SHAExportSystem() {
   }
 
   // Filter exports
-  const filteredExports = exportHistory.filter(exp => {
+  const filteredExports = (Array.isArray(exportHistory) ? exportHistory : []).filter(exp => {
     const matchesSearch = exp.filename.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          exp.exportType.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          exp.reason.toLowerCase().includes(searchQuery.toLowerCase())

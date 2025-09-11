@@ -240,6 +240,8 @@ export default function Dashboard() {
                 {/* Quick Actions */}
                 <QuickActions actions={quickActions} />
 
+                {/* Financial Recording Widget */}
+
                 {/* Recent Activity and Patient Queue */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <RecentActivity activities={activities || []} />

@@ -13,7 +13,7 @@ const mpesaService = new MPesaService()
 router.post(
   "/invoices",
   authenticateToken,
-  requireRole([UserRole.PHARMACIST, UserRole.CASHIER, UserRole.ADMIN]),
+  requireRole([UserRole.PHARMACIST, UserRole.ADMIN]),
   [
     body("items").isArray().withMessage("Items must be an array"),
     body("items.*.description").notEmpty().withMessage("Item description is required"),
@@ -163,7 +163,7 @@ router.post(
 router.post(
   "/payments",
   authenticateToken,
-  requireRole([UserRole.PHARMACIST, UserRole.CASHIER, UserRole.ADMIN]),
+  requireRole([UserRole.PHARMACIST, UserRole.ADMIN]),
   [
     body("invoice_id").notEmpty().withMessage("Invoice ID is required"),
     body("amount").isNumeric().withMessage("Amount must be a number"),
@@ -292,7 +292,7 @@ router.post(
 router.post(
   "/mpesa/stk-push",
   authenticateToken,
-  requireRole([UserRole.PHARMACIST, UserRole.CASHIER, UserRole.ADMIN]),
+  requireRole([UserRole.PHARMACIST, UserRole.ADMIN]),
   [
     body("phone_number").isMobilePhone("any").withMessage("Valid phone number is required"),
     body("amount").isNumeric().withMessage("Amount must be a number"),

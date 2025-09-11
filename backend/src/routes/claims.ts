@@ -13,7 +13,7 @@ const shaService = new SHAService()
 router.post(
   "/claims",
   authenticateToken,
-  requireRole([UserRole.CLAIMS_MANAGER, UserRole.ADMIN]),
+  requireRole([UserRole.CLAIMS_MANAGER, UserRole.ADMIN, UserRole.RECEPTIONIST]),
   [
     body("op_number").notEmpty().withMessage("OP Number is required"),
     body("diagnosis_code").notEmpty().withMessage("Diagnosis code is required"),
@@ -117,7 +117,7 @@ router.post(
 )
 
 // Get claims with filters
-router.get("/claims", authenticateToken, requireRole([UserRole.CLAIMS_MANAGER, UserRole.ADMIN]), async (req, res) => {
+router.get("/claims", authenticateToken, requireRole([UserRole.CLAIMS_MANAGER, UserRole.ADMIN, UserRole.RECEPTIONIST]), async (req, res) => {
   try {
     const { status, batch_id, op_number, limit = 50, offset = 0 } = req.query
 
@@ -181,7 +181,7 @@ router.get("/claims", authenticateToken, requireRole([UserRole.CLAIMS_MANAGER, U
 router.post(
   "/batches",
   authenticateToken,
-  requireRole([UserRole.CLAIMS_MANAGER, UserRole.ADMIN]),
+  requireRole([UserRole.CLAIMS_MANAGER, UserRole.ADMIN, UserRole.RECEPTIONIST]),
   [body("claim_ids").isArray().withMessage("Claim IDs must be an array")],
   async (req, res) => {
     try {
@@ -274,7 +274,7 @@ router.post(
 )
 
 // Submit batch to SHA
-router.post("/batches/:id/submit", authenticateToken, requireRole([UserRole.CLAIMS_MANAGER, UserRole.ADMIN]), async (req, res) => {
+router.post("/batches/:id/submit", authenticateToken, requireRole([UserRole.CLAIMS_MANAGER, UserRole.ADMIN, UserRole.RECEPTIONIST]), async (req, res) => {
   try {
     const { id } = req.params
 
@@ -321,7 +321,7 @@ router.post("/batches/:id/submit", authenticateToken, requireRole([UserRole.CLAI
 })
 
 // Get claim dashboard data
-router.get("/dashboard", authenticateToken, requireRole([UserRole.CLAIMS_MANAGER, UserRole.ADMIN]), async (req, res) => {
+router.get("/dashboard", authenticateToken, requireRole([UserRole.CLAIMS_MANAGER, UserRole.ADMIN, UserRole.RECEPTIONIST]), async (req, res) => {
   try {
     // Claims by status
     const statusResult = await pool.query(`

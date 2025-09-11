@@ -1,14 +1,17 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ProtectedRoute } from "../../components/auth/ProtectedRoute"
 import { UserRole } from "../../types"
 import { DiagnosticsForm } from "../../components/diagnostics/DiagnosticsForm"
-import { EnhancedPatientInput } from "../../components/patients/EnhancedPatientInput"
+import { Input } from "../../components/ui/input"
+import { Label } from "../../components/ui/label"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
 import { Badge } from "../../components/ui/badge"
-import { Microscope, UserPlus, TestTube, Clock, Save, AlertTriangle } from "lucide-react"
+import { useToast } from "../../hooks/use-toast"
+import { useAuthStore } from "../../lib/auth"
+import { Search, Loader2, User, Phone, MapPin, Microscope, UserPlus, TestTube, Clock, Save, AlertTriangle } from "lucide-react"
 import type { Patient } from "../../types"
 
 export default function DiagnosticsPage() {
@@ -16,15 +19,63 @@ export default function DiagnosticsPage() {
   const [currentStep, setCurrentStep] = useState<"patient" | "diagnostics">("patient")
   const [consultationId, setConsultationId] = useState("demo-consultation-123")
   const [visitId, setVisitId] = useState("demo-visit-456")
+  
+  // Patient search state
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<Patient[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const { toast } = useToast()
+  const { accessToken } = useAuthStore()
+
+  // Patient search functionality
+  const searchPatients = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([])
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      const response = await fetch(`/api/patients/search?q=${encodeURIComponent(query)}&limit=10`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setSearchResults(result.data?.patients || [])
+      }
+    } catch (err) {
+      console.error("Search failed:", err)
+      toast({
+        title: "Error",
+        description: "Failed to search patients",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  // Debounced search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery) {
+        searchPatients(searchQuery)
+      } else {
+        setSearchResults([])
+      }
+    }, 300)
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery])
 
   const handlePatientSelected = (patient: Patient) => {
     setSelectedPatient(patient)
     setCurrentStep("diagnostics")
-  }
-
-  const handleNewPatientCreated = (patient: Patient) => {
-    setSelectedPatient(patient)
-    setCurrentStep("diagnostics")
+    setSearchQuery("")
+    setSearchResults([])
   }
 
   const handleDiagnosticsSuccess = (diagnostics: any) => {
@@ -144,12 +195,71 @@ export default function DiagnosticsPage() {
                     </Button>
                   </div>
                 ) : (
-                  <EnhancedPatientInput
-                    onPatientSelected={handlePatientSelected}
-                    onNewPatientCreated={handleNewPatientCreated}
-                    onCancel={() => {}}
-                    showVisitInfo={true}
-                  />
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="patientSearch">Search Patient</Label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Input
+                          id="patientSearch"
+                          placeholder="Search by name, OP number, or phone..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10 border-2 border-blue-300 dark:border-blue-600 shadow-md h-12"
+                        />
+                        {isSearching && (
+                          <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Search Results */}
+                    {searchResults.length > 0 && (
+                      <div className="border border-gray-200 dark:border-slate-700 rounded-lg max-h-60 overflow-y-auto">
+                        {searchResults.map((patient) => (
+                          <div
+                            key={patient.id}
+                            onClick={() => handlePatientSelected(patient)}
+                            className="p-3 hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer border-b border-gray-100 dark:border-slate-700 last:border-b-0"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="font-medium text-gray-900 dark:text-slate-100">
+                                  {patient.first_name} {patient.last_name}
+                                </h4>
+                                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-slate-400">
+                                  <span className="flex items-center gap-1">
+                                    <span className="font-mono">#{patient.op_number}</span>
+                                  </span>
+                                  {patient.phone_number && (
+                                    <span className="flex items-center gap-1">
+                                      <Phone className="h-3 w-3" />
+                                      {patient.phone_number}
+                                    </span>
+                                  )}
+                                  {patient.area && (
+                                    <span className="flex items-center gap-1">
+                                      <MapPin className="h-3 w-3" />
+                                      {patient.area}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <Badge variant="outline">
+                                {patient.insurance_type}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {searchQuery && searchResults.length === 0 && !isSearching && (
+                      <div className="text-center py-4 text-gray-500 dark:text-slate-400">
+                        No patients found matching "{searchQuery}"
+                      </div>
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>

@@ -13,7 +13,7 @@ const shaService = new SHAService()
 // Get all SHA invoices with pagination and filtering
 router.get(
   "/",
-  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER]),
+  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER, UserRole.RECEPTIONIST]),
   [
     query("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
     query("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100"),
@@ -120,7 +120,7 @@ router.get(
 // Get invoice by ID with full details
 router.get(
   "/:id",
-  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER]),
+  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER, UserRole.RECEPTIONIST]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params
@@ -151,7 +151,7 @@ router.get(
 // CORRECTED WORKFLOW: Generate invoice for clinic records BEFORE submission
 router.post(
   "/generate/:claimId",
-  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER]),
+  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER, UserRole.RECEPTIONIST]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { claimId } = req.params
@@ -203,7 +203,7 @@ router.post(
 // Get invoices ready for review/printing (before submission)
 router.get(
   "/ready-for-review",
-  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER]),
+  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER, UserRole.RECEPTIONIST]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const invoices = await shaService.getInvoicesReadyForReview()
@@ -304,7 +304,7 @@ router.post(
 // Mark invoice as printed
 router.patch(
   "/:id/print",
-  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER]),
+  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER, UserRole.RECEPTIONIST]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params

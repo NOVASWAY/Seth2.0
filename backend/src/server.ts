@@ -31,6 +31,7 @@ import shaExportsRoutes from "./routes/sha-exports"
 import clinicalAutocompleteRoutes from "./routes/clinical-autocomplete"
 import eventRoutes from "./routes/events"
 import patientAssignmentRoutes from "./routes/patient-assignments"
+import quickAssignmentRoutes from "./routes/quick-assignments"
 import notificationRoutes from "./routes/notifications"
 import userPresenceRoutes from "./routes/user-presence"
 import syncRoutes from "./routes/sync"
@@ -83,7 +84,7 @@ app.use(
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 1000, // limit each IP to 1000 requests per windowMs (increased for development)
   message: "Too many requests from this IP, please try again later.",
 })
 
@@ -153,6 +154,7 @@ app.use("/api/sha-exports", authenticate, shaExportsRoutes)
 app.use("/api/clinical-autocomplete", authenticate, clinicalAutocompleteRoutes)
 app.use("/api/events", authenticate, eventRoutes)
 app.use("/api/patient-assignments", authenticate, patientAssignmentRoutes)
+app.use("/api/quick-assignments", authenticate, quickAssignmentRoutes)
 app.use("/api/notifications", authenticate, notificationRoutes)
 app.use("/api/user-presence", authenticate, userPresenceRoutes)
 app.use("/api/sync", authenticate, syncRoutes)

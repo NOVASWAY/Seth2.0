@@ -10,7 +10,7 @@ const router = express.Router()
 // Get all patient assignments with filtering and pagination
 router.get(
   "/",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE, UserRole.PHARMACIST, UserRole.CASHIER]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE, UserRole.PHARMACIST]),
   [
     query("status").optional().isIn(["ACTIVE", "COMPLETED", "CANCELLED", "TRANSFERRED"]),
     query("assignment_type").optional().isIn(["GENERAL", "PRIMARY_CARE", "SPECIALIST", "NURSE", "PHARMACIST", "FOLLOW_UP", "REFERRAL"]),
@@ -66,7 +66,7 @@ router.get(
 // Get patient assignments for a specific patient
 router.get(
   "/patient/:patientId",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE, UserRole.PHARMACIST, UserRole.CASHIER]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE, UserRole.PHARMACIST]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { patientId } = req.params
@@ -89,7 +89,7 @@ router.get(
 // Get patient assignments for a specific user
 router.get(
   "/user/:userId",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE, UserRole.PHARMACIST, UserRole.CASHIER]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE, UserRole.PHARMACIST]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { userId } = req.params
@@ -135,7 +135,7 @@ router.get(
 // Get assignment by ID
 router.get(
   "/:id",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE, UserRole.PHARMACIST, UserRole.CASHIER]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE, UserRole.PHARMACIST]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params
@@ -165,7 +165,7 @@ router.get(
 // Create new patient assignment
 router.post(
   "/",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE, UserRole.PHARMACIST, UserRole.CASHIER]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE, UserRole.PHARMACIST]),
   [
     body("patient_id").isUUID().withMessage("Valid patient ID is required"),
     body("assigned_to_user_id").isUUID().withMessage("Valid assigned to user ID is required"),
@@ -227,10 +227,64 @@ router.post(
   }
 )
 
+// Delete patient assignment (deactivate)
+router.delete(
+  "/patient/:patientId/user/:userId",
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE, UserRole.PHARMACIST]),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const { patientId, userId } = req.params
+
+      // Find and deactivate the assignment
+      const assignment = await PatientAssignmentModel.findByPatientAndUser(patientId, userId)
+      if (!assignment) {
+        return res.status(404).json({
+          success: false,
+          message: "Assignment not found",
+        })
+      }
+
+      // Update assignment status to CANCELLED
+      await PatientAssignmentModel.update(assignment.id, {
+        status: "CANCELLED",
+        updated_at: new Date().toISOString(),
+      })
+
+      // Log the assignment event
+      await EventLoggerService.logEvent({
+        event_type: "PATIENT",
+        user_id: req.user.id,
+        username: req.user.username,
+        target_type: "patient_assignment",
+        target_id: assignment.id,
+        action: "remove_assignment",
+        details: {
+          patient_id: patientId,
+          assigned_to_user_id: userId,
+        },
+        ip_address: req.ip,
+        user_agent: req.get("User-Agent"),
+        severity: "MEDIUM",
+      })
+
+      res.json({
+        success: true,
+        message: "Patient assignment removed successfully",
+      })
+    } catch (error: any) {
+      console.error("Error removing patient assignment:", error)
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to remove patient assignment",
+      })
+    }
+  }
+)
+
 // Update patient assignment
 router.put(
   "/:id",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE, UserRole.PHARMACIST, UserRole.CASHIER]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE, UserRole.PHARMACIST]),
   [
     body("status").optional().isIn(["ACTIVE", "COMPLETED", "CANCELLED", "TRANSFERRED"]),
     body("priority").optional().isIn(["LOW", "NORMAL", "HIGH", "URGENT"]),

@@ -10,7 +10,7 @@ const router = express.Router()
 // Get all SHA claims with pagination and filtering
 router.get(
   "/",
-  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER]),
+  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER, UserRole.RECEPTIONIST]),
   [
     query("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
     query("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100"),
@@ -132,7 +132,7 @@ router.get(
 // Get single SHA claim
 router.get(
   "/:id",
-  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER]),
+  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER, UserRole.RECEPTIONIST]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params
@@ -389,7 +389,7 @@ router.post(
 // Update SHA claim
 router.put(
   "/:id",
-  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER]),
+  authorize([UserRole.ADMIN, UserRole.CLAIMS_MANAGER, UserRole.CLINICAL_OFFICER, UserRole.RECEPTIONIST]),
   [
     body("status").optional().isIn(["DRAFT", "READY_TO_SUBMIT", "SUBMITTED", "APPROVED", "REJECTED", "PAID"]),
     body("claim_amount").optional().isNumeric(),

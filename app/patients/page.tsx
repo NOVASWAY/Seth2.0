@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
 import { Badge } from '../../components/ui/badge'
 import { Upload, FileText, CheckCircle, AlertCircle, X, Eye, Download, UserPlus, Database } from 'lucide-react'
+import PatientAssignmentButton from '../../components/patients/PatientAssignmentButton'
+import PatientAssignmentStatus from '../../components/patients/PatientAssignmentStatus'
 
 interface Patient {
   id: string
@@ -120,6 +122,7 @@ export default function PatientsPage() {
 
     try {
       setLoading(true)
+      
       const response = await fetch('http://localhost:5000/api/patients', {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -143,14 +146,35 @@ export default function PatientsPage() {
           variant: "destructive"
         })
         router.push('/login')
+      } else if (response.status === 429) {
+        toast({
+          title: "Rate Limit Exceeded",
+          description: "Too many requests. Please wait a moment and try again.",
+          variant: "destructive"
+        })
+        // Wait 5 seconds before retrying
+        setTimeout(() => {
+          fetchPatients()
+        }, 5000)
+        return
       } else {
-        throw new Error('Failed to fetch patients')
+        // Get more specific error information
+        let errorMessage = 'Failed to fetch patients'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.message || errorMessage
+        } catch (parseError) {
+          // If we can't parse the error response, use the status text
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`
+        }
+        throw new Error(errorMessage)
       }
     } catch (error) {
       console.error('Error fetching patients:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch patients'
       toast({
         title: "Error",
-        description: "Failed to fetch patients. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       })
     } finally {
@@ -415,11 +439,16 @@ export default function PatientsPage() {
   }
 
   const filteredPatients = (patients || []).filter(patient => {
-    const fullName = `${patient.first_name} ${patient.last_name}`.toLowerCase()
+    const firstName = patient.first_name || ""
+    const lastName = patient.last_name || ""
+    const opNumber = patient.op_number || ""
+    const area = patient.area || ""
+    
+    const fullName = `${firstName} ${lastName}`.toLowerCase()
     const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
-                         patient.op_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         opNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (patient.phone_number && patient.phone_number.includes(searchTerm)) ||
-                         (patient.area && patient.area.toLowerCase().includes(searchTerm.toLowerCase()))
+                         area.toLowerCase().includes(searchTerm.toLowerCase())
     return matchesSearch
   })
 
@@ -428,44 +457,8 @@ export default function PatientsPage() {
   }
 
   const handleEditPatient = async (patientId: string) => {
-    try {
-      const patient = (patients || []).find(p => p.id === patientId)
-      if (!patient) {
-        toast({
-          title: "Error",
-          description: "Patient not found",
-          variant: "destructive",
-        })
-        return
-      }
-
-      // For now, we'll show a simple edit dialog
-      // In a real implementation, this would open a proper edit form
-      const newFirstName = prompt("Enter new first name:", patient.first_name)
-      const newLastName = prompt("Enter new last name:", patient.last_name)
-      
-      if (newFirstName && newLastName) {
-        // Update the patient in the local state
-        setPatients((patients || []).map(p => 
-          p.id === patientId 
-            ? { ...p, first_name: newFirstName, last_name: newLastName, updated_at: new Date().toISOString() }
-            : p
-        ))
-        
-        toast({
-          title: "Success",
-          description: "Patient updated successfully",
-          variant: "default",
-        })
-      }
-    } catch (error) {
-      console.error('Error editing patient:', error)
-      toast({
-        title: "Error",
-        description: "Failed to update patient",
-        variant: "destructive",
-      })
-    }
+    // Navigate to the dedicated edit page
+    router.push(`/patients/edit/${patientId}`)
   }
 
   const handleDeletePatient = async (patientId: string) => {
@@ -819,6 +812,9 @@ export default function PatientsPage() {
                       Insurance
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
+                      Assignments
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -826,7 +822,7 @@ export default function PatientsPage() {
                 <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                   {loading ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center">
+                      <td colSpan={6} className="px-6 py-12 text-center">
                         <div className="flex items-center justify-center">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                           <span className="ml-2 text-gray-600 dark:text-gray-400">Loading patients...</span>
@@ -835,7 +831,7 @@ export default function PatientsPage() {
                     </tr>
                   ) : filteredPatients.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center">
+                      <td colSpan={6} className="px-6 py-12 text-center">
                         <div className="text-gray-500 dark:text-gray-400">
                           <div className="text-4xl mb-4">👥</div>
                           <p className="text-lg font-medium">No patients found</p>
@@ -887,20 +883,36 @@ export default function PatientsPage() {
                           {patient.insurance_type}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <PatientAssignmentStatus 
+                          patientId={patient.id} 
+                          compact={true}
+                        />
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleEditPatient(patient.id)}
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeletePatient(patient.id)}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                          >
-                            Delete
-                          </button>
+                        <div className="flex flex-col space-y-2">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleEditPatient(patient.id)}
+                              className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeletePatient(patient.id)}
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <PatientAssignmentButton 
+                              patient={patient} 
+                              onAssignmentCreated={() => {
+                                // Refresh assignments if needed
+                              }}
+                            />
+                          </div>
                         </div>
                       </td>
                     </tr>

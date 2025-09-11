@@ -31,8 +31,10 @@ import {
   Heart,
   Thermometer,
   Weight,
-  Ruler
+  Ruler,
+  ClipboardList
 } from "lucide-react"
+import Link from "next/link"
 import { format } from "date-fns"
 
 interface Visit {
@@ -424,11 +426,19 @@ Visit Details:
                   <p className="text-slate-600 dark:text-slate-400">Manage patient visits and appointments</p>
                 </div>
                 
+                {/* Quick Visit Recording Button */}
+                <Link href="/visits/record">
+                  <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
+                    <ClipboardList className="h-4 w-4" />
+                    Record Visit
+                  </Button>
+                </Link>
+
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button className="flex items-center gap-2">
+                    <Button variant="outline" className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
-                      New Visit
+                      Quick Add
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[600px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">

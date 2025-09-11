@@ -9,7 +9,7 @@ const router = express.Router()
 // Get comprehensive patient clinical data for SHA claims
 router.get(
   "/patient/:patientId/clinical-data",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER, UserRole.RECEPTIONIST]),
   [
     query("visitId").optional().isUUID().withMessage("Visit ID must be a valid UUID"),
     query("includeHistory").optional().isBoolean().withMessage("Include history must be a boolean")
@@ -318,7 +318,7 @@ router.get(
 // Get patient data for SHA invoice generation
 router.get(
   "/patient/:patientId/sha-invoice-data",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER, UserRole.RECEPTIONIST]),
   [
     query("visitId").isUUID().withMessage("Visit ID is required"),
     query("encounterId").optional().isUUID().withMessage("Encounter ID must be a valid UUID")
