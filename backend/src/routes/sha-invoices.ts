@@ -5,7 +5,7 @@ import { UserRole } from "../types"
 import { pool } from "../config/database"
 import { generateInvoiceNumber, formatSHACurrency, calculateInvoiceDueDate } from "../utils/invoiceUtils"
 import { SHAService } from "../services/SHAService"
-import crypto from "crypto"
+import * as crypto from "crypto"
 
 const router = express.Router()
 const shaService = new SHAService()

@@ -68,7 +68,7 @@ interface LabRequest {
 
 export default function LabTestsPage() {
   const router = useRouter()
-  const { accessToken } = useAuthStore()
+  const { accessToken, initialize } = useAuthStore()
   const { toast } = useToast()
   const apiClient = useApiClient()
   const [labTests, setLabTests] = useState<LabTest[]>([])
@@ -127,22 +127,39 @@ export default function LabTestsPage() {
   ]
 
   useEffect(() => {
-    // Only fetch data if we have a valid access token
-    if (accessToken) {
-      console.log("Access token found, fetching lab data...")
-      fetchLabTests()
-      fetchLabRequests()
-    } else {
-      // If no access token, redirect to login
-      console.log("No access token found, redirecting to login")
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to access lab tests",
-        variant: "destructive"
+    // Initialize auth store first
+    initialize()
+    
+    // Add a small delay to allow auth store to initialize
+    const timer = setTimeout(() => {
+      // Debug: Check what's in localStorage
+      const storedAccessToken = localStorage.getItem('accessToken')
+      const storedRefreshToken = localStorage.getItem('refreshToken')
+      console.log("🔍 Debug - Stored tokens:", {
+        accessToken: storedAccessToken ? "Present" : "Missing",
+        refreshToken: storedRefreshToken ? "Present" : "Missing",
+        authStoreAccessToken: accessToken ? "Present" : "Missing"
       })
-      router.push('/login')
-    }
-  }, [accessToken, router, toast])
+      
+      // Only fetch data if we have a valid access token
+      if (accessToken) {
+        console.log("Access token found, fetching lab data...")
+        fetchLabTests()
+        fetchLabRequests()
+      } else {
+        // If no access token, redirect to login
+        console.log("No access token found, redirecting to login")
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to access lab tests",
+          variant: "destructive"
+        })
+        router.push('/login')
+      }
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [accessToken, router, toast, initialize])
 
   const fetchLabTests = async () => {
     try {

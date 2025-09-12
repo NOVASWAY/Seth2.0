@@ -64,6 +64,24 @@ class PatientAssignmentModel {
         const result = await database_1.default.query(query, [patientId]);
         return result.rows.map(row => this.mapRowToPatientAssignment(row));
     }
+    static async findByPatientAndUser(patientId, userId) {
+        const query = `
+      SELECT 
+        pa.*,
+        p.first_name || ' ' || p.last_name as patient_name,
+        u1.username as assigned_to_name,
+        u2.username as assigned_by_name
+      FROM patient_assignments pa
+      LEFT JOIN patients p ON pa.patient_id = p.id
+      LEFT JOIN users u1 ON pa.assigned_to_user_id = u1.id
+      LEFT JOIN users u2 ON pa.assigned_by_user_id = u2.id
+      WHERE pa.patient_id = $1 AND pa.assigned_to_user_id = $2
+      ORDER BY pa.assigned_at DESC
+      LIMIT 1
+    `;
+        const result = await database_1.default.query(query, [patientId, userId]);
+        return result.rows.length > 0 ? this.mapRowToPatientAssignment(result.rows[0]) : null;
+    }
     static async findByAssignedToUserId(userId, status) {
         let query = `
       SELECT 
@@ -90,6 +108,7 @@ class PatientAssignmentModel {
         let whereConditions = [];
         let queryParams = [];
         let paramIndex = 1;
+        // Build WHERE conditions
         if (filters.status) {
             whereConditions.push(`pa.status = $${paramIndex}`);
             queryParams.push(filters.status);
@@ -116,9 +135,11 @@ class PatientAssignmentModel {
             paramIndex++;
         }
         const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+        // Get total count
         const countQuery = `SELECT COUNT(*) as total FROM patient_assignments pa ${whereClause}`;
         const countResult = await database_1.default.query(countQuery, queryParams);
         const total = parseInt(countResult.rows[0].total);
+        // Get assignments with pagination
         const limit = filters.limit || 50;
         const offset = filters.offset || 0;
         const assignmentsQuery = `
@@ -194,12 +215,16 @@ class PatientAssignmentModel {
         return result.rowCount > 0;
     }
     static async getAssignmentStats() {
+        // Total assignments
         const totalResult = await database_1.default.query(`SELECT COUNT(*) as total FROM patient_assignments`);
         const total_assignments = parseInt(totalResult.rows[0].total);
+        // Active assignments
         const activeResult = await database_1.default.query(`SELECT COUNT(*) as total FROM patient_assignments WHERE status = 'ACTIVE'`);
         const active_assignments = parseInt(activeResult.rows[0].total);
+        // Completed assignments
         const completedResult = await database_1.default.query(`SELECT COUNT(*) as total FROM patient_assignments WHERE status = 'COMPLETED'`);
         const completed_assignments = parseInt(completedResult.rows[0].total);
+        // Assignments by type
         const typeResult = await database_1.default.query(`
       SELECT assignment_type, COUNT(*) as count
       FROM patient_assignments
@@ -210,6 +235,7 @@ class PatientAssignmentModel {
             acc[row.assignment_type] = parseInt(row.count);
             return acc;
         }, {});
+        // Assignments by priority
         const priorityResult = await database_1.default.query(`
       SELECT priority, COUNT(*) as count
       FROM patient_assignments
@@ -251,4 +277,3 @@ class PatientAssignmentModel {
     }
 }
 exports.PatientAssignmentModel = PatientAssignmentModel;
-//# sourceMappingURL=PatientAssignment.js.map

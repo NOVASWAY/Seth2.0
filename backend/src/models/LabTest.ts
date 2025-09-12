@@ -1,6 +1,6 @@
 import pool from "../config/database"
 import type { LabTest } from "../types"
-import crypto from "crypto"
+import * as crypto from "crypto"
 
 export interface CreateLabTestData {
   testCode: string

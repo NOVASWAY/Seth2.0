@@ -9,6 +9,7 @@ const LabRequest_1 = require("../models/LabRequest");
 const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
 const router = express_1.default.Router();
+// Get all lab requests
 router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.LAB_TECHNICIAN]), [
     (0, express_validator_1.query)("status").optional().isString().withMessage("Status must be a string"),
     (0, express_validator_1.query)("urgency").optional().isString().withMessage("Urgency must be a string"),
@@ -36,6 +37,7 @@ router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.
         });
     }
 });
+// Get pending lab requests (for lab technicians)
 router.get("/pending", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.LAB_TECHNICIAN]), async (req, res) => {
     try {
         const requests = await LabRequest_1.LabRequestModel.getPendingRequests();
@@ -52,6 +54,7 @@ router.get("/pending", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.Us
         });
     }
 });
+// Get completed lab requests
 router.get("/completed", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.LAB_TECHNICIAN]), [
     (0, express_validator_1.query)("startDate").optional().isISO8601().withMessage("Start date must be a valid date"),
     (0, express_validator_1.query)("endDate").optional().isISO8601().withMessage("End date must be a valid date"),
@@ -79,6 +82,7 @@ router.get("/completed", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.
         });
     }
 });
+// Get lab requests for a specific patient
 router.get("/patient/:patientId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.LAB_TECHNICIAN]), async (req, res) => {
     try {
         const { patientId } = req.params;
@@ -96,6 +100,7 @@ router.get("/patient/:patientId", (0, auth_1.authorize)([types_1.UserRole.ADMIN,
         });
     }
 });
+// Get lab requests for a specific visit
 router.get("/visit/:visitId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.LAB_TECHNICIAN]), async (req, res) => {
     try {
         const { visitId } = req.params;
@@ -113,6 +118,7 @@ router.get("/visit/:visitId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, typ
         });
     }
 });
+// Get lab request by ID
 router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.LAB_TECHNICIAN]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -123,6 +129,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
                 message: "Lab request not found"
             });
         }
+        // Get request items
         const items = await LabRequest_1.LabRequestModel.getRequestItems(id);
         res.json({
             success: true,
@@ -140,6 +147,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
         });
     }
 });
+// Create new lab request
 router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER]), [
     (0, express_validator_1.body)("visitId").isUUID().withMessage("Valid visit ID is required"),
     (0, express_validator_1.body)("patientId").isUUID().withMessage("Valid patient ID is required"),
@@ -183,6 +191,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
         });
     }
 });
+// Update lab request status
 router.patch("/:id/status", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.LAB_TECHNICIAN]), [
     (0, express_validator_1.body)("status").isIn(["REQUESTED", "SAMPLE_COLLECTED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]).withMessage("Invalid status"),
     (0, express_validator_1.body)("specimenCollectedAt").optional().isISO8601().withMessage("Specimen collected at must be a valid date"),
@@ -199,6 +208,7 @@ router.patch("/:id/status", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types
         }
         const { id } = req.params;
         const updateData = req.body;
+        // Convert date strings to Date objects
         if (updateData.specimenCollectedAt) {
             updateData.specimenCollectedAt = new Date(updateData.specimenCollectedAt);
         }
@@ -226,6 +236,7 @@ router.patch("/:id/status", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types
         });
     }
 });
+// Update lab request item status and results
 router.patch("/items/:itemId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.LAB_TECHNICIAN]), [
     (0, express_validator_1.body)("status").isIn(["REQUESTED", "SAMPLE_COLLECTED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]).withMessage("Invalid status"),
     (0, express_validator_1.body)("resultData").optional().isObject().withMessage("Result data must be an object"),
@@ -246,6 +257,7 @@ router.patch("/items/:itemId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, ty
         }
         const { itemId } = req.params;
         const updateData = req.body;
+        // Convert date strings to Date objects
         if (updateData.verifiedAt) {
             updateData.verifiedAt = new Date(updateData.verifiedAt);
         }
@@ -273,6 +285,7 @@ router.patch("/items/:itemId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, ty
         });
     }
 });
+// Get lab request items
 router.get("/:id/items", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.LAB_TECHNICIAN]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -291,4 +304,3 @@ router.get("/:id/items", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.
     }
 });
 exports.default = router;
-//# sourceMappingURL=lab-requests.js.map

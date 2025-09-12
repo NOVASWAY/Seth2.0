@@ -9,6 +9,7 @@ const LabTest_1 = require("../models/LabTest");
 const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
 const router = express_1.default.Router();
+// Get all available lab tests
 router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.LAB_TECHNICIAN]), [
     (0, express_validator_1.query)("search").optional().isString().withMessage("Search must be a string"),
     (0, express_validator_1.query)("category").optional().isString().withMessage("Category must be a string"),
@@ -46,6 +47,7 @@ router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.
         });
     }
 });
+// Get available tests for diagnostics (with search and category filtering)
 router.get("/available", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.LAB_TECHNICIAN]), [
     (0, express_validator_1.query)("search").optional().isString().withMessage("Search must be a string"),
     (0, express_validator_1.query)("category").optional().isString().withMessage("Category must be a string"),
@@ -73,6 +75,7 @@ router.get("/available", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.
         });
     }
 });
+// Get test categories
 router.get("/categories", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.LAB_TECHNICIAN]), async (req, res) => {
     try {
         const categories = await LabTest_1.LabTestModel.getCategories();
@@ -89,6 +92,7 @@ router.get("/categories", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1
         });
     }
 });
+// Get lab test by ID
 router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.LAB_TECHNICIAN]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -112,6 +116,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
         });
     }
 });
+// Create new lab test (Admin only)
 router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
     (0, express_validator_1.body)("testCode").trim().isLength({ min: 1 }).withMessage("Test code is required"),
     (0, express_validator_1.body)("testName").trim().isLength({ min: 1 }).withMessage("Test name is required"),
@@ -132,6 +137,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
             });
         }
         const { testCode, testName, testCategory, description, specimenType, turnaroundTime, price, isActive = true, referenceRanges, instructions } = req.body;
+        // Check if test code already exists
         const existingTest = await LabTest_1.LabTestModel.findByTestCode(testCode);
         if (existingTest) {
             return res.status(400).json({
@@ -165,6 +171,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
         });
     }
 });
+// Update lab test (Admin only)
 router.put("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
     (0, express_validator_1.body)("testCode").optional().trim().isLength({ min: 1 }).withMessage("Test code cannot be empty"),
     (0, express_validator_1.body)("testName").optional().trim().isLength({ min: 1 }).withMessage("Test name cannot be empty"),
@@ -187,6 +194,7 @@ router.put("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
         }
         const { id } = req.params;
         const updateData = req.body;
+        // If test code is being updated, check for duplicates
         if (updateData.testCode) {
             const existingTest = await LabTest_1.LabTestModel.findByTestCode(updateData.testCode);
             if (existingTest && existingTest.id !== id) {
@@ -217,6 +225,7 @@ router.put("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
         });
     }
 });
+// Delete lab test (Admin only)
 router.delete("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -241,4 +250,3 @@ router.delete("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (re
     }
 });
 exports.default = router;
-//# sourceMappingURL=lab-tests.js.map

@@ -9,6 +9,7 @@ const User_1 = require("../models/User");
 const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
 const router = express_1.default.Router();
+// Get all users (Admin only)
 router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
     (0, express_validator_1.query)("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
     (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100"),
@@ -46,6 +47,7 @@ router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
         });
     }
 });
+// Create new user (Admin only)
 router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
     (0, express_validator_1.body)("username").trim().isLength({ min: 3 }).withMessage("Username must be at least 3 characters"),
     (0, express_validator_1.body)("email").optional().isEmail().withMessage("Invalid email format"),
@@ -62,6 +64,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
             });
         }
         const { username, email, password, role } = req.body;
+        // Check if username already exists
         const existingUser = await User_1.UserModel.findByUsername(username);
         if (existingUser) {
             return res.status(409).json({
@@ -75,6 +78,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
             password,
             role,
         });
+        // Remove password hash from response
         const { passwordHash, ...userResponse } = user;
         res.status(201).json({
             success: true,
@@ -89,6 +93,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
         });
     }
 });
+// Update user (Admin only)
 router.put("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
     (0, express_validator_1.body)("email").optional().isEmail().withMessage("Invalid email format"),
     (0, express_validator_1.body)("role").optional().isIn(Object.values(types_1.UserRole)).withMessage("Invalid role"),
@@ -118,6 +123,7 @@ router.put("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
                 message: "User not found",
             });
         }
+        // Remove password hash from response
         const { passwordHash, ...userResponse } = user;
         res.json({
             success: true,
@@ -132,6 +138,7 @@ router.put("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
         });
     }
 });
+// Reset user password (Admin only)
 router.post("/:id/reset-password", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [(0, express_validator_1.body)("newPassword").isLength({ min: 8 }).withMessage("Password must be at least 8 characters")], async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
@@ -165,4 +172,3 @@ router.post("/:id/reset-password", (0, auth_1.authorize)([types_1.UserRole.ADMIN
     }
 });
 exports.default = router;
-//# sourceMappingURL=users.js.map

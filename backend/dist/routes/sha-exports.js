@@ -1,7 +1,37 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const express_validator_1 = require("express-validator");
@@ -9,11 +39,12 @@ const database_1 = require("../config/database");
 const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
 const SHAExportService_1 = require("../services/SHAExportService");
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
 const router = (0, express_1.Router)();
 const exportService = new SHAExportService_1.SHAExportService();
-router.post("/invoice/:invoiceId/pdf", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER]), [
+// Export single invoice as PDF
+router.post("/invoice/:invoiceId/pdf", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.RECEPTIONIST]), [
     (0, express_validator_1.body)("reason").notEmpty().withMessage("Export reason is required"),
     (0, express_validator_1.body)("complianceApproved").optional().isBoolean(),
     (0, express_validator_1.body)("approvedBy").optional().isUUID()
@@ -40,7 +71,7 @@ router.post("/invoice/:invoiceId/pdf", (0, auth_1.authorize)([types_1.UserRole.A
             success: true,
             data: {
                 exportId: result.exportId,
-                filename: path_1.default.basename(result.filePath),
+                filename: path.basename(result.filePath),
                 downloadUrl: `/api/sha-exports/download/${result.exportId}`
             },
             message: "Invoice PDF generated successfully"
@@ -54,6 +85,7 @@ router.post("/invoice/:invoiceId/pdf", (0, auth_1.authorize)([types_1.UserRole.A
         });
     }
 });
+// Export multiple invoices as Excel
 router.post("/invoices/excel", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), [
     (0, express_validator_1.body)("reason").notEmpty().withMessage("Export reason is required"),
     (0, express_validator_1.body)("filters").optional().isObject(),
@@ -91,7 +123,7 @@ router.post("/invoices/excel", (0, auth_1.authorize)([types_1.UserRole.ADMIN, ty
             success: true,
             data: {
                 exportId: result.exportId,
-                filename: path_1.default.basename(result.filePath),
+                filename: path.basename(result.filePath),
                 downloadUrl: `/api/sha-exports/download/${result.exportId}`
             },
             message: "Invoices Excel export generated successfully"
@@ -105,6 +137,7 @@ router.post("/invoices/excel", (0, auth_1.authorize)([types_1.UserRole.ADMIN, ty
         });
     }
 });
+// Export claims as CSV for SHA portal upload
 router.post("/claims/csv", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), [
     (0, express_validator_1.body)("reason").notEmpty().withMessage("Export reason is required"),
     (0, express_validator_1.body)("filters").optional().isObject(),
@@ -140,7 +173,7 @@ router.post("/claims/csv", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_
             success: true,
             data: {
                 exportId: result.exportId,
-                filename: path_1.default.basename(result.filePath),
+                filename: path.basename(result.filePath),
                 downloadUrl: `/api/sha-exports/download/${result.exportId}`
             },
             message: "Claims CSV export generated successfully for SHA portal upload"
@@ -154,6 +187,7 @@ router.post("/claims/csv", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_
         });
     }
 });
+// Export batch submission report
 router.post("/batch/:batchId/report", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), [
     (0, express_validator_1.body)("reason").notEmpty().withMessage("Export reason is required"),
     (0, express_validator_1.body)("complianceApproved").optional().isBoolean(),
@@ -181,7 +215,7 @@ router.post("/batch/:batchId/report", (0, auth_1.authorize)([types_1.UserRole.AD
             success: true,
             data: {
                 exportId: result.exportId,
-                filename: path_1.default.basename(result.filePath),
+                filename: path.basename(result.filePath),
                 downloadUrl: `/api/sha-exports/download/${result.exportId}`
             },
             message: "Batch report generated successfully"
@@ -195,7 +229,8 @@ router.post("/batch/:batchId/report", (0, auth_1.authorize)([types_1.UserRole.AD
         });
     }
 });
-router.get("/download/:exportId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER]), async (req, res) => {
+// Download exported file
+router.get("/download/:exportId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const { exportId } = req.params;
         const result = await database_1.pool.query(`SELECT * FROM sha_export_logs WHERE id = $1`, [exportId]);
@@ -206,15 +241,18 @@ router.get("/download/:exportId", (0, auth_1.authorize)([types_1.UserRole.ADMIN,
             });
         }
         const exportLog = result.rows[0];
-        if (!fs_1.default.existsSync(exportLog.file_path)) {
+        // Check if file exists
+        if (!fs.existsSync(exportLog.file_path)) {
             return res.status(404).json({
                 success: false,
                 message: "Export file not found on disk"
             });
         }
+        // Update download count
         await database_1.pool.query(`UPDATE sha_export_logs 
          SET download_count = download_count + 1
          WHERE id = $1`, [exportId]);
+        // Determine content type based on export type
         let contentType = 'application/octet-stream';
         if (exportLog.export_type === 'PDF') {
             contentType = 'application/pdf';
@@ -225,11 +263,13 @@ router.get("/download/:exportId", (0, auth_1.authorize)([types_1.UserRole.ADMIN,
         else if (exportLog.export_type === 'CSV') {
             contentType = 'text/csv';
         }
-        const filename = path_1.default.basename(exportLog.file_path);
+        // Set headers
+        const filename = path.basename(exportLog.file_path);
         res.setHeader('Content-Type', contentType);
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Content-Length', exportLog.file_size);
-        const fileStream = fs_1.default.createReadStream(exportLog.file_path);
+        // Stream file
+        const fileStream = fs.createReadStream(exportLog.file_path);
         fileStream.pipe(res);
     }
     catch (error) {
@@ -240,6 +280,7 @@ router.get("/download/:exportId", (0, auth_1.authorize)([types_1.UserRole.ADMIN,
         });
     }
 });
+// Get export history
 router.get("/history", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), [
     (0, express_validator_1.query)("exportType").optional().isIn(['PDF', 'EXCEL', 'CSV']),
     (0, express_validator_1.query)("exportScope").optional().isIn(['SINGLE_INVOICE', 'BATCH', 'DATE_RANGE', 'CUSTOM_FILTER']),
@@ -293,6 +334,7 @@ router.get("/history", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.Us
         ORDER BY e.exported_at DESC
         LIMIT $${paramCount++} OFFSET $${paramCount++}
       `, params);
+        // Get total count
         const countResult = await database_1.pool.query(`
         SELECT COUNT(*) as total
         FROM sha_export_logs e
@@ -320,6 +362,7 @@ router.get("/history", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.Us
         });
     }
 });
+// Delete export file (cleanup)
 router.delete("/:exportId", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { exportId } = req.params;
@@ -331,9 +374,11 @@ router.delete("/:exportId", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), asy
             });
         }
         const exportLog = result.rows[0];
-        if (fs_1.default.existsSync(exportLog.file_path)) {
-            fs_1.default.unlinkSync(exportLog.file_path);
+        // Delete file from disk
+        if (fs.existsSync(exportLog.file_path)) {
+            fs.unlinkSync(exportLog.file_path);
         }
+        // Delete from database
         await database_1.pool.query(`DELETE FROM sha_export_logs WHERE id = $1`, [exportId]);
         res.json({
             success: true,
@@ -348,6 +393,7 @@ router.delete("/:exportId", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), asy
         });
     }
 });
+// Get export statistics
 router.get("/statistics", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), [
     (0, express_validator_1.query)("period").optional().isIn(['week', 'month', 'quarter', 'year']),
     (0, express_validator_1.query)("dateFrom").optional().isISO8601(),
@@ -362,6 +408,7 @@ router.get("/statistics", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1
             params.push(new Date(dateFrom), new Date(dateTo));
         }
         else {
+            // Default to current period
             const now = new Date();
             let startDate;
             switch (period) {
@@ -374,7 +421,7 @@ router.get("/statistics", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1
                 case 'year':
                     startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
                     break;
-                default:
+                default: // month
                     startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
             }
             dateFilter = "WHERE exported_at >= $1";
@@ -425,4 +472,3 @@ router.get("/statistics", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1
     }
 });
 exports.default = router;
-//# sourceMappingURL=sha-exports.js.map

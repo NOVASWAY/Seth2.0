@@ -1,11 +1,44 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserModel = void 0;
 const database_1 = __importDefault(require("../config/database"));
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const bcrypt = __importStar(require("bcryptjs"));
 class UserModel {
     static async findById(id) {
         const query = `
@@ -32,7 +65,7 @@ class UserModel {
         return result.rows[0] || null;
     }
     static async create(userData) {
-        const hashedPassword = await bcryptjs_1.default.hash(userData.password, 12);
+        const hashedPassword = await bcrypt.hash(userData.password, 12);
         const query = `
       INSERT INTO users (username, email, password_hash, role)
       VALUES ($1, $2, $3, $4)
@@ -107,7 +140,7 @@ class UserModel {
         await database_1.default.query(query, [id]);
     }
     static async resetPassword(id, newPassword) {
-        const hashedPassword = await bcryptjs_1.default.hash(newPassword, 12);
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
         const query = `
       UPDATE users 
       SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
@@ -136,8 +169,7 @@ class UserModel {
         };
     }
     static async verifyPassword(user, password) {
-        return bcryptjs_1.default.compare(password, user.passwordHash);
+        return bcrypt.compare(password, user.passwordHash);
     }
 }
 exports.UserModel = UserModel;
-//# sourceMappingURL=User.js.map

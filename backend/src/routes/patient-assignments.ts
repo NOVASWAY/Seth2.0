@@ -247,7 +247,7 @@ router.delete(
       // Update assignment status to CANCELLED
       await PatientAssignmentModel.update(assignment.id, {
         status: "CANCELLED",
-        updated_at: new Date().toISOString(),
+        updated_at: new Date(),
       })
 
       // Log the assignment event

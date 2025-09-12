@@ -5,9 +5,9 @@ import { authorize } from "../middleware/auth"
 import { UserRole } from "../types"
 import { AuthenticatedRequest } from "../types/auth"
 import multer from "multer"
-import path from "path"
-import crypto from "crypto"
-import fs from "fs"
+import * as path from "path"
+import * as crypto from "crypto"
+import * as fs from "fs"
 import { Express } from "express"
 
 const router = Router()

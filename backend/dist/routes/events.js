@@ -9,6 +9,7 @@ const auth_1 = require("../middleware/auth");
 const EventLoggerService_1 = require("../services/EventLoggerService");
 const types_1 = require("../types");
 const router = express_1.default.Router();
+// Get events with filtering and pagination
 router.get("/", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), [
     (0, express_validator_1.query)("event_type").optional().isString(),
     (0, express_validator_1.query)("user_id").optional().isUUID(),
@@ -60,6 +61,7 @@ router.get("/", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserR
         });
     }
 });
+// Get event statistics
 router.get("/stats", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), [
     (0, express_validator_1.query)("days").optional().isInt({ min: 1, max: 365 }),
 ], async (req, res) => {
@@ -87,6 +89,7 @@ router.get("/stats", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.
         });
     }
 });
+// Get available event types
 router.get("/types", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const eventTypes = await EventLoggerService_1.EventLoggerService.getEventTypes();
@@ -103,6 +106,7 @@ router.get("/types", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.
         });
     }
 });
+// Get available actions for an event type
 router.get("/types/:eventType/actions", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { eventType } = req.params;
@@ -120,6 +124,7 @@ router.get("/types/:eventType/actions", auth_1.authenticateToken, (0, auth_1.req
         });
     }
 });
+// Clean up old events (Admin only)
 router.post("/cleanup", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         await EventLoggerService_1.EventLoggerService.cleanupOldEvents();
@@ -136,6 +141,7 @@ router.post("/cleanup", auth_1.authenticateToken, (0, auth_1.requireRole)([types
         });
     }
 });
+// Log an event (for internal use)
 router.post("/log", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), [
     (0, express_validator_1.body)("event_type").isString().notEmpty(),
     (0, express_validator_1.body)("action").isString().notEmpty(),
@@ -175,4 +181,3 @@ router.post("/log", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.U
     }
 });
 exports.default = router;
-//# sourceMappingURL=events.js.map

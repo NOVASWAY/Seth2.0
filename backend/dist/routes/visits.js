@@ -10,6 +10,7 @@ const Patient_1 = require("../models/Patient");
 const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
 const router = express_1.default.Router();
+// Get today's queue
 router.get("/queue", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.RECEPTIONIST, types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER]), async (req, res) => {
     try {
         const queueItems = await Visit_1.VisitModel.getQueueItems();
@@ -29,6 +30,7 @@ router.get("/queue", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.User
         });
     }
 });
+// Create new visit (register patient for today)
 router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.RECEPTIONIST]), [
     (0, express_validator_1.body)("patientId").isUUID().withMessage("Invalid patient ID"),
     (0, express_validator_1.body)("chiefComplaint").optional().trim().isLength({ min: 1 }).withMessage("Chief complaint cannot be empty"),
@@ -44,6 +46,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
             });
         }
         const { patientId, chiefComplaint, triageCategory } = req.body;
+        // Verify patient exists
         const patient = await Patient_1.PatientModel.findById(patientId);
         if (!patient) {
             return res.status(404).json({
@@ -51,6 +54,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
                 message: "Patient not found",
             });
         }
+        // Check if patient already has a visit today
         const todaysVisits = await Visit_1.VisitModel.findByPatientId(patientId, 1);
         const hasVisitToday = todaysVisits.some((visit) => {
             const visitDate = new Date(visit.visitDate);
@@ -82,6 +86,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
         });
     }
 });
+// Update visit status
 router.patch("/:id/status", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST]), [(0, express_validator_1.body)("status").isIn(Object.values(types_1.VisitStatus)).withMessage("Invalid visit status")], async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
@@ -114,6 +119,7 @@ router.patch("/:id/status", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types
         });
     }
 });
+// Get visit details
 router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -124,6 +130,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
                 message: "Visit not found",
             });
         }
+        // Get patient details
         const patient = await Patient_1.PatientModel.findById(visit.patientId);
         res.json({
             success: true,
@@ -141,4 +148,3 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
     }
 });
 exports.default = router;
-//# sourceMappingURL=visits.js.map

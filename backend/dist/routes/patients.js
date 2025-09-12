@@ -10,6 +10,7 @@ const Visit_1 = require("../models/Visit");
 const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
 const router = express_1.default.Router();
+// Get all patients with pagination and search
 router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.RECEPTIONIST, types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER]), [
     (0, express_validator_1.query)("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
     (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100"),
@@ -56,6 +57,7 @@ router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.
         });
     }
 });
+// Get patient by ID
 router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.RECEPTIONIST, types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -66,6 +68,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
                 message: "Patient not found",
             });
         }
+        // Get patient's recent visits
         const visits = await Visit_1.VisitModel.findByPatientId(id, 5);
         res.json({
             success: true,
@@ -82,6 +85,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
         });
     }
 });
+// Create new patient (Registration)
 router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.RECEPTIONIST]), [
     (0, express_validator_1.body)("firstName").trim().isLength({ min: 1 }).withMessage("First name is required"),
     (0, express_validator_1.body)("lastName").trim().isLength({ min: 1 }).withMessage("Last name is required"),
@@ -103,13 +107,16 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
         }
         const patientData = req.body;
         const registrationType = patientData.registrationType || 'NEW_PATIENT';
+        // Convert date string to Date object if provided
         if (patientData.dateOfBirth) {
             patientData.dateOfBirth = new Date(patientData.dateOfBirth);
         }
+        // Add registration metadata
         patientData.registrationType = registrationType;
         patientData.registeredBy = req.user.id;
         patientData.registrationDate = new Date();
         const patient = await Patient_1.PatientModel.create(patientData);
+        // Log the registration type for audit purposes
         console.log(`Patient ${patient.id} registered via ${registrationType} by user ${req.user.id}`);
         res.status(201).json({
             success: true,
@@ -126,6 +133,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
     }
     catch (error) {
         if (error.code === "23505") {
+            // Unique constraint violation
             return res.status(409).json({
                 success: false,
                 message: "Patient with this OP number already exists",
@@ -137,6 +145,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
         });
     }
 });
+// Update patient
 router.put("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.RECEPTIONIST]), [
     (0, express_validator_1.body)("firstName").optional().trim().isLength({ min: 1 }).withMessage("First name cannot be empty"),
     (0, express_validator_1.body)("lastName").optional().trim().isLength({ min: 1 }).withMessage("Last name cannot be empty"),
@@ -157,6 +166,7 @@ router.put("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
         }
         const { id } = req.params;
         const updateData = req.body;
+        // Convert date string to Date object if provided
         if (updateData.dateOfBirth) {
             updateData.dateOfBirth = new Date(updateData.dateOfBirth);
         }
@@ -180,6 +190,7 @@ router.put("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
         });
     }
 });
+// Import patients from CSV
 router.post("/import", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.RECEPTIONIST]), [
     (0, express_validator_1.body)("patients").isArray().withMessage("Patients must be an array"),
     (0, express_validator_1.body)("patients.*.op_number").trim().isLength({ min: 1 }).withMessage("OP number is required"),
@@ -206,8 +217,10 @@ router.post("/import", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.Us
             failed: [],
             total: patients.length
         };
+        // Process each patient
         for (const patientData of patients) {
             try {
+                // Check if patient with OP number already exists
                 const existingPatient = await Patient_1.PatientModel.findByOpNumber(patientData.op_number);
                 if (existingPatient) {
                     results.failed.push({
@@ -217,9 +230,11 @@ router.post("/import", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.Us
                     });
                     continue;
                 }
+                // Convert date string to Date object if provided
                 if (patientData.date_of_birth) {
                     patientData.date_of_birth = new Date(patientData.date_of_birth);
                 }
+                // Create patient with import metadata
                 const patient = await Patient_1.PatientModel.create({
                     opNumber: patientData.op_number,
                     firstName: patientData.first_name,
@@ -229,14 +244,14 @@ router.post("/import", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.Us
                     area: patientData.area,
                     phoneNumber: patientData.phone_number,
                     insuranceType: patientData.insurance_type,
-                    gender: "OTHER",
+                    gender: "OTHER", // Default gender since it's not provided in CSV
                     registrationType: "IMPORT_PATIENT",
                     registeredBy: req.user.id,
                     registrationDate: new Date()
                 });
                 results.successful.push({
                     op_number: patient.opNumber,
-                    name: `${patient.firstName} ${patient.lastName}`,
+                    name: `${patient.first_name} ${patient.last_name}`,
                     id: patient.id
                 });
             }
@@ -261,6 +276,7 @@ router.post("/import", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.Us
         });
     }
 });
+// Search patients endpoint
 router.get("/search", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.RECEPTIONIST, types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER]), [
     (0, express_validator_1.query)("q").trim().isLength({ min: 1 }).withMessage("Search query is required"),
     (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 50 }).withMessage("Limit must be between 1 and 50"),
@@ -293,4 +309,3 @@ router.get("/search", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.Use
     }
 });
 exports.default = router;
-//# sourceMappingURL=patients.js.map

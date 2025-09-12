@@ -1,7 +1,7 @@
 import { pool } from "../config/database"
 import { SHAService } from "./SHAService"
 import { generateInvoiceNumber } from "../utils/invoiceUtils"
-import crypto from "crypto"
+import * as crypto from "crypto"
 
 export interface PatientEncounter {
   id: string

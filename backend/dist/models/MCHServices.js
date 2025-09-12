@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MCHServicesModel = void 0;
 const database_1 = __importDefault(require("../config/database"));
 class MCHServicesModel {
+    // Get all MCH services
     static async getServices() {
         const query = `
       SELECT id, name, service_code as "serviceCode", category, description,
@@ -18,6 +19,7 @@ class MCHServicesModel {
         const result = await database_1.default.query(query);
         return result.rows;
     }
+    // Get services by category
     static async getServicesByCategory(category) {
         const query = `
       SELECT id, name, service_code as "serviceCode", category, description,
@@ -30,6 +32,7 @@ class MCHServicesModel {
         const result = await database_1.default.query(query, [category]);
         return result.rows;
     }
+    // Get patient MCH services history
     static async getPatientMCHServices(patientId) {
         const query = `
       SELECT pms.id, pms.patient_id as "patientId", pms.visit_id as "visitId",
@@ -48,6 +51,7 @@ class MCHServicesModel {
         const result = await database_1.default.query(query, [patientId]);
         return result.rows;
     }
+    // Get patient MCH services by category
     static async getPatientMCHServicesByCategory(patientId, category) {
         const query = `
       SELECT pms.id, pms.patient_id as "patientId", pms.visit_id as "visitId",
@@ -66,6 +70,7 @@ class MCHServicesModel {
         const result = await database_1.default.query(query, [patientId, category]);
         return result.rows;
     }
+    // Create patient MCH service record
     static async createPatientMCHService(data) {
         const query = `
       INSERT INTO patient_mch_services (
@@ -94,6 +99,7 @@ class MCHServicesModel {
         const result = await database_1.default.query(query, values);
         return result.rows[0];
     }
+    // Update patient MCH service record
     static async updatePatientMCHService(id, data) {
         const fields = [];
         const values = [];
@@ -130,6 +136,7 @@ class MCHServicesModel {
         const result = await database_1.default.query(query, values);
         return result.rows[0] || null;
     }
+    // Get MCH service statistics
     static async getMCHServiceStats() {
         const query = `
       SELECT 
@@ -150,6 +157,7 @@ class MCHServicesModel {
         const result = await database_1.default.query(query);
         return result.rows;
     }
+    // Get upcoming MCH appointments
     static async getUpcomingMCHAppointments(days = 7) {
         const query = `
       SELECT 
@@ -169,6 +177,7 @@ class MCHServicesModel {
         const result = await database_1.default.query(query);
         return result.rows;
     }
+    // Delete patient MCH service record
     static async deletePatientMCHService(id) {
         const query = 'DELETE FROM patient_mch_services WHERE id = $1';
         const result = await database_1.default.query(query, [id]);
@@ -176,4 +185,3 @@ class MCHServicesModel {
     }
 }
 exports.MCHServicesModel = MCHServicesModel;
-//# sourceMappingURL=MCHServices.js.map

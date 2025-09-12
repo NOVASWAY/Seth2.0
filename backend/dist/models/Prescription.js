@@ -6,10 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PrescriptionModel = void 0;
 const database_1 = __importDefault(require("../config/database"));
 class PrescriptionModel {
+    // Create new prescription with items
     static async create(data) {
         const client = await database_1.default.connect();
         try {
             await client.query("BEGIN");
+            // Create prescription
             const prescriptionQuery = `
         INSERT INTO prescriptions (
           consultation_id, visit_id, patient_id, prescribed_by, status
@@ -26,6 +28,7 @@ class PrescriptionModel {
                 data.prescribedBy,
             ]);
             const prescription = prescriptionResult.rows[0];
+            // Create prescription items
             const itemQuery = `
         INSERT INTO prescription_items (
           prescription_id, inventory_item_id, item_name, dosage, frequency,
@@ -65,9 +68,11 @@ class PrescriptionModel {
             client.release();
         }
     }
+    // Find prescription by ID
     static async findById(id) {
         const client = await database_1.default.connect();
         try {
+            // Get prescription
             const prescriptionQuery = `
         SELECT id, consultation_id as "consultationId", visit_id as "visitId", 
                patient_id as "patientId", prescribed_by as "prescribedBy", 
@@ -80,6 +85,7 @@ class PrescriptionModel {
                 return null;
             }
             const prescription = prescriptionResult.rows[0];
+            // Get prescription items
             const itemsQuery = `
         SELECT id, prescription_id as "prescriptionId", inventory_item_id as "inventoryItemId",
                item_name as "itemName", dosage, frequency, duration,
@@ -99,9 +105,11 @@ class PrescriptionModel {
             client.release();
         }
     }
+    // Find prescriptions by patient ID
     static async findByPatientId(patientId) {
         const client = await database_1.default.connect();
         try {
+            // Get prescriptions
             const prescriptionQuery = `
         SELECT id, consultation_id as "consultationId", visit_id as "visitId", 
                patient_id as "patientId", prescribed_by as "prescribedBy", 
@@ -112,6 +120,7 @@ class PrescriptionModel {
       `;
             const prescriptionResult = await client.query(prescriptionQuery, [patientId]);
             const prescriptions = prescriptionResult.rows;
+            // Get items for each prescription
             const prescriptionsWithItems = [];
             for (const prescription of prescriptions) {
                 const itemsQuery = `
@@ -135,6 +144,7 @@ class PrescriptionModel {
             client.release();
         }
     }
+    // Update prescription status
     static async updateStatus(id, status) {
         const query = `
       UPDATE prescriptions 
@@ -149,6 +159,7 @@ class PrescriptionModel {
             return null;
         }
         const prescription = result.rows[0];
+        // Get prescription items
         const itemsQuery = `
       SELECT id, prescription_id as "prescriptionId", inventory_item_id as "inventoryItemId",
              item_name as "itemName", dosage, frequency, duration,
@@ -164,6 +175,7 @@ class PrescriptionModel {
             items,
         };
     }
+    // Update dispensed quantity for a prescription item
     static async updateDispensedQuantity(itemId, quantityDispensed) {
         const query = `
       UPDATE prescription_items 
@@ -180,9 +192,11 @@ class PrescriptionModel {
         }
         return result.rows[0];
     }
+    // Get prescriptions by visit ID
     static async findByVisitId(visitId) {
         const client = await database_1.default.connect();
         try {
+            // Get prescriptions
             const prescriptionQuery = `
         SELECT id, consultation_id as "consultationId", visit_id as "visitId", 
                patient_id as "patientId", prescribed_by as "prescribedBy", 
@@ -193,6 +207,7 @@ class PrescriptionModel {
       `;
             const prescriptionResult = await client.query(prescriptionQuery, [visitId]);
             const prescriptions = prescriptionResult.rows;
+            // Get items for each prescription
             const prescriptionsWithItems = [];
             for (const prescription of prescriptions) {
                 const itemsQuery = `
@@ -218,4 +233,3 @@ class PrescriptionModel {
     }
 }
 exports.PrescriptionModel = PrescriptionModel;
-//# sourceMappingURL=Prescription.js.map

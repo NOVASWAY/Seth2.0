@@ -1,7 +1,37 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const database_1 = require("../config/database");
@@ -9,10 +39,11 @@ const auth_1 = require("../middleware/auth");
 const MPesaService_1 = require("../services/MPesaService");
 const express_validator_1 = require("express-validator");
 const types_1 = require("../types");
-const crypto_1 = __importDefault(require("crypto"));
+const crypto = __importStar(require("crypto"));
 const router = (0, express_1.Router)();
 const mpesaService = new MPesaService_1.MPesaService();
-router.post("/invoices", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.ADMIN]), [
+// Create invoice
+router.post("/invoices", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.PHARMACIST, types_1.UserRole.ADMIN]), [
     (0, express_validator_1.body)("items").isArray().withMessage("Items must be an array"),
     (0, express_validator_1.body)("items.*.description").notEmpty().withMessage("Item description is required"),
     (0, express_validator_1.body)("items.*.quantity").isNumeric().withMessage("Quantity must be a number"),
@@ -27,10 +58,13 @@ router.post("/invoices", auth_1.authenticateToken, (0, auth_1.requireRole)([type
         const client = await database_1.pool.connect();
         try {
             await client.query("BEGIN");
+            // Calculate totals
             const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
-            const taxAmount = subtotal * 0.16;
+            const taxAmount = subtotal * 0.16; // 16% VAT
             const totalAmount = subtotal + taxAmount - discount_amount;
+            // Generate invoice number
             const invoiceNumber = `INV-${Date.now()}`;
+            // Create invoice
             const invoiceResult = await client.query(`
           INSERT INTO invoices (
             id, invoice_number, op_number, patient_id, buyer_name, buyer_phone,
@@ -40,14 +74,14 @@ router.post("/invoices", auth_1.authenticateToken, (0, auth_1.requireRole)([type
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
           RETURNING *
         `, [
-                crypto_1.default.randomUUID(),
+                crypto.randomUUID(),
                 invoiceNumber,
                 op_number,
                 patient_id,
                 buyer_name,
                 buyer_phone,
                 new Date(),
-                new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
                 subtotal,
                 taxAmount,
                 discount_amount,
@@ -62,6 +96,7 @@ router.post("/invoices", auth_1.authenticateToken, (0, auth_1.requireRole)([type
                 new Date(),
             ]);
             const invoice = invoiceResult.rows[0];
+            // Create invoice items
             for (const item of items) {
                 await client.query(`
             INSERT INTO invoice_items (
@@ -69,7 +104,7 @@ router.post("/invoices", auth_1.authenticateToken, (0, auth_1.requireRole)([type
               quantity, unit_price, total_price, batch_id, created_at
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
           `, [
-                    crypto_1.default.randomUUID(),
+                    crypto.randomUUID(),
                     invoice.id,
                     item.item_type || "other",
                     item.item_id,
@@ -81,6 +116,7 @@ router.post("/invoices", auth_1.authenticateToken, (0, auth_1.requireRole)([type
                     new Date(),
                 ]);
             }
+            // Create accounts receivable entry if not paid immediately
             if (totalAmount > 0) {
                 await client.query(`
             INSERT INTO accounts_receivable (
@@ -88,7 +124,7 @@ router.post("/invoices", auth_1.authenticateToken, (0, auth_1.requireRole)([type
               days_overdue, aging_bucket, status, created_at, updated_at
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
           `, [
-                    crypto_1.default.randomUUID(),
+                    crypto.randomUUID(),
                     invoice.id,
                     op_number,
                     patient_id,
@@ -123,7 +159,8 @@ router.post("/invoices", auth_1.authenticateToken, (0, auth_1.requireRole)([type
         });
     }
 });
-router.post("/payments", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.ADMIN]), [
+// Process payment
+router.post("/payments", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.PHARMACIST, types_1.UserRole.ADMIN]), [
     (0, express_validator_1.body)("invoice_id").notEmpty().withMessage("Invoice ID is required"),
     (0, express_validator_1.body)("amount").isNumeric().withMessage("Amount must be a number"),
     (0, express_validator_1.body)("payment_method")
@@ -139,7 +176,8 @@ router.post("/payments", auth_1.authenticateToken, (0, auth_1.requireRole)([type
         const client = await database_1.pool.connect();
         try {
             await client.query("BEGIN");
-            const paymentId = crypto_1.default.randomUUID();
+            // Create payment record
+            const paymentId = crypto.randomUUID();
             const paymentReference = `PAY-${Date.now()}`;
             await client.query(`
           INSERT INTO payments (
@@ -159,6 +197,7 @@ router.post("/payments", auth_1.authenticateToken, (0, auth_1.requireRole)([type
                 payment_method === "cash" ? false : true,
                 new Date(),
             ]);
+            // Update invoice payment status
             const paymentsResult = await client.query(`
           SELECT COALESCE(SUM(amount), 0) as total_paid
           FROM payments 
@@ -183,6 +222,7 @@ router.post("/payments", auth_1.authenticateToken, (0, auth_1.requireRole)([type
             SET amount_paid = $1, balance = $2, status = $3, updated_at = $4
             WHERE id = $5
           `, [totalPaid, Math.max(0, balance), status, new Date(), invoice_id]);
+                // Update accounts receivable
                 if (status === "paid") {
                     await client.query(`
               UPDATE accounts_receivable 
@@ -216,7 +256,8 @@ router.post("/payments", auth_1.authenticateToken, (0, auth_1.requireRole)([type
         });
     }
 });
-router.post("/mpesa/stk-push", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.ADMIN]), [
+// Initiate M-Pesa payment
+router.post("/mpesa/stk-push", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.PHARMACIST, types_1.UserRole.ADMIN]), [
     (0, express_validator_1.body)("phone_number").isMobilePhone("any").withMessage("Valid phone number is required"),
     (0, express_validator_1.body)("amount").isNumeric().withMessage("Amount must be a number"),
     (0, express_validator_1.body)("invoice_id").notEmpty().withMessage("Invoice ID is required"),
@@ -227,6 +268,7 @@ router.post("/mpesa/stk-push", auth_1.authenticateToken, (0, auth_1.requireRole)
             return res.status(400).json({ errors: errors.array() });
         }
         const { phone_number, amount, invoice_id } = req.body;
+        // Link transaction to invoice
         await database_1.pool.query(`
         UPDATE mpesa_transactions 
         SET invoice_id = $1 
@@ -253,6 +295,7 @@ router.post("/mpesa/stk-push", auth_1.authenticateToken, (0, auth_1.requireRole)
         });
     }
 });
+// M-Pesa callback endpoint
 router.post("/mpesa/callback", async (req, res) => {
     try {
         await mpesaService.handleCallback(req.body);
@@ -263,16 +306,19 @@ router.post("/mpesa/callback", async (req, res) => {
         res.status(500).json({ success: false });
     }
 });
-router.get("/dashboard", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.ADMIN, types_1.UserRole.CASHIER, types_1.UserRole.PHARMACIST]), async (req, res) => {
+// Get financial dashboard data
+router.get("/dashboard", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.ADMIN, types_1.UserRole.PHARMACIST]), async (req, res) => {
     try {
         const today = new Date();
         const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+        // Today's revenue
         const revenueResult = await database_1.pool.query(`
         SELECT COALESCE(SUM(amount), 0) as today_revenue
         FROM payments 
         WHERE received_at >= $1 AND received_at < $2
       `, [startOfDay, endOfDay]);
+        // Outstanding receivables
         const receivablesResult = await database_1.pool.query(`
         SELECT 
           COALESCE(SUM(CASE WHEN aging_bucket = '0-30' THEN remaining_amount ELSE 0 END), 0) as current,
@@ -282,6 +328,7 @@ router.get("/dashboard", auth_1.authenticateToken, (0, auth_1.requireRole)([type
         FROM accounts_receivable 
         WHERE status != 'SETTLED'
       `);
+        // Recent transactions
         const transactionsResult = await database_1.pool.query(`
         SELECT p.*, i.invoice_number, i.op_number
         FROM payments p
@@ -307,4 +354,3 @@ router.get("/dashboard", auth_1.authenticateToken, (0, auth_1.requireRole)([type
     }
 });
 exports.default = router;
-//# sourceMappingURL=financial.js.map

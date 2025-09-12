@@ -11,10 +11,12 @@ const types_1 = require("../types");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const AuditLog_1 = require("../models/AuditLog");
 const router = express_1.default.Router();
+// Get all staff members with statistics
 router.get("/staff", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const result = await User_1.UserModel.findAll();
         const staff = result.users;
+        // Calculate statistics
         const stats = {
             total: staff.length,
             active: staff.filter(u => u.isActive && !u.isLocked).length,
@@ -28,12 +30,13 @@ router.get("/staff", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req
                 return new Date(u.lastLoginAt) > oneWeekAgo;
             }).length
         };
+        // Remove sensitive data
         const safeStaff = staff.map(user => ({
             id: user.id,
             username: user.username,
             email: user.email,
-            firstName: user.username,
-            lastName: '',
+            firstName: user.username, // Use username as display name since we don't have firstName
+            lastName: '', // Empty since we don't have lastName
             role: user.role,
             isActive: user.isActive,
             isLocked: user.isLocked,
@@ -41,7 +44,7 @@ router.get("/staff", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req
             lastLoginAt: user.lastLoginAt,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
-            lastFailedLoginAt: null
+            lastFailedLoginAt: null // This field doesn't exist in the current schema
         }));
         res.json({
             success: true,
@@ -59,6 +62,7 @@ router.get("/staff", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req
         });
     }
 });
+// Unlock a user account
 router.post("/staff/:userId/unlock", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { userId } = req.params;
@@ -70,11 +74,13 @@ router.post("/staff/:userId/unlock", (0, auth_1.authorize)([types_1.UserRole.ADM
                 message: "User not found"
             });
         }
+        // Unlock the account and reset failed attempts
         await User_1.UserModel.update(userId, {
             isLocked: false,
             failedLoginAttempts: 0,
             lastFailedLoginAt: null
         });
+        // Log the action
         await AuditLog_1.AuditLogModel.create({
             userId: adminId,
             action: 'UNLOCK_USER',
@@ -97,6 +103,7 @@ router.post("/staff/:userId/unlock", (0, auth_1.authorize)([types_1.UserRole.ADM
         });
     }
 });
+// Toggle user active status
 router.post("/staff/:userId/toggle-status", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), [
     (0, express_validator_1.body)("isActive").isBoolean().withMessage("isActive must be a boolean")
 ], async (req, res) => {
@@ -119,6 +126,7 @@ router.post("/staff/:userId/toggle-status", (0, auth_1.authorize)([types_1.UserR
                 message: "User not found"
             });
         }
+        // Prevent admin from deactivating themselves
         if (userId === adminId && !isActive) {
             return res.status(400).json({
                 success: false,
@@ -126,6 +134,7 @@ router.post("/staff/:userId/toggle-status", (0, auth_1.authorize)([types_1.UserR
             });
         }
         await User_1.UserModel.update(userId, { isActive });
+        // Log the action
         await AuditLog_1.AuditLogModel.create({
             userId: adminId,
             action: isActive ? 'ACTIVATE_USER' : 'DEACTIVATE_USER',
@@ -148,6 +157,7 @@ router.post("/staff/:userId/toggle-status", (0, auth_1.authorize)([types_1.UserR
         });
     }
 });
+// Reset user password
 router.post("/staff/:userId/reset-password", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { userId } = req.params;
@@ -159,14 +169,17 @@ router.post("/staff/:userId/reset-password", (0, auth_1.authorize)([types_1.User
                 message: "User not found"
             });
         }
+        // Generate a temporary password
         const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
         const hashedPassword = await bcrypt_1.default.hash(tempPassword, 10);
+        // Update password and unlock account
         await User_1.UserModel.update(userId, {
             passwordHash: hashedPassword,
             isLocked: false,
             failedLoginAttempts: 0,
             lastFailedLoginAt: null
         });
+        // Log the action
         await AuditLog_1.AuditLogModel.create({
             userId: adminId,
             action: 'RESET_PASSWORD',
@@ -180,7 +193,7 @@ router.post("/staff/:userId/reset-password", (0, auth_1.authorize)([types_1.User
             success: true,
             message: "Password reset successfully",
             data: {
-                tempPassword,
+                tempPassword, // In production, this should be sent via email
                 username: user.username
             }
         });
@@ -193,6 +206,7 @@ router.post("/staff/:userId/reset-password", (0, auth_1.authorize)([types_1.User
         });
     }
 });
+// Get user credentials (for admin viewing)
 router.get("/staff/:userId/credentials", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { userId } = req.params;
@@ -204,6 +218,7 @@ router.get("/staff/:userId/credentials", (0, auth_1.authorize)([types_1.UserRole
                 message: "User not found"
             });
         }
+        // Log the action
         await AuditLog_1.AuditLogModel.create({
             userId: adminId,
             action: 'VIEW_CREDENTIALS',
@@ -219,14 +234,14 @@ router.get("/staff/:userId/credentials", (0, auth_1.authorize)([types_1.UserRole
                 id: user.id,
                 username: user.username,
                 email: user.email,
-                firstName: user.username,
-                lastName: '',
+                firstName: user.username, // Use username as display name
+                lastName: '', // Empty since we don't have lastName
                 role: user.role,
                 isActive: user.isActive,
                 isLocked: user.isLocked,
                 failedLoginAttempts: user.failedLoginAttempts,
                 lastLoginAt: user.lastLoginAt,
-                lastFailedLoginAt: null,
+                lastFailedLoginAt: null, // This field doesn't exist in the current schema
                 createdAt: user.createdAt,
                 updatedAt: user.updatedAt
             }
@@ -240,6 +255,7 @@ router.get("/staff/:userId/credentials", (0, auth_1.authorize)([types_1.UserRole
         });
     }
 });
+// Get audit logs for admin actions
 router.get("/audit-logs", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -268,5 +284,68 @@ router.get("/audit-logs", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async
         });
     }
 });
+// Generate new password for user (Admin only)
+router.get("/staff/:id/password", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({
+                success: false,
+                message: "User ID is required"
+            });
+        }
+        const user = await User_1.UserModel.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+        // Generate a new password
+        const newPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+        const hashedPassword = await bcrypt_1.default.hash(newPassword, 10);
+        // Update the user's password
+        await User_1.UserModel.update(id, {
+            passwordHash: hashedPassword,
+            isLocked: false,
+            failedLoginAttempts: 0,
+            lastFailedLoginAt: null
+        });
+        // Log this sensitive action (optional - don't fail if audit logging fails)
+        try {
+            await AuditLog_1.AuditLogModel.create({
+                userId: req.user?.id,
+                action: "GENERATE_NEW_PASSWORD",
+                resource: "user",
+                resourceId: id,
+                details: {
+                    targetUserId: id,
+                    targetUsername: user.username
+                },
+                ipAddress: req.ip,
+                userAgent: req.get("User-Agent")
+            });
+        }
+        catch (auditError) {
+            console.warn("Failed to log password generation action:", auditError);
+            // Continue with the main operation even if audit logging fails
+        }
+        res.json({
+            success: true,
+            message: "New password generated successfully",
+            data: {
+                password: newPassword, // Return the actual new password
+                username: user.username,
+                note: "This password has been set for the user. Please share it securely."
+            }
+        });
+    }
+    catch (error) {
+        console.error("Error generating new password:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
+});
 exports.default = router;
-//# sourceMappingURL=admin.js.map

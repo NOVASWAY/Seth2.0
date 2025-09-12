@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FamilyPlanningModel = void 0;
 const database_1 = __importDefault(require("../config/database"));
 class FamilyPlanningModel {
+    // Get all family planning methods
     static async getMethods() {
         const query = `
       SELECT id, name, method_code as "methodCode", category, description,
@@ -19,6 +20,7 @@ class FamilyPlanningModel {
         const result = await database_1.default.query(query);
         return result.rows;
     }
+    // Get methods by category
     static async getMethodsByCategory(category) {
         const query = `
       SELECT id, name, method_code as "methodCode", category, description,
@@ -32,6 +34,7 @@ class FamilyPlanningModel {
         const result = await database_1.default.query(query, [category]);
         return result.rows;
     }
+    // Get patient family planning history
     static async getPatientFamilyPlanning(patientId) {
         const query = `
       SELECT pfp.id, pfp.patient_id as "patientId", pfp.visit_id as "visitId",
@@ -52,6 +55,7 @@ class FamilyPlanningModel {
         const result = await database_1.default.query(query, [patientId]);
         return result.rows;
     }
+    // Get active family planning for patient
     static async getActivePatientFamilyPlanning(patientId) {
         const query = `
       SELECT pfp.id, pfp.patient_id as "patientId", pfp.visit_id as "visitId",
@@ -73,6 +77,7 @@ class FamilyPlanningModel {
         const result = await database_1.default.query(query, [patientId]);
         return result.rows[0] || null;
     }
+    // Create patient family planning record
     static async createPatientFamilyPlanning(data) {
         const query = `
       INSERT INTO patient_family_planning (
@@ -107,6 +112,7 @@ class FamilyPlanningModel {
         const result = await database_1.default.query(query, values);
         return result.rows[0];
     }
+    // Update patient family planning record
     static async updatePatientFamilyPlanning(id, data) {
         const fields = [];
         const values = [];
@@ -139,6 +145,7 @@ class FamilyPlanningModel {
         const result = await database_1.default.query(query, values);
         return result.rows[0] || null;
     }
+    // Discontinue current family planning method
     static async discontinuePatientFamilyPlanning(patientId, reason, providerId) {
         const query = `
       UPDATE patient_family_planning 
@@ -148,6 +155,7 @@ class FamilyPlanningModel {
         const result = await database_1.default.query(query, [reason, patientId]);
         return result.rowCount > 0;
     }
+    // Get family planning statistics
     static async getFamilyPlanningStats() {
         const query = `
       SELECT 
@@ -165,6 +173,7 @@ class FamilyPlanningModel {
         const result = await database_1.default.query(query);
         return result.rows;
     }
+    // Delete patient family planning record
     static async deletePatientFamilyPlanning(id) {
         const query = 'DELETE FROM patient_family_planning WHERE id = $1';
         const result = await database_1.default.query(query, [id]);
@@ -172,4 +181,3 @@ class FamilyPlanningModel {
     }
 }
 exports.FamilyPlanningModel = FamilyPlanningModel;
-//# sourceMappingURL=FamilyPlanning.js.map

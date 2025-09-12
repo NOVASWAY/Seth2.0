@@ -1,7 +1,37 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const express_validator_1 = require("express-validator");
@@ -9,10 +39,11 @@ const database_1 = require("../config/database");
 const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
 const AutoInvoiceService_1 = require("../services/AutoInvoiceService");
-const crypto_1 = __importDefault(require("crypto"));
+const crypto = __importStar(require("crypto"));
 const router = (0, express_1.Router)();
 const autoInvoiceService = new AutoInvoiceService_1.AutoInvoiceService();
-router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.DOCTOR]), [
+// Create new patient encounter
+router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER]), [
     (0, express_validator_1.body)("patientId").isUUID().withMessage("Valid patient ID is required"),
     (0, express_validator_1.body)("visitId").isUUID().withMessage("Valid visit ID is required"),
     (0, express_validator_1.body)("encounterType").isIn(['CONSULTATION', 'LAB', 'PHARMACY', 'INPATIENT', 'EMERGENCY', 'FOLLOW_UP', 'PROCEDURE']).withMessage("Invalid encounter type"),
@@ -31,6 +62,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
             });
         }
         const { patientId, visitId, encounterType, chiefComplaint, department, location, shaEligible = false, privatePayment = true } = req.body;
+        // Verify patient and visit exist
         const patientResult = await database_1.pool.query(`SELECT p.*, p.insurance_number as sha_beneficiary_id FROM patients p WHERE p.id = $1`, [patientId]);
         if (patientResult.rows.length === 0) {
             return res.status(404).json({
@@ -46,9 +78,11 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
                 message: "Visit not found for this patient"
             });
         }
+        // Determine insurance eligibility
         const insuranceEligible = Boolean(patient.sha_beneficiary_id);
         const finalShaEligible = shaEligible && insuranceEligible;
-        const encounterId = crypto_1.default.randomUUID();
+        // Create encounter
+        const encounterId = crypto.randomUUID();
         const result = await database_1.pool.query(`INSERT INTO patient_encounters (
           id, patient_id, visit_id, encounter_type, encounter_date,
           chief_complaint, department, location, insurance_eligible,
@@ -86,7 +120,8 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
         });
     }
 });
-router.post("/:id/complete", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.DOCTOR, types_1.UserRole.PHARMACIST]), [
+// Complete encounter with services and auto-generate invoice
+router.post("/:id/complete", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST]), [
     (0, express_validator_1.body)("services").optional().isArray().withMessage("Services must be an array"),
     (0, express_validator_1.body)("medications").optional().isArray().withMessage("Medications must be an array"),
     (0, express_validator_1.body)("labTests").optional().isArray().withMessage("Lab tests must be an array"),
@@ -107,6 +142,7 @@ router.post("/:id/complete", (0, auth_1.authorize)([types_1.UserRole.ADMIN, type
         const { id } = req.params;
         const { services = [], medications = [], labTests = [], procedures = [], diagnosisCodes, diagnosisDescriptions, treatmentSummary = "", autoGenerateInvoice = true } = req.body;
         if (autoGenerateInvoice) {
+            // Complete encounter and auto-generate invoice
             const result = await autoInvoiceService.completeEncounterWithServices(id, services, medications, labTests, procedures, diagnosisCodes, diagnosisDescriptions, treatmentSummary, req.user.id);
             res.json({
                 success: true,
@@ -115,6 +151,7 @@ router.post("/:id/complete", (0, auth_1.authorize)([types_1.UserRole.ADMIN, type
             });
         }
         else {
+            // Just complete the encounter without invoice generation
             await database_1.pool.query(`UPDATE patient_encounters 
            SET services_provided = $1,
                medications_prescribed = $2,
@@ -152,7 +189,8 @@ router.post("/:id/complete", (0, auth_1.authorize)([types_1.UserRole.ADMIN, type
         });
     }
 });
-router.post("/:id/generate-invoice", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.DOCTOR, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
+// Generate invoice for completed encounter (manual trigger)
+router.post("/:id/generate-invoice", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { id } = req.params;
         const result = await autoInvoiceService.manuallyTriggerInvoiceGeneration(id, req.user.id);
@@ -170,6 +208,7 @@ router.post("/:id/generate-invoice", (0, auth_1.authorize)([types_1.UserRole.ADM
         });
     }
 });
+// Get encounters ready for billing
 router.get("/ready-for-billing", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const encounters = await autoInvoiceService.getEncountersReadyForBilling();
@@ -187,7 +226,8 @@ router.get("/ready-for-billing", (0, auth_1.authorize)([types_1.UserRole.ADMIN, 
         });
     }
 });
-router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.DOCTOR, types_1.UserRole.PHARMACIST, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
+// Get encounter details
+router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { id } = req.params;
         const result = await database_1.pool.query(`SELECT e.*,
@@ -226,7 +266,8 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
         });
     }
 });
-router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.DOCTOR, types_1.UserRole.CLAIMS_MANAGER]), [
+// List encounters with filtering
+router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER]), [
     (0, express_validator_1.query)("status").optional().isIn(['IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'INVOICE_GENERATED', 'BILLED']),
     (0, express_validator_1.query)("encounterType").optional().isIn(['CONSULTATION', 'LAB', 'PHARMACY', 'INPATIENT', 'EMERGENCY', 'FOLLOW_UP', 'PROCEDURE']),
     (0, express_validator_1.query)("patientId").optional().isUUID(),
@@ -286,12 +327,14 @@ router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.
          ${whereClause}
          ORDER BY e.encounter_date DESC
          LIMIT $${paramCount++} OFFSET $${paramCount++}`, params);
+        // Get total count
         const countResult = await database_1.pool.query(`SELECT COUNT(*) as total
          FROM patient_encounters e
          ${whereClause.replace(/\$\d+/g, (match, offset) => {
             const paramIndex = Number.parseInt(match.substring(1)) - 1;
             return params[paramIndex] !== undefined ? match : 'NULL';
-        })}`, params.slice(0, -2));
+        })}`, params.slice(0, -2) // Remove limit and offset
+        );
         res.json({
             success: true,
             data: {
@@ -314,7 +357,8 @@ router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.
         });
     }
 });
-router.patch("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.DOCTOR]), [
+// Update encounter
+router.patch("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER]), [
     (0, express_validator_1.body)("chiefComplaint").optional().trim(),
     (0, express_validator_1.body)("diagnosisCodes").optional().isArray(),
     (0, express_validator_1.body)("diagnosisDescriptions").optional().isArray(),
@@ -336,6 +380,7 @@ router.patch("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.User
         }
         const { id } = req.params;
         const updateData = req.body;
+        // Check if encounter exists and is still in progress
         const existingResult = await database_1.pool.query(`SELECT * FROM patient_encounters WHERE id = $1`, [id]);
         if (existingResult.rows.length === 0) {
             return res.status(404).json({
@@ -350,6 +395,7 @@ router.patch("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.User
                 message: "Can only update encounters that are in progress"
             });
         }
+        // Build update query dynamically
         const updateFields = [];
         const values = [];
         let paramCount = 1;
@@ -390,4 +436,3 @@ router.patch("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.User
     }
 });
 exports.default = router;
-//# sourceMappingURL=patient-encounters.js.map

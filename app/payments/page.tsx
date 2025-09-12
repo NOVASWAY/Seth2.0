@@ -41,50 +41,12 @@ interface NewPayment {
   invoice_id?: string
 }
 
-const mockPayments: Payment[] = [
-  {
-    id: "1",
-    patientName: "Sarah Johnson",
-    patientId: "1",
-    amount: 5000,
-    currency: "KES",
-    method: "mpesa",
-    status: "completed",
-    date: "2024-02-01",
-    description: "Consultation fee",
-    reference: "MPESA-001"
-  },
-  {
-    id: "2",
-    patientName: "Michael Chen",
-    patientId: "2",
-    amount: 3500,
-    currency: "KES",
-    method: "cash",
-    status: "completed",
-    date: "2024-02-01",
-    description: "Lab test fee",
-    reference: "CASH-002"
-  },
-  {
-    id: "3",
-    patientName: "Emily Davis",
-    patientId: "3",
-    amount: 8000,
-    currency: "KES",
-    method: "insurance",
-    status: "pending",
-    date: "2024-02-01",
-    description: "Prenatal care",
-    reference: "INS-003"
-  }
-]
 
 export default function PaymentsPage() {
   const { user, isAuthenticated, isLoading, accessToken } = useAuthStore()
   const router = useRouter()
   const { toast } = useToast()
-  const [payments, setPayments] = useState<Payment[]>(mockPayments)
+  const [payments, setPayments] = useState<Payment[]>([])
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [methodFilter, setMethodFilter] = useState<string>('all')
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -152,7 +114,7 @@ export default function PaymentsPage() {
         return
       }
 
-      // For now, we'll create a mock invoice_id since the backend requires it
+      // Create a temporary invoice_id for the payment
       // In a real implementation, you'd select from existing invoices
       const paymentData = {
         invoice_id: newPayment.invoice_id || `temp-invoice-${Date.now()}`,

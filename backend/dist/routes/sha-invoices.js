@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -10,10 +43,11 @@ const types_1 = require("../types");
 const database_1 = require("../config/database");
 const invoiceUtils_1 = require("../utils/invoiceUtils");
 const SHAService_1 = require("../services/SHAService");
-const crypto_1 = __importDefault(require("crypto"));
+const crypto = __importStar(require("crypto"));
 const router = express_1.default.Router();
 const shaService = new SHAService_1.SHAService();
-router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER]), [
+// Get all SHA invoices with pagination and filtering
+router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.RECEPTIONIST]), [
     (0, express_validator_1.query)("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
     (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100"),
     (0, express_validator_1.query)("status").optional().isString().withMessage("Status must be a string"),
@@ -98,7 +132,8 @@ router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.
         });
     }
 });
-router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER]), async (req, res) => {
+// Get invoice by ID with full details
+router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const { id } = req.params;
         const invoiceData = await shaService.getInvoiceForPrinting(id);
@@ -121,9 +156,11 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
         });
     }
 });
-router.post("/generate/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER]), async (req, res) => {
+// CORRECTED WORKFLOW: Generate invoice for clinic records BEFORE submission
+router.post("/generate/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const { claimId } = req.params;
+        // Generate invoice for clinic records before submission
         const result = await shaService.generateInvoiceForClaim(claimId, req.user.id);
         res.status(201).json({
             success: true,
@@ -139,9 +176,11 @@ router.post("/generate/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN,
         });
     }
 });
+// CORRECTED WORKFLOW: Submit claim to SHA (locks invoice)
 router.post("/submit/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { claimId } = req.params;
+        // Submit claim to SHA (this will lock the invoice)
         const result = await shaService.submitSingleClaim(claimId, req.user.id);
         res.json({
             success: true,
@@ -157,7 +196,8 @@ router.post("/submit/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, t
         });
     }
 });
-router.get("/ready-for-review", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER]), async (req, res) => {
+// Get invoices ready for review/printing (before submission)
+router.get("/ready-for-review", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const invoices = await shaService.getInvoicesReadyForReview();
         res.json({
@@ -174,6 +214,7 @@ router.get("/ready-for-review", (0, auth_1.authorize)([types_1.UserRole.ADMIN, t
         });
     }
 });
+// Get submitted invoices (archived, read-only)
 router.get("/submitted-archive", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), [
     (0, express_validator_1.query)("startDate").optional().isISO8601().withMessage("Start date must be valid"),
     (0, express_validator_1.query)("endDate").optional().isISO8601().withMessage("End date must be valid"),
@@ -202,9 +243,11 @@ router.get("/submitted-archive", (0, auth_1.authorize)([types_1.UserRole.ADMIN, 
         });
     }
 });
+// Generate invoices for batch
 router.post("/generate/batch/:batchId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { batchId } = req.params;
+        // Check if batch exists
         const batchResult = await database_1.pool.query(`SELECT * FROM sha_claim_batches WHERE id = $1`, [batchId]);
         if (batchResult.rows.length === 0) {
             return res.status(404).json({
@@ -212,6 +255,7 @@ router.post("/generate/batch/:batchId", (0, auth_1.authorize)([types_1.UserRole.
                 message: "Batch not found"
             });
         }
+        // Generate invoices for all claims in batch
         const invoices = await shaService.generateInvoicesForBatch(batchId, req.user.id);
         res.status(201).json({
             success: true,
@@ -227,7 +271,8 @@ router.post("/generate/batch/:batchId", (0, auth_1.authorize)([types_1.UserRole.
         });
     }
 });
-router.patch("/:id/print", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER]), async (req, res) => {
+// Mark invoice as printed
+router.patch("/:id/print", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const { id } = req.params;
         await shaService.markInvoiceAsPrinted(id, req.user.id);
@@ -244,6 +289,7 @@ router.patch("/:id/print", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_
         });
     }
 });
+// Submit invoice to SHA
 router.patch("/:id/submit", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -271,6 +317,7 @@ router.patch("/:id/submit", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types
         });
     }
 });
+// Get invoices ready for printing (weekly/monthly batches)
 router.get("/ready-for-printing/:batchType", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { batchType } = req.params;
@@ -295,6 +342,7 @@ router.get("/ready-for-printing/:batchType", (0, auth_1.authorize)([types_1.User
         });
     }
 });
+// Get compliance report
 router.get("/compliance/report", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), [
     (0, express_validator_1.query)("startDate").isISO8601().withMessage("Start date is required and must be valid"),
     (0, express_validator_1.query)("endDate").isISO8601().withMessage("End date is required and must be valid"),
@@ -309,6 +357,7 @@ router.get("/compliance/report", (0, auth_1.authorize)([types_1.UserRole.ADMIN, 
         }
         const { startDate, endDate } = req.query;
         const report = await shaService.getComplianceReport(new Date(startDate), new Date(endDate));
+        // Calculate summary statistics
         const summary = {
             totalClaims: report.length,
             totalInvoicesGenerated: report.filter((r) => r.invoice_number).length,
@@ -333,6 +382,7 @@ router.get("/compliance/report", (0, auth_1.authorize)([types_1.UserRole.ADMIN, 
         });
     }
 });
+// Bulk print invoices (mark multiple as printed)
 router.patch("/bulk/print", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), [
     (0, express_validator_1.body)("invoiceIds").isArray({ min: 1 }).withMessage("Invoice IDs array is required"),
     (0, express_validator_1.body)("invoiceIds.*").isUUID().withMessage("All invoice IDs must be valid UUIDs"),
@@ -381,6 +431,7 @@ router.patch("/bulk/print", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types
         });
     }
 });
+// Get audit trail for specific invoice
 router.get("/:id/audit", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -404,9 +455,11 @@ router.get("/:id/audit", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.
         });
     }
 });
-router.post("/generate-comprehensive/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
+// Generate comprehensive SHA invoice with patient clinical data
+router.post("/generate-comprehensive/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { claimId } = req.params;
+        // Get claim details
         const claimResult = await database_1.pool.query(`SELECT 
           c.*,
           p.op_number, p.first_name, p.last_name, p.insurance_number, p.phone_number,
@@ -423,6 +476,7 @@ router.post("/generate-comprehensive/:claimId", (0, auth_1.authorize)([types_1.U
             });
         }
         const claim = claimResult.rows[0];
+        // Get comprehensive patient clinical data
         const clinicalDataQuery = `
         SELECT 
           -- Patient encounters
@@ -452,7 +506,9 @@ router.post("/generate-comprehensive/:claimId", (0, auth_1.authorize)([types_1.U
       `;
         const clinicalResult = await database_1.pool.query(clinicalDataQuery, [claim.patient_id, claim.visit_id]);
         const clinicalData = clinicalResult.rows;
+        // Organize clinical data for invoice
         const invoiceData = {
+            // Patient Information
             patient: {
                 name: `${claim.first_name} ${claim.last_name}`,
                 op_number: claim.op_number,
@@ -462,6 +518,7 @@ router.post("/generate-comprehensive/:claimId", (0, auth_1.authorize)([types_1.U
                 gender: claim.gender,
                 area: claim.area
             },
+            // Claim Information
             claim: {
                 id: claim.id,
                 claim_number: claim.claim_number,
@@ -475,10 +532,12 @@ router.post("/generate-comprehensive/:claimId", (0, auth_1.authorize)([types_1.U
                 status: claim.status,
                 created_at: claim.created_at
             },
+            // Clinical Services
             services: [],
             diagnoses: [],
             prescriptions: [],
             lab_tests: [],
+            // Invoice Details
             invoice: {
                 invoice_number: (0, invoiceUtils_1.generateInvoiceNumber)(),
                 generated_at: new Date().toISOString(),
@@ -489,12 +548,14 @@ router.post("/generate-comprehensive/:claimId", (0, auth_1.authorize)([types_1.U
                 facility_level: claim.facility_level
             }
         };
+        // Process clinical data
         let totalAmount = 0;
         const processedServices = new Set();
         const processedDiagnoses = new Set();
         const processedPrescriptions = new Set();
         const processedLabTests = new Set();
         clinicalData.forEach(row => {
+            // Add services
             if (row.service_name && !processedServices.has(row.service_name)) {
                 const serviceAmount = (parseFloat(row.service_cost) || 0) * (parseInt(row.service_quantity) || 1);
                 invoiceData.services.push({
@@ -506,6 +567,7 @@ router.post("/generate-comprehensive/:claimId", (0, auth_1.authorize)([types_1.U
                 totalAmount += serviceAmount;
                 processedServices.add(row.service_name);
             }
+            // Add diagnoses
             if (row.diagnosis_code && !processedDiagnoses.has(row.diagnosis_code)) {
                 invoiceData.diagnoses.push({
                     code: row.diagnosis_code,
@@ -514,6 +576,7 @@ router.post("/generate-comprehensive/:claimId", (0, auth_1.authorize)([types_1.U
                 });
                 processedDiagnoses.add(row.diagnosis_code);
             }
+            // Add prescriptions
             if (row.prescription_id && !processedPrescriptions.has(row.prescription_id)) {
                 invoiceData.prescriptions.push({
                     prescription_id: row.prescription_id,
@@ -528,6 +591,7 @@ router.post("/generate-comprehensive/:claimId", (0, auth_1.authorize)([types_1.U
                 });
                 processedPrescriptions.add(row.prescription_id);
             }
+            // Add lab tests
             if (row.lab_request_id && !processedLabTests.has(row.lab_request_id)) {
                 const testAmount = parseFloat(row.test_cost) || 0;
                 invoiceData.lab_tests.push({
@@ -545,8 +609,10 @@ router.post("/generate-comprehensive/:claimId", (0, auth_1.authorize)([types_1.U
                 processedLabTests.add(row.lab_request_id);
             }
         });
+        // Update total amount
         invoiceData.invoice.total_amount = totalAmount;
-        const invoiceId = crypto_1.default.randomUUID();
+        // Create invoice record in database
+        const invoiceId = crypto.randomUUID();
         const invoiceResult = await database_1.pool.query(`INSERT INTO sha_invoices (
           id, claim_id, invoice_number, patient_name, sha_beneficiary_id,
           op_number, visit_date, service_given, amount_charged, diagnosis,
@@ -587,4 +653,3 @@ router.post("/generate-comprehensive/:claimId", (0, auth_1.authorize)([types_1.U
     }
 });
 exports.default = router;
-//# sourceMappingURL=sha-invoices.js.map

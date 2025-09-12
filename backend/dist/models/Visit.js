@@ -182,4 +182,3 @@ class VisitModel {
     }
 }
 exports.VisitModel = VisitModel;
-//# sourceMappingURL=Visit.js.map

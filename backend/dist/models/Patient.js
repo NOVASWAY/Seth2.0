@@ -155,4 +155,3 @@ class PatientModel {
     }
 }
 exports.PatientModel = PatientModel;
-//# sourceMappingURL=Patient.js.map

@@ -6,7 +6,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.backupQueue = exports.notificationQueue = exports.inventoryQueue = exports.claimsQueue = void 0;
 const bull_1 = __importDefault(require("bull"));
 const ioredis_1 = __importDefault(require("ioredis"));
+// Redis connection
 const redis = new ioredis_1.default(process.env.REDIS_URL || "redis://localhost:6379");
+// Job queues
 exports.claimsQueue = new bull_1.default("claims processing", {
     redis: {
         port: 6379,
@@ -35,4 +37,3 @@ exports.backupQueue = new bull_1.default("database backup", {
         password: process.env.REDIS_PASSWORD,
     },
 });
-//# sourceMappingURL=queue.js.map

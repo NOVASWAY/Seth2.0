@@ -9,7 +9,8 @@ const auditLogger_1 = require("../middleware/auditLogger");
 const types_1 = require("../types");
 const Invoice_1 = require("../models/Invoice");
 const router = express_1.default.Router();
-router.get("/", (0, auth_1.requireRole)([types_1.UserRole.ADMIN, types_1.UserRole.PHARMACIST, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
+// Get all invoices with pagination and filtering
+router.get("/", (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { page = 1, limit = 20, status, patientId, opNumber, startDate, endDate } = req.query;
         const offset = (Number(page) - 1) * Number(limit);
@@ -88,7 +89,8 @@ router.get("/", (0, auth_1.requireRole)([types_1.UserRole.ADMIN, types_1.UserRol
         });
     }
 });
-router.get("/:id", (0, auth_1.requireRole)([types_1.UserRole.ADMIN, types_1.UserRole.PHARMACIST, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
+// Get invoice by ID with line items
+router.get("/:id", (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { id } = req.params;
         const invoiceQuery = `
@@ -152,7 +154,8 @@ router.get("/:id", (0, auth_1.requireRole)([types_1.UserRole.ADMIN, types_1.User
         });
     }
 });
-router.patch("/:id/status", (0, auth_1.requireRole)([types_1.UserRole.ADMIN, types_1.UserRole.PHARMACIST]), async (req, res) => {
+// Update invoice status
+router.patch("/:id/status", (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
@@ -197,9 +200,11 @@ router.patch("/:id/status", (0, auth_1.requireRole)([types_1.UserRole.ADMIN, typ
         });
     }
 });
+// Delete invoice (admin only)
 router.delete("/:id", (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { id } = req.params;
+        // Check if invoice has payments
         const paymentsResult = await Invoice_1.Invoice.query("SELECT COUNT(*) FROM payments WHERE invoice_id = $1", [id]);
         if (Number.parseInt(paymentsResult.rows[0].count) > 0) {
             return res.status(400).json({
@@ -207,7 +212,9 @@ router.delete("/:id", (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (
                 message: "Cannot delete invoice with payments",
             });
         }
+        // Delete line items first
         await Invoice_1.Invoice.query("DELETE FROM invoice_lines WHERE invoice_id = $1", [id]);
+        // Delete invoice
         const result = await Invoice_1.Invoice.query("DELETE FROM invoices WHERE id = $1 RETURNING *", [id]);
         if (result.rows.length === 0) {
             return res.status(404).json({
@@ -238,4 +245,3 @@ router.delete("/:id", (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (
     }
 });
 exports.default = router;
-//# sourceMappingURL=invoices.js.map

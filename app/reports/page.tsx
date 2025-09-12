@@ -37,27 +37,34 @@ export default function ReportsPage() {
     inventory: "pdf"
   })
 
-  // Mock data for reports
-  const financialData = {
-    totalRevenue: 1250000,
-    totalExpenses: 450000,
-    netProfit: 800000,
-    monthlyGrowth: 12.5
-  }
+  // Real data will be fetched from API
+  const [financialData, setFinancialData] = useState({
+    totalRevenue: 0,
+    totalExpenses: 0,
+    netProfit: 0,
+    monthlyGrowth: 0
+  })
 
-  const patientStats = {
-    totalPatients: 1250,
-    newPatients: 45,
-    activePatients: 1100,
-    averageAge: 42
-  }
+  const [patientStats, setPatientStats] = useState({
+    totalPatients: 0,
+    newPatients: 0,
+    activePatients: 0,
+    averageAge: 0
+  })
 
-  const appointmentStats = {
-    totalAppointments: 320,
-    completedAppointments: 285,
-    cancelledAppointments: 20,
-    noShowAppointments: 15
-  }
+  const [appointmentStats, setAppointmentStats] = useState({
+    totalAppointments: 0,
+    completedAppointments: 0,
+    cancelledAppointments: 0,
+    noShowAppointments: 0
+  })
+
+  const [inventoryStats, setInventoryStats] = useState({
+    totalItems: 0,
+    lowStock: 0,
+    outOfStock: 0,
+    totalValue: 0
+  })
 
   // CSV Import functionality
   const handleCSVImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -176,18 +183,13 @@ export default function ReportsPage() {
           reportData = {
             title: "Inventory Status Report",
             generatedAt: new Date().toISOString(),
-            data: {
-              totalItems: 1250,
-              lowStock: 45,
-              outOfStock: 12,
-              totalValue: 2500000
-            },
+            data: inventoryStats,
             summary: {
-              totalItems: 1250,
-              lowStockItems: 45,
-              outOfStockItems: 12,
-              totalInventoryValue: 2500000,
-              stockHealth: "Good"
+              totalItems: inventoryStats.totalItems,
+              lowStockItems: inventoryStats.lowStock,
+              outOfStockItems: inventoryStats.outOfStock,
+              totalInventoryValue: inventoryStats.totalValue,
+              stockHealth: inventoryStats.lowStock > 0 ? "Needs Attention" : "Good"
             }
           }
           fileName = `inventory-report-${new Date().toISOString().split('T')[0]}`
@@ -782,7 +784,7 @@ export default function ReportsPage() {
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">1,250</div>
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{inventoryStats.totalItems.toLocaleString()}</div>
                 <p className="text-xs text-slate-600 dark:text-slate-400">
                   In inventory
                 </p>
@@ -794,7 +796,7 @@ export default function ReportsPage() {
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">45</div>
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{inventoryStats.lowStock}</div>
                 <p className="text-xs text-slate-600 dark:text-slate-400">
                   Items need restocking
                 </p>
@@ -806,7 +808,7 @@ export default function ReportsPage() {
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400">12</div>
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{inventoryStats.outOfStock}</div>
                 <p className="text-xs text-slate-600 dark:text-slate-400">
                   Items out of stock
                 </p>
@@ -818,7 +820,7 @@ export default function ReportsPage() {
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatCurrencyDisplay(2500000)}</div>
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatCurrencyDisplay(inventoryStats.totalValue)}</div>
                 <p className="text-xs text-slate-600 dark:text-slate-400">
                   Inventory value
                 </p>

@@ -44,6 +44,7 @@ class NotificationModel {
         let whereConditions = ['n.user_id = $1'];
         let queryParams = [userId];
         let paramIndex = 2;
+        // Build WHERE conditions
         if (filters.is_read !== undefined) {
             whereConditions.push(`n.is_read = $${paramIndex}`);
             queryParams.push(filters.is_read);
@@ -60,9 +61,11 @@ class NotificationModel {
             paramIndex++;
         }
         const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+        // Get total count
         const countQuery = `SELECT COUNT(*) as total FROM notifications n ${whereClause}`;
         const countResult = await database_1.default.query(countQuery, queryParams);
         const total = parseInt(countResult.rows[0].total);
+        // Get notifications with pagination
         const limit = filters.limit || 50;
         const offset = filters.offset || 0;
         const notificationsQuery = `
@@ -113,10 +116,13 @@ class NotificationModel {
         return result.rowCount || 0;
     }
     static async getNotificationStats(userId) {
+        // Total notifications
         const totalResult = await database_1.default.query(`SELECT COUNT(*) as total FROM notifications WHERE user_id = $1`, [userId]);
         const total = parseInt(totalResult.rows[0].total);
+        // Unread notifications
         const unreadResult = await database_1.default.query(`SELECT COUNT(*) as total FROM notifications WHERE user_id = $1 AND is_read = false`, [userId]);
         const unread = parseInt(unreadResult.rows[0].total);
+        // By type
         const typeResult = await database_1.default.query(`
       SELECT type, COUNT(*) as count
       FROM notifications
@@ -128,6 +134,7 @@ class NotificationModel {
             acc[row.type] = parseInt(row.count);
             return acc;
         }, {});
+        // By priority
         const priorityResult = await database_1.default.query(`
       SELECT priority, COUNT(*) as count
       FROM notifications
@@ -146,10 +153,16 @@ class NotificationModel {
             by_priority
         };
     }
+    /**
+     * Get unread notifications count for a user
+     */
     static async getUnreadCount(userId) {
         const result = await database_1.default.query('SELECT COUNT(*) as count FROM notifications WHERE user_id = $1 AND is_read = false', [userId]);
         return parseInt(result.rows[0].count);
     }
+    /**
+     * Get user notifications with optional filtering
+     */
     static async getUserNotifications(userId, options = {}) {
         const { limit = 50, unreadOnly = false } = options;
         let query = `
@@ -185,4 +198,3 @@ class NotificationModel {
     }
 }
 exports.NotificationModel = NotificationModel;
-//# sourceMappingURL=Notification.js.map

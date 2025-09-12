@@ -37,6 +37,27 @@ services:
       timeout: 10s
       retries: 3
 
+  # MongoDB for unstructured data and analytics
+  mongodb:
+    image: mongo:7.0
+    container_name: seth-clinic-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: seth_clinic_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./database/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - seth-clinic-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Backend API
   backend:
     build:
@@ -47,6 +68,7 @@ services:
     environment:
       NODE_ENV: development
       DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/seth_clinic
+      MONGODB_URL: mongodb://admin:admin123@mongodb:27017/seth_clinic_mongo?authSource=admin
       REDIS_URL: redis://redis:6379
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
       JWT_REFRESH_SECRET: your-super-secret-refresh-key-change-in-production
@@ -72,6 +94,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mongodb:
+        condition: service_healthy
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -96,6 +120,7 @@ services:
     environment:
       NODE_ENV: development
       DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/seth_clinic
+      MONGODB_URL: mongodb://admin:admin123@mongodb:27017/seth_clinic_mongo?authSource=admin
       REDIS_URL: redis://redis:6379
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
       LOG_LEVEL: debug
@@ -114,6 +139,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      mongodb:
         condition: service_healthy
     volumes:
       - ./backend:/app
@@ -158,6 +185,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  mongodb_data:
   uploads_data:
   exports_data:
 

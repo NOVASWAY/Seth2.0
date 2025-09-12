@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryModel = void 0;
 const database_1 = __importDefault(require("../config/database"));
 class InventoryModel {
+    // Inventory Items
     static async findAllItems(limit = 50, offset = 0) {
         const countQuery = "SELECT COUNT(*) FROM inventory_items WHERE is_active = true";
         const countResult = await database_1.default.query(countQuery);
@@ -100,6 +101,7 @@ class InventoryModel {
         const result = await database_1.default.query(query, values);
         return result.rows[0] || null;
     }
+    // Inventory Batches
     static async findBatchesByItemId(itemId) {
         const query = `
       SELECT id, inventory_item_id as "inventoryItemId", batch_number as "batchNumber",
@@ -169,6 +171,7 @@ class InventoryModel {
         const result = await database_1.default.query(query, [newQuantity, id]);
         return result.rows[0] || null;
     }
+    // Inventory Movements
     static async createMovement(movementData) {
         const query = `
       INSERT INTO inventory_movements (
@@ -207,6 +210,7 @@ class InventoryModel {
         const result = await database_1.default.query(query, [itemId, limit]);
         return result.rows;
     }
+    // Stock levels and alerts
     static async getStockLevels() {
         const query = `
       SELECT 
@@ -262,6 +266,7 @@ class InventoryModel {
             daysToExpiry: row.days_to_expiry,
         }));
     }
+    // Get available stock for prescriptions
     static async getAvailableStock(search, category) {
         let query = `
       SELECT 
@@ -306,10 +311,12 @@ class InventoryModel {
             hasExpiringStock: row.has_expiring_stock,
         }));
     }
+    // Dispensing operations
     static async dispenseFromBatch(batchId, quantity, performedBy, reference) {
         const client = await database_1.default.connect();
         try {
             await client.query("BEGIN");
+            // Get current batch
             const batchQuery = `
         SELECT id, inventory_item_id, quantity, selling_price
         FROM inventory_batches 
@@ -325,6 +332,7 @@ class InventoryModel {
                 await client.query("ROLLBACK");
                 return { success: false, message: "Insufficient stock in batch" };
             }
+            // Update batch quantity
             const newQuantity = batch.quantity - quantity;
             const updateQuery = `
         UPDATE inventory_batches 
@@ -332,6 +340,7 @@ class InventoryModel {
         WHERE id = $2
       `;
             await client.query(updateQuery, [newQuantity, batchId]);
+            // Create movement record
             const movementQuery = `
         INSERT INTO inventory_movements (
           inventory_item_id, batch_id, movement_type, quantity,
@@ -361,4 +370,3 @@ class InventoryModel {
     }
 }
 exports.InventoryModel = InventoryModel;
-//# sourceMappingURL=Inventory.js.map

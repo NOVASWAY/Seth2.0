@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ImmunizationModel = void 0;
 const database_1 = __importDefault(require("../config/database"));
 class ImmunizationModel {
+    // Get all immunization schedules
     static async getSchedules() {
         const query = `
       SELECT id, name, description, age_group as "ageGroup", is_active as "isActive",
@@ -17,6 +18,7 @@ class ImmunizationModel {
         const result = await database_1.default.query(query);
         return result.rows;
     }
+    // Get all vaccines
     static async getVaccines() {
         const query = `
       SELECT id, name, vaccine_code as "vaccineCode", description, manufacturer,
@@ -29,6 +31,7 @@ class ImmunizationModel {
         const result = await database_1.default.query(query);
         return result.rows;
     }
+    // Get vaccines by schedule
     static async getVaccinesBySchedule(scheduleId) {
         const query = `
       SELECT v.id, v.name, v.vaccine_code as "vaccineCode", v.description, v.manufacturer,
@@ -43,6 +46,7 @@ class ImmunizationModel {
         const result = await database_1.default.query(query, [scheduleId]);
         return result.rows;
     }
+    // Get patient immunizations
     static async getPatientImmunizations(patientId) {
         const query = `
       SELECT pi.id, pi.patient_id as "patientId", pi.visit_id as "visitId",
@@ -61,6 +65,7 @@ class ImmunizationModel {
         const result = await database_1.default.query(query, [patientId]);
         return result.rows;
     }
+    // Create patient immunization
     static async createPatientImmunization(data) {
         const query = `
       INSERT INTO patient_immunizations (
@@ -96,6 +101,7 @@ class ImmunizationModel {
         const result = await database_1.default.query(query, values);
         return result.rows[0];
     }
+    // Get immunization schedule for patient based on age
     static async getPatientImmunizationSchedule(patientId) {
         const query = `
       WITH patient_age AS (
@@ -140,6 +146,7 @@ class ImmunizationModel {
         const result = await database_1.default.query(query, [patientId]);
         return result.rows;
     }
+    // Update patient immunization
     static async updatePatientImmunization(id, data) {
         const fields = [];
         const values = [];
@@ -172,6 +179,7 @@ class ImmunizationModel {
         const result = await database_1.default.query(query, values);
         return result.rows[0] || null;
     }
+    // Delete patient immunization
     static async deletePatientImmunization(id) {
         const query = 'DELETE FROM patient_immunizations WHERE id = $1';
         const result = await database_1.default.query(query, [id]);
@@ -179,4 +187,3 @@ class ImmunizationModel {
     }
 }
 exports.ImmunizationModel = ImmunizationModel;
-//# sourceMappingURL=Immunization.js.map

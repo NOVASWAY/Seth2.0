@@ -49,6 +49,7 @@ class MPesaService {
         const accessToken = await this.getAccessToken();
         const password = this.generatePassword();
         const timestamp = this.getTimestamp();
+        // Format phone number (remove + and ensure it starts with 254)
         const formattedPhone = phoneNumber.replace(/^\+/, "").replace(/^0/, "254");
         const requestBody = {
             BusinessShortCode: this.shortcode,
@@ -70,6 +71,7 @@ class MPesaService {
                     "Content-Type": "application/json",
                 },
             });
+            // Save transaction to database
             const transaction = {
                 id: crypto.randomUUID(),
                 transaction_type: "stk_push",
@@ -134,18 +136,21 @@ class MPesaService {
         else if (resultCode === 1032) {
             status = "cancelled";
         }
+        // Update transaction in database
         await database_1.pool.query(`
       UPDATE mpesa_transactions 
       SET status = $1, result_code = $2, result_desc = $3, 
           receipt_number = $4, transaction_id = $5, updated_at = $6
       WHERE checkout_request_id = $7
     `, [status, resultCode.toString(), resultDesc, receiptNumber, transactionId, new Date(), checkoutRequestId]);
+        // If successful, create payment record
         if (status === "success") {
             const transactionResult = await database_1.pool.query(`
         SELECT * FROM mpesa_transactions WHERE checkout_request_id = $1
       `, [checkoutRequestId]);
             if (transactionResult.rows.length > 0) {
                 const transaction = transactionResult.rows[0];
+                // Create payment record
                 await database_1.pool.query(`
           INSERT INTO payments (
             id, invoice_id, payment_reference, payment_method, amount,
@@ -165,6 +170,7 @@ class MPesaService {
                     true,
                     new Date(),
                 ]);
+                // Update invoice payment status
                 if (transaction.invoice_id) {
                     await this.updateInvoicePaymentStatus(transaction.invoice_id);
                 }
@@ -172,12 +178,14 @@ class MPesaService {
         }
     }
     async updateInvoicePaymentStatus(invoiceId) {
+        // Calculate total payments for invoice
         const paymentsResult = await database_1.pool.query(`
       SELECT COALESCE(SUM(amount), 0) as total_paid
       FROM payments 
       WHERE invoice_id = $1
     `, [invoiceId]);
         const totalPaid = Number.parseFloat(paymentsResult.rows[0].total_paid);
+        // Get invoice total
         const invoiceResult = await database_1.pool.query(`
       SELECT total_amount FROM invoices WHERE id = $1
     `, [invoiceId]);
@@ -200,4 +208,3 @@ class MPesaService {
     }
 }
 exports.MPesaService = MPesaService;
-//# sourceMappingURL=MPesaService.js.map

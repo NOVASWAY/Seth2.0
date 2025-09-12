@@ -8,6 +8,7 @@ const express_validator_1 = require("express-validator");
 const AuthService_1 = require("../services/AuthService");
 const auth_1 = require("../middleware/auth");
 const router = express_1.default.Router();
+// Login endpoint
 router.post("/login", [
     (0, express_validator_1.body)("username").trim().isLength({ min: 3 }).withMessage("Username must be at least 3 characters"),
     (0, express_validator_1.body)("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters"),
@@ -46,6 +47,7 @@ router.post("/login", [
         });
     }
 });
+// Refresh token endpoint
 router.post("/refresh", [(0, express_validator_1.body)("refreshToken").notEmpty().withMessage("Refresh token is required")], async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
@@ -77,6 +79,7 @@ router.post("/refresh", [(0, express_validator_1.body)("refreshToken").notEmpty(
         });
     }
 });
+// Logout endpoint
 router.post("/logout", auth_1.authenticate, async (req, res) => {
     try {
         if (req.user) {
@@ -94,6 +97,7 @@ router.post("/logout", auth_1.authenticate, async (req, res) => {
         });
     }
 });
+// Get current user endpoint
 router.get("/me", auth_1.authenticate, (req, res) => {
     res.json({
         success: true,
@@ -101,4 +105,3 @@ router.get("/me", auth_1.authenticate, (req, res) => {
     });
 });
 exports.default = router;
-//# sourceMappingURL=auth.js.map

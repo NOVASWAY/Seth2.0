@@ -8,7 +8,9 @@ const express_validator_1 = require("express-validator");
 const Immunization_1 = require("../models/Immunization");
 const auth_1 = require("../middleware/auth");
 const auditLogger_1 = require("../middleware/auditLogger");
+const types_1 = require("../types");
 const router = express_1.default.Router();
+// Get all immunization schedules
 router.get("/schedules", auth_1.authenticate, async (req, res) => {
     try {
         const schedules = await Immunization_1.ImmunizationModel.getSchedules();
@@ -25,6 +27,7 @@ router.get("/schedules", auth_1.authenticate, async (req, res) => {
         });
     }
 });
+// Get all vaccines
 router.get("/vaccines", auth_1.authenticate, async (req, res) => {
     try {
         const vaccines = await Immunization_1.ImmunizationModel.getVaccines();
@@ -41,6 +44,7 @@ router.get("/vaccines", auth_1.authenticate, async (req, res) => {
         });
     }
 });
+// Get vaccines by schedule
 router.get("/schedules/:scheduleId/vaccines", auth_1.authenticate, (0, express_validator_1.param)("scheduleId").isUUID().withMessage("Invalid schedule ID"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
@@ -66,6 +70,7 @@ router.get("/schedules/:scheduleId/vaccines", auth_1.authenticate, (0, express_v
         });
     }
 });
+// Get patient immunization schedule
 router.get("/patients/:patientId/schedule", auth_1.authenticate, (0, express_validator_1.param)("patientId").isUUID().withMessage("Invalid patient ID"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
@@ -91,6 +96,7 @@ router.get("/patients/:patientId/schedule", auth_1.authenticate, (0, express_val
         });
     }
 });
+// Get patient immunizations
 router.get("/patients/:patientId/immunizations", auth_1.authenticate, (0, express_validator_1.param)("patientId").isUUID().withMessage("Invalid patient ID"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
@@ -116,7 +122,8 @@ router.get("/patients/:patientId/immunizations", auth_1.authenticate, (0, expres
         });
     }
 });
-router.post("/patients/:patientId/immunizations", auth_1.authenticate, (0, auth_1.authorize)(["NURSE", "CLINICAL_OFFICER", "ADMIN"]), auditLogger_1.auditLogger, (0, express_validator_1.param)("patientId").isUUID().withMessage("Invalid patient ID"), (0, express_validator_1.body)("vaccineId").isUUID().withMessage("Invalid vaccine ID"), (0, express_validator_1.body)("immunizationDate").optional().isISO8601().withMessage("Invalid immunization date"), (0, express_validator_1.body)("batchNumber").optional().isString().withMessage("Invalid batch number"), (0, express_validator_1.body)("expiryDate").optional().isISO8601().withMessage("Invalid expiry date"), (0, express_validator_1.body)("site").optional().isString().withMessage("Invalid site"), (0, express_validator_1.body)("route").optional().isString().withMessage("Invalid route"), (0, express_validator_1.body)("dosage").optional().isString().withMessage("Invalid dosage"), (0, express_validator_1.body)("adverseReactions").optional().isString().withMessage("Invalid adverse reactions"), (0, express_validator_1.body)("nextDueDate").optional().isISO8601().withMessage("Invalid next due date"), (0, express_validator_1.body)("status").optional().isIn(["SCHEDULED", "COMPLETED", "MISSED", "CONTRAINDICATED"]).withMessage("Invalid status"), (0, express_validator_1.body)("notes").optional().isString().withMessage("Invalid notes"), async (req, res) => {
+// Create patient immunization
+router.post("/patients/:patientId/immunizations", auth_1.authenticate, (0, auth_1.authorize)([types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.ADMIN]), auditLogger_1.auditLogger, (0, express_validator_1.param)("patientId").isUUID().withMessage("Invalid patient ID"), (0, express_validator_1.body)("vaccineId").isUUID().withMessage("Invalid vaccine ID"), (0, express_validator_1.body)("immunizationDate").optional().isISO8601().withMessage("Invalid immunization date"), (0, express_validator_1.body)("batchNumber").optional().isString().withMessage("Invalid batch number"), (0, express_validator_1.body)("expiryDate").optional().isISO8601().withMessage("Invalid expiry date"), (0, express_validator_1.body)("site").optional().isString().withMessage("Invalid site"), (0, express_validator_1.body)("route").optional().isString().withMessage("Invalid route"), (0, express_validator_1.body)("dosage").optional().isString().withMessage("Invalid dosage"), (0, express_validator_1.body)("adverseReactions").optional().isString().withMessage("Invalid adverse reactions"), (0, express_validator_1.body)("nextDueDate").optional().isISO8601().withMessage("Invalid next due date"), (0, express_validator_1.body)("status").optional().isIn(["SCHEDULED", "COMPLETED", "MISSED", "CONTRAINDICATED"]).withMessage("Invalid status"), (0, express_validator_1.body)("notes").optional().isString().withMessage("Invalid notes"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -147,7 +154,8 @@ router.post("/patients/:patientId/immunizations", auth_1.authenticate, (0, auth_
         });
     }
 });
-router.put("/immunizations/:immunizationId", auth_1.authenticate, (0, auth_1.authorize)(["NURSE", "CLINICAL_OFFICER", "ADMIN"]), auditLogger_1.auditLogger, (0, express_validator_1.param)("immunizationId").isUUID().withMessage("Invalid immunization ID"), (0, express_validator_1.body)("immunizationDate").optional().isISO8601().withMessage("Invalid immunization date"), (0, express_validator_1.body)("batchNumber").optional().isString().withMessage("Invalid batch number"), (0, express_validator_1.body)("expiryDate").optional().isISO8601().withMessage("Invalid expiry date"), (0, express_validator_1.body)("site").optional().isString().withMessage("Invalid site"), (0, express_validator_1.body)("route").optional().isString().withMessage("Invalid route"), (0, express_validator_1.body)("dosage").optional().isString().withMessage("Invalid dosage"), (0, express_validator_1.body)("adverseReactions").optional().isString().withMessage("Invalid adverse reactions"), (0, express_validator_1.body)("nextDueDate").optional().isISO8601().withMessage("Invalid next due date"), (0, express_validator_1.body)("status").optional().isIn(["SCHEDULED", "COMPLETED", "MISSED", "CONTRAINDICATED"]).withMessage("Invalid status"), (0, express_validator_1.body)("notes").optional().isString().withMessage("Invalid notes"), async (req, res) => {
+// Update patient immunization
+router.put("/immunizations/:immunizationId", auth_1.authenticate, (0, auth_1.authorize)([types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.ADMIN]), auditLogger_1.auditLogger, (0, express_validator_1.param)("immunizationId").isUUID().withMessage("Invalid immunization ID"), (0, express_validator_1.body)("immunizationDate").optional().isISO8601().withMessage("Invalid immunization date"), (0, express_validator_1.body)("batchNumber").optional().isString().withMessage("Invalid batch number"), (0, express_validator_1.body)("expiryDate").optional().isISO8601().withMessage("Invalid expiry date"), (0, express_validator_1.body)("site").optional().isString().withMessage("Invalid site"), (0, express_validator_1.body)("route").optional().isString().withMessage("Invalid route"), (0, express_validator_1.body)("dosage").optional().isString().withMessage("Invalid dosage"), (0, express_validator_1.body)("adverseReactions").optional().isString().withMessage("Invalid adverse reactions"), (0, express_validator_1.body)("nextDueDate").optional().isISO8601().withMessage("Invalid next due date"), (0, express_validator_1.body)("status").optional().isIn(["SCHEDULED", "COMPLETED", "MISSED", "CONTRAINDICATED"]).withMessage("Invalid status"), (0, express_validator_1.body)("notes").optional().isString().withMessage("Invalid notes"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -179,7 +187,8 @@ router.put("/immunizations/:immunizationId", auth_1.authenticate, (0, auth_1.aut
         });
     }
 });
-router.delete("/immunizations/:immunizationId", auth_1.authenticate, (0, auth_1.authorize)(["NURSE", "CLINICAL_OFFICER", "ADMIN"]), auditLogger_1.auditLogger, (0, express_validator_1.param)("immunizationId").isUUID().withMessage("Invalid immunization ID"), async (req, res) => {
+// Delete patient immunization
+router.delete("/immunizations/:immunizationId", auth_1.authenticate, (0, auth_1.authorize)([types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.ADMIN]), auditLogger_1.auditLogger, (0, express_validator_1.param)("immunizationId").isUUID().withMessage("Invalid immunization ID"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -211,4 +220,3 @@ router.delete("/immunizations/:immunizationId", auth_1.authenticate, (0, auth_1.
     }
 });
 exports.default = router;
-//# sourceMappingURL=immunization.js.map

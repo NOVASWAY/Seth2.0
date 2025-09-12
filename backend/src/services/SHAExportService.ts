@@ -1,9 +1,9 @@
 import PDFDocument from "pdfkit"
 import ExcelJS from "exceljs"
 import { pool } from "../config/database"
-import path from "path"
-import fs from "fs"
-import crypto from "crypto"
+import * as path from "path"
+import * as fs from "fs"
+import * as crypto from "crypto"
 
 export interface ExportFilters {
   dateFrom?: Date

@@ -1,5 +1,5 @@
 import pool from "../config/database"
-import bcrypt from "bcryptjs"
+import * as bcrypt from "bcryptjs"
 import type { UserRole } from "../types"
 
 export interface User {

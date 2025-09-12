@@ -10,6 +10,7 @@ class LabRequestModel {
         const client = await database_1.default.connect();
         try {
             await client.query("BEGIN");
+            // Create the main lab request
             const requestQuery = `
         INSERT INTO lab_requests (
           visit_id, patient_id, requested_by, clinical_notes, urgency
@@ -25,6 +26,7 @@ class LabRequestModel {
             ];
             const requestResult = await client.query(requestQuery, requestValues);
             const labRequest = requestResult.rows[0];
+            // Create lab request items
             for (const item of data.items) {
                 const itemQuery = `
           INSERT INTO lab_request_items (
@@ -333,4 +335,3 @@ class LabRequestModel {
     }
 }
 exports.LabRequestModel = LabRequestModel;
-//# sourceMappingURL=LabRequest.js.map

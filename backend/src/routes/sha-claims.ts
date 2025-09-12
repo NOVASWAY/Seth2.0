@@ -3,7 +3,7 @@ import { body, query, validationResult } from "express-validator"
 import { authorize, type AuthenticatedRequest } from "../middleware/auth"
 import { UserRole } from "../types"
 import { pool } from "../config/database"
-import crypto from "crypto"
+import * as crypto from "crypto"
 
 const router = express.Router()
 

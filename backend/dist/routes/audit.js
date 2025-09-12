@@ -8,6 +8,7 @@ const auth_1 = require("../middleware/auth");
 const AuditLog_1 = require("../models/AuditLog");
 const types_1 = require("../types");
 const router = express_1.default.Router();
+// Get audit logs with filtering and pagination
 router.get("/", (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { page = 1, limit = 50, userId, action, resource, startDate, endDate, opNumber } = req.query;
@@ -76,6 +77,7 @@ router.get("/", (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req, r
         });
     }
 });
+// Get audit log by ID
 router.get("/:id", (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -104,6 +106,7 @@ router.get("/:id", (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req
         });
     }
 });
+// Export audit logs to CSV
 router.get("/export/csv", (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { userId, action, resource, startDate, endDate, opNumber } = req.query;
@@ -154,6 +157,7 @@ router.get("/export/csv", (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), asy
       ORDER BY al.created_at DESC
     `;
         const result = await AuditLog_1.AuditLog.query(query, params);
+        // Convert to CSV
         const headers = [
             "ID",
             "User ID",
@@ -201,4 +205,3 @@ router.get("/export/csv", (0, auth_1.requireRole)([types_1.UserRole.ADMIN]), asy
     }
 });
 exports.default = router;
-//# sourceMappingURL=audit.js.map

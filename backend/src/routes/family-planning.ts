@@ -4,6 +4,7 @@ import { FamilyPlanningModel } from "../models/FamilyPlanning"
 import { authenticate, authorize } from "../middleware/auth"
 import { auditLogger } from "../middleware/auditLogger"
 import type { AuthenticatedRequest } from "../types"
+import { UserRole } from "../types"
 
 const router = express.Router()
 
@@ -123,7 +124,7 @@ router.get("/patients/:patientId/active",
 // Create patient family planning record
 router.post("/patients/:patientId/records",
   authenticate,
-  authorize(["NURSE", "CLINICAL_OFFICER", "ADMIN"]),
+  authorize([UserRole.NURSE, UserRole.CLINICAL_OFFICER, UserRole.ADMIN]),
   auditLogger,
   param("patientId").isUUID().withMessage("Invalid patient ID"),
   body("methodId").isUUID().withMessage("Invalid method ID"),
@@ -175,7 +176,7 @@ router.post("/patients/:patientId/records",
 // Update patient family planning record
 router.put("/records/:recordId",
   authenticate,
-  authorize(["NURSE", "CLINICAL_OFFICER", "ADMIN"]),
+  authorize([UserRole.NURSE, UserRole.CLINICAL_OFFICER, UserRole.ADMIN]),
   auditLogger,
   param("recordId").isUUID().withMessage("Invalid record ID"),
   body("startDate").optional().isISO8601().withMessage("Invalid start date"),
@@ -227,7 +228,7 @@ router.put("/records/:recordId",
 // Discontinue current family planning method
 router.post("/patients/:patientId/discontinue",
   authenticate,
-  authorize(["NURSE", "CLINICAL_OFFICER", "ADMIN"]),
+  authorize([UserRole.NURSE, UserRole.CLINICAL_OFFICER, UserRole.ADMIN]),
   auditLogger,
   param("patientId").isUUID().withMessage("Invalid patient ID"),
   body("reason").isString().withMessage("Discontinuation reason is required"),
@@ -275,7 +276,7 @@ router.post("/patients/:patientId/discontinue",
 // Get family planning statistics
 router.get("/statistics",
   authenticate,
-  authorize(["ADMIN", "CLINICAL_OFFICER"]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const stats = await FamilyPlanningModel.getFamilyPlanningStats()
@@ -297,7 +298,7 @@ router.get("/statistics",
 // Delete family planning record
 router.delete("/records/:recordId",
   authenticate,
-  authorize(["NURSE", "CLINICAL_OFFICER", "ADMIN"]),
+  authorize([UserRole.NURSE, UserRole.CLINICAL_OFFICER, UserRole.ADMIN]),
   auditLogger,
   param("recordId").isUUID().withMessage("Invalid record ID"),
   async (req: AuthenticatedRequest, res) => {

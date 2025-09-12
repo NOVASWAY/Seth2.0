@@ -8,7 +8,9 @@ const express_validator_1 = require("express-validator");
 const FamilyPlanning_1 = require("../models/FamilyPlanning");
 const auth_1 = require("../middleware/auth");
 const auditLogger_1 = require("../middleware/auditLogger");
+const types_1 = require("../types");
 const router = express_1.default.Router();
+// Get all family planning methods
 router.get("/methods", auth_1.authenticate, async (req, res) => {
     try {
         const methods = await FamilyPlanning_1.FamilyPlanningModel.getMethods();
@@ -25,6 +27,7 @@ router.get("/methods", auth_1.authenticate, async (req, res) => {
         });
     }
 });
+// Get family planning methods by category
 router.get("/methods/category/:category", auth_1.authenticate, (0, express_validator_1.param)("category").isIn(["HORMONAL", "BARRIER", "IUD", "STERILIZATION", "NATURAL"]).withMessage("Invalid category"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
@@ -50,6 +53,7 @@ router.get("/methods/category/:category", auth_1.authenticate, (0, express_valid
         });
     }
 });
+// Get patient family planning history
 router.get("/patients/:patientId/history", auth_1.authenticate, (0, express_validator_1.param)("patientId").isUUID().withMessage("Invalid patient ID"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
@@ -75,6 +79,7 @@ router.get("/patients/:patientId/history", auth_1.authenticate, (0, express_vali
         });
     }
 });
+// Get active family planning for patient
 router.get("/patients/:patientId/active", auth_1.authenticate, (0, express_validator_1.param)("patientId").isUUID().withMessage("Invalid patient ID"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
@@ -100,7 +105,8 @@ router.get("/patients/:patientId/active", auth_1.authenticate, (0, express_valid
         });
     }
 });
-router.post("/patients/:patientId/records", auth_1.authenticate, (0, auth_1.authorize)(["NURSE", "CLINICAL_OFFICER", "ADMIN"]), auditLogger_1.auditLogger, (0, express_validator_1.param)("patientId").isUUID().withMessage("Invalid patient ID"), (0, express_validator_1.body)("methodId").isUUID().withMessage("Invalid method ID"), (0, express_validator_1.body)("startDate").optional().isISO8601().withMessage("Invalid start date"), (0, express_validator_1.body)("endDate").optional().isISO8601().withMessage("Invalid end date"), (0, express_validator_1.body)("counselingProvided").optional().isBoolean().withMessage("Invalid counseling provided"), (0, express_validator_1.body)("counselingNotes").optional().isString().withMessage("Invalid counseling notes"), (0, express_validator_1.body)("sideEffectsExperienced").optional().isString().withMessage("Invalid side effects"), (0, express_validator_1.body)("satisfactionRating").optional().isInt({ min: 1, max: 5 }).withMessage("Invalid satisfaction rating"), (0, express_validator_1.body)("followUpDate").optional().isISO8601().withMessage("Invalid follow-up date"), (0, express_validator_1.body)("status").optional().isIn(["ACTIVE", "DISCONTINUED", "COMPLETED", "SWITCHED"]).withMessage("Invalid status"), (0, express_validator_1.body)("discontinuationReason").optional().isString().withMessage("Invalid discontinuation reason"), (0, express_validator_1.body)("notes").optional().isString().withMessage("Invalid notes"), async (req, res) => {
+// Create patient family planning record
+router.post("/patients/:patientId/records", auth_1.authenticate, (0, auth_1.authorize)([types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.ADMIN]), auditLogger_1.auditLogger, (0, express_validator_1.param)("patientId").isUUID().withMessage("Invalid patient ID"), (0, express_validator_1.body)("methodId").isUUID().withMessage("Invalid method ID"), (0, express_validator_1.body)("startDate").optional().isISO8601().withMessage("Invalid start date"), (0, express_validator_1.body)("endDate").optional().isISO8601().withMessage("Invalid end date"), (0, express_validator_1.body)("counselingProvided").optional().isBoolean().withMessage("Invalid counseling provided"), (0, express_validator_1.body)("counselingNotes").optional().isString().withMessage("Invalid counseling notes"), (0, express_validator_1.body)("sideEffectsExperienced").optional().isString().withMessage("Invalid side effects"), (0, express_validator_1.body)("satisfactionRating").optional().isInt({ min: 1, max: 5 }).withMessage("Invalid satisfaction rating"), (0, express_validator_1.body)("followUpDate").optional().isISO8601().withMessage("Invalid follow-up date"), (0, express_validator_1.body)("status").optional().isIn(["ACTIVE", "DISCONTINUED", "COMPLETED", "SWITCHED"]).withMessage("Invalid status"), (0, express_validator_1.body)("discontinuationReason").optional().isString().withMessage("Invalid discontinuation reason"), (0, express_validator_1.body)("notes").optional().isString().withMessage("Invalid notes"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -131,7 +137,8 @@ router.post("/patients/:patientId/records", auth_1.authenticate, (0, auth_1.auth
         });
     }
 });
-router.put("/records/:recordId", auth_1.authenticate, (0, auth_1.authorize)(["NURSE", "CLINICAL_OFFICER", "ADMIN"]), auditLogger_1.auditLogger, (0, express_validator_1.param)("recordId").isUUID().withMessage("Invalid record ID"), (0, express_validator_1.body)("startDate").optional().isISO8601().withMessage("Invalid start date"), (0, express_validator_1.body)("endDate").optional().isISO8601().withMessage("Invalid end date"), (0, express_validator_1.body)("counselingProvided").optional().isBoolean().withMessage("Invalid counseling provided"), (0, express_validator_1.body)("counselingNotes").optional().isString().withMessage("Invalid counseling notes"), (0, express_validator_1.body)("sideEffectsExperienced").optional().isString().withMessage("Invalid side effects"), (0, express_validator_1.body)("satisfactionRating").optional().isInt({ min: 1, max: 5 }).withMessage("Invalid satisfaction rating"), (0, express_validator_1.body)("followUpDate").optional().isISO8601().withMessage("Invalid follow-up date"), (0, express_validator_1.body)("status").optional().isIn(["ACTIVE", "DISCONTINUED", "COMPLETED", "SWITCHED"]).withMessage("Invalid status"), (0, express_validator_1.body)("discontinuationReason").optional().isString().withMessage("Invalid discontinuation reason"), (0, express_validator_1.body)("notes").optional().isString().withMessage("Invalid notes"), async (req, res) => {
+// Update patient family planning record
+router.put("/records/:recordId", auth_1.authenticate, (0, auth_1.authorize)([types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.ADMIN]), auditLogger_1.auditLogger, (0, express_validator_1.param)("recordId").isUUID().withMessage("Invalid record ID"), (0, express_validator_1.body)("startDate").optional().isISO8601().withMessage("Invalid start date"), (0, express_validator_1.body)("endDate").optional().isISO8601().withMessage("Invalid end date"), (0, express_validator_1.body)("counselingProvided").optional().isBoolean().withMessage("Invalid counseling provided"), (0, express_validator_1.body)("counselingNotes").optional().isString().withMessage("Invalid counseling notes"), (0, express_validator_1.body)("sideEffectsExperienced").optional().isString().withMessage("Invalid side effects"), (0, express_validator_1.body)("satisfactionRating").optional().isInt({ min: 1, max: 5 }).withMessage("Invalid satisfaction rating"), (0, express_validator_1.body)("followUpDate").optional().isISO8601().withMessage("Invalid follow-up date"), (0, express_validator_1.body)("status").optional().isIn(["ACTIVE", "DISCONTINUED", "COMPLETED", "SWITCHED"]).withMessage("Invalid status"), (0, express_validator_1.body)("discontinuationReason").optional().isString().withMessage("Invalid discontinuation reason"), (0, express_validator_1.body)("notes").optional().isString().withMessage("Invalid notes"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -163,7 +170,8 @@ router.put("/records/:recordId", auth_1.authenticate, (0, auth_1.authorize)(["NU
         });
     }
 });
-router.post("/patients/:patientId/discontinue", auth_1.authenticate, (0, auth_1.authorize)(["NURSE", "CLINICAL_OFFICER", "ADMIN"]), auditLogger_1.auditLogger, (0, express_validator_1.param)("patientId").isUUID().withMessage("Invalid patient ID"), (0, express_validator_1.body)("reason").isString().withMessage("Discontinuation reason is required"), async (req, res) => {
+// Discontinue current family planning method
+router.post("/patients/:patientId/discontinue", auth_1.authenticate, (0, auth_1.authorize)([types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.ADMIN]), auditLogger_1.auditLogger, (0, express_validator_1.param)("patientId").isUUID().withMessage("Invalid patient ID"), (0, express_validator_1.body)("reason").isString().withMessage("Discontinuation reason is required"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -195,7 +203,8 @@ router.post("/patients/:patientId/discontinue", auth_1.authenticate, (0, auth_1.
         });
     }
 });
-router.get("/statistics", auth_1.authenticate, (0, auth_1.authorize)(["ADMIN", "CLINICAL_OFFICER"]), async (req, res) => {
+// Get family planning statistics
+router.get("/statistics", auth_1.authenticate, (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER]), async (req, res) => {
     try {
         const stats = await FamilyPlanning_1.FamilyPlanningModel.getFamilyPlanningStats();
         res.json({
@@ -211,7 +220,8 @@ router.get("/statistics", auth_1.authenticate, (0, auth_1.authorize)(["ADMIN", "
         });
     }
 });
-router.delete("/records/:recordId", auth_1.authenticate, (0, auth_1.authorize)(["NURSE", "CLINICAL_OFFICER", "ADMIN"]), auditLogger_1.auditLogger, (0, express_validator_1.param)("recordId").isUUID().withMessage("Invalid record ID"), async (req, res) => {
+// Delete family planning record
+router.delete("/records/:recordId", auth_1.authenticate, (0, auth_1.authorize)([types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.ADMIN]), auditLogger_1.auditLogger, (0, express_validator_1.param)("recordId").isUUID().withMessage("Invalid record ID"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -243,4 +253,3 @@ router.delete("/records/:recordId", auth_1.authenticate, (0, auth_1.authorize)([
     }
 });
 exports.default = router;
-//# sourceMappingURL=family-planning.js.map

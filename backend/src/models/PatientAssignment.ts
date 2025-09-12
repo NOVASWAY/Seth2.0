@@ -39,6 +39,7 @@ export interface UpdatePatientAssignmentData {
   due_date?: Date
   notes?: string
   completed_at?: Date
+  updated_at?: Date
 }
 
 export class PatientAssignmentModel {
@@ -105,6 +106,26 @@ export class PatientAssignmentModel {
     
     const result = await pool.query(query, [patientId])
     return result.rows.map(row => this.mapRowToPatientAssignment(row))
+  }
+
+  static async findByPatientAndUser(patientId: string, userId: string): Promise<PatientAssignment | null> {
+    const query = `
+      SELECT 
+        pa.*,
+        p.first_name || ' ' || p.last_name as patient_name,
+        u1.username as assigned_to_name,
+        u2.username as assigned_by_name
+      FROM patient_assignments pa
+      LEFT JOIN patients p ON pa.patient_id = p.id
+      LEFT JOIN users u1 ON pa.assigned_to_user_id = u1.id
+      LEFT JOIN users u2 ON pa.assigned_by_user_id = u2.id
+      WHERE pa.patient_id = $1 AND pa.assigned_to_user_id = $2
+      ORDER BY pa.assigned_at DESC
+      LIMIT 1
+    `
+    
+    const result = await pool.query(query, [patientId, userId])
+    return result.rows.length > 0 ? this.mapRowToPatientAssignment(result.rows[0]) : null
   }
 
   static async findByAssignedToUserId(userId: string, status?: string): Promise<PatientAssignment[]> {

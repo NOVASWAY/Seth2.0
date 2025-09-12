@@ -10,6 +10,7 @@ const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
 const database_1 = __importDefault(require("../config/database"));
 const router = express_1.default.Router();
+// Get all prescriptions (with pagination and filtering)
 router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST]), async (req, res) => {
     try {
         const { limit = 50, offset = 0, status, patientId } = req.query;
@@ -27,9 +28,11 @@ router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.
             queryParams.push(patientId);
             paramIndex++;
         }
+        // Get total count
         const countQuery = `SELECT COUNT(*) as total FROM prescriptions ${whereClause}`;
         const countResult = await database_1.default.query(countQuery, queryParams);
         const total = parseInt(countResult.rows[0].total);
+        // Get prescriptions with pagination
         const prescriptionsQuery = `
         SELECT id, consultation_id as "consultationId", visit_id as "visitId", 
                patient_id as "patientId", prescribed_by as "prescribedBy", 
@@ -42,6 +45,7 @@ router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.
         queryParams.push(parseInt(limit), parseInt(offset));
         const prescriptionsResult = await database_1.default.query(prescriptionsQuery, queryParams);
         const prescriptions = prescriptionsResult.rows;
+        // Get items for each prescription
         const prescriptionsWithItems = [];
         for (const prescription of prescriptions) {
             const itemsQuery = `
@@ -78,6 +82,7 @@ router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.
         });
     }
 });
+// Get all prescriptions for a patient
 router.get("/patient/:patientId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST]), async (req, res) => {
     try {
         const { patientId } = req.params;
@@ -94,6 +99,7 @@ router.get("/patient/:patientId", (0, auth_1.authorize)([types_1.UserRole.ADMIN,
         });
     }
 });
+// Get prescription by ID
 router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -116,6 +122,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
         });
     }
 });
+// Create new prescription
 router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER]), [
     (0, express_validator_1.body)("consultationId").isUUID().withMessage("Invalid consultation ID"),
     (0, express_validator_1.body)("visitId").isUUID().withMessage("Invalid visit ID"),
@@ -156,6 +163,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
         });
     }
 });
+// Update prescription status
 router.patch("/:id/status", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.PHARMACIST]), [
     (0, express_validator_1.body)("status").isIn(["PENDING", "PARTIALLY_DISPENSED", "FULLY_DISPENSED", "CANCELLED"]).withMessage("Invalid status"),
 ], async (req, res) => {
@@ -190,6 +198,7 @@ router.patch("/:id/status", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types
         });
     }
 });
+// Update prescription item dispensed quantity
 router.patch("/items/:id/dispense", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.PHARMACIST]), [
     (0, express_validator_1.body)("quantityDispensed").isInt({ min: 0 }).withMessage("Quantity dispensed must be non-negative"),
 ], async (req, res) => {
@@ -225,4 +234,3 @@ router.patch("/items/:id/dispense", (0, auth_1.authorize)([types_1.UserRole.ADMI
     }
 });
 exports.default = router;
-//# sourceMappingURL=prescriptions.js.map

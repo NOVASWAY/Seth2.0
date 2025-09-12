@@ -7,7 +7,8 @@ const types_1 = require("../types");
 const ClinicalAutocompleteService_1 = require("../services/ClinicalAutocompleteService");
 const router = (0, express_1.Router)();
 const autocompleteService = new ClinicalAutocompleteService_1.ClinicalAutocompleteService();
-router.get("/diagnosis", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.DOCTOR]), [
+// Search diagnosis codes (ICD-10)
+router.get("/diagnosis", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER]), [
     (0, express_validator_1.query)("q").isLength({ min: 1 }).withMessage("Search term is required"),
     (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 50 }),
     (0, express_validator_1.query)("offset").optional().isInt({ min: 0 }),
@@ -52,7 +53,8 @@ router.get("/diagnosis", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.
         });
     }
 });
-router.get("/medications", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.DOCTOR, types_1.UserRole.PHARMACIST]), [
+// Search medications
+router.get("/medications", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST]), [
     (0, express_validator_1.query)("q").isLength({ min: 1 }).withMessage("Search term is required"),
     (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 50 }),
     (0, express_validator_1.query)("offset").optional().isInt({ min: 0 }),
@@ -95,7 +97,8 @@ router.get("/medications", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_
         });
     }
 });
-router.get("/lab-tests", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.DOCTOR, types_1.UserRole.LAB_TECHNICIAN]), [
+// Search lab tests
+router.get("/lab-tests", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.LAB_TECHNICIAN]), [
     (0, express_validator_1.query)("q").isLength({ min: 1 }).withMessage("Search term is required"),
     (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 50 }),
     (0, express_validator_1.query)("offset").optional().isInt({ min: 0 }),
@@ -138,7 +141,8 @@ router.get("/lab-tests", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.
         });
     }
 });
-router.get("/procedures", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.DOCTOR]), [
+// Search procedures
+router.get("/procedures", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER]), [
     (0, express_validator_1.query)("q").isLength({ min: 1 }).withMessage("Search term is required"),
     (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 50 }),
     (0, express_validator_1.query)("offset").optional().isInt({ min: 0 }),
@@ -181,7 +185,8 @@ router.get("/procedures", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1
         });
     }
 });
-router.get("/favorites/:itemType", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.DOCTOR, types_1.UserRole.PHARMACIST, types_1.UserRole.LAB_TECHNICIAN]), [
+// Get user favorites
+router.get("/favorites/:itemType", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST, types_1.UserRole.LAB_TECHNICIAN]), [
     (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 20 })
 ], async (req, res) => {
     try {
@@ -208,7 +213,8 @@ router.get("/favorites/:itemType", (0, auth_1.authorize)([types_1.UserRole.ADMIN
         });
     }
 });
-router.post("/favorites", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.DOCTOR, types_1.UserRole.PHARMACIST, types_1.UserRole.LAB_TECHNICIAN]), [
+// Toggle favorite status
+router.post("/favorites", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST, types_1.UserRole.LAB_TECHNICIAN]), [
     (0, express_validator_1.body)("itemType").isIn(['DIAGNOSIS', 'MEDICATION', 'LAB_TEST', 'PROCEDURE', 'SYMPTOM']).withMessage("Invalid item type"),
     (0, express_validator_1.body)("itemId").isUUID().withMessage("Valid item ID is required"),
     (0, express_validator_1.body)("itemName").notEmpty().withMessage("Item name is required")
@@ -240,7 +246,8 @@ router.post("/favorites", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1
         });
     }
 });
-router.get("/categories/:itemType", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.DOCTOR, types_1.UserRole.PHARMACIST, types_1.UserRole.LAB_TECHNICIAN]), async (req, res) => {
+// Get categories for a clinical data type
+router.get("/categories/:itemType", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST, types_1.UserRole.LAB_TECHNICIAN]), async (req, res) => {
     try {
         const { itemType } = req.params;
         if (!['DIAGNOSIS', 'MEDICATION', 'LAB_TEST', 'PROCEDURE', 'SYMPTOM'].includes(itemType.toUpperCase())) {
@@ -264,7 +271,8 @@ router.get("/categories/:itemType", (0, auth_1.authorize)([types_1.UserRole.ADMI
         });
     }
 });
-router.get("/suggestions/:itemType", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.DOCTOR, types_1.UserRole.PHARMACIST, types_1.UserRole.LAB_TECHNICIAN]), [
+// Get search suggestions
+router.get("/suggestions/:itemType", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST, types_1.UserRole.LAB_TECHNICIAN]), [
     (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 20 })
 ], async (req, res) => {
     try {
@@ -291,7 +299,8 @@ router.get("/suggestions/:itemType", (0, auth_1.authorize)([types_1.UserRole.ADM
         });
     }
 });
-router.post("/selection", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.DOCTOR, types_1.UserRole.PHARMACIST, types_1.UserRole.LAB_TECHNICIAN]), [
+// Record selection (for analytics)
+router.post("/selection", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST, types_1.UserRole.LAB_TECHNICIAN]), [
     (0, express_validator_1.body)("searchTerm").notEmpty().withMessage("Search term is required"),
     (0, express_validator_1.body)("searchType").isIn(['DIAGNOSIS', 'MEDICATION', 'LAB_TEST', 'PROCEDURE', 'SYMPTOM']).withMessage("Invalid search type"),
     (0, express_validator_1.body)("selectedItemId").isUUID().withMessage("Valid selected item ID is required"),
@@ -321,4 +330,3 @@ router.post("/selection", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1
     }
 });
 exports.default = router;
-//# sourceMappingURL=clinical-autocomplete.js.map

@@ -4,7 +4,7 @@ import { UserPresenceModel } from '../models/UserPresence'
 import { EventLoggerService } from './EventLoggerService'
 
 interface SyncEvent {
-  type: 'patient_update' | 'prescription_update' | 'lab_update' | 'visit_update' | 'assignment_update' | 'user_update'
+  type: 'patient_update' | 'prescription_update' | 'lab_update' | 'visit_update' | 'assignment_update' | 'user_update' | 'payment_update'
   entityId: string
   entityType: string
   action: 'create' | 'update' | 'delete'
@@ -57,7 +57,7 @@ export class SyncService {
       title: string
       message: string
       data?: any
-      priority?: 'low' | 'medium' | 'high' | 'urgent'
+      priority: 'low' | 'medium' | 'high' | 'urgent'
     },
     target: NotificationTarget
   ): Promise<void> {
@@ -76,7 +76,7 @@ export class SyncService {
           title: notification.title,
           message: notification.message,
           data: notification.data,
-          priority: notification.priority || 'medium'
+          priority: notification.priority
         })
 
         // Send real-time notification

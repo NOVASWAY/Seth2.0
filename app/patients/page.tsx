@@ -57,47 +57,6 @@ interface ImportPreview {
   duplicateOpNumbers: string[]
 }
 
-const mockPatients: Patient[] = [
-  {
-    id: "1",
-    op_number: "001/25",
-    first_name: "Sarah",
-    last_name: "Johnson",
-    age: 28,
-    gender: "FEMALE",
-    phone_number: "+254-700-123-456",
-    area: "Nairobi",
-    payment_method: "CASH",
-    created_at: "2024-01-15T10:00:00Z",
-    updated_at: "2024-01-15T10:00:00Z"
-  },
-  {
-    id: "2",
-    op_number: "002/25",
-    first_name: "Michael",
-    last_name: "Chen",
-    age: 45,
-    gender: "MALE",
-    phone_number: "+254-700-234-567",
-    area: "Mombasa",
-    payment_method: "PRIVATE",
-    created_at: "2024-01-20T10:00:00Z",
-    updated_at: "2024-01-20T10:00:00Z"
-  },
-  {
-    id: "3",
-    op_number: "003/25",
-    first_name: "Emily",
-    last_name: "Davis",
-    age: 32,
-    gender: "FEMALE",
-    phone_number: "+254-700-345-678",
-    area: "Kisumu",
-    payment_method: "SHA",
-    created_at: "2024-01-18T10:00:00Z",
-    updated_at: "2024-01-18T10:00:00Z"
-  }
-]
 
 export default function PatientsPage() {
   const { user, isAuthenticated, isLoading, accessToken } = useAuthStore()

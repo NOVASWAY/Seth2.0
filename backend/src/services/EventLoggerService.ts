@@ -1,5 +1,5 @@
 import pool from "../config/database"
-import crypto from "crypto"
+import * as crypto from "crypto"
 
 export interface EventLog {
   id: string

@@ -19,65 +19,11 @@ interface Appointment {
   room: string
 }
 
-const mockAppointments: Appointment[] = [
-  {
-    id: "1",
-    patientName: "Sarah Johnson",
-    patientId: "1",
-    doctorName: "Dr. Smith",
-    date: "2024-02-01",
-    time: "09:00",
-    duration: 30,
-    type: "consultation",
-    status: "scheduled",
-    notes: "Annual checkup",
-    room: "Room 101"
-  },
-  {
-    id: "2",
-    patientName: "Michael Chen",
-    patientId: "2",
-    doctorName: "Dr. Williams",
-    date: "2024-02-01",
-    time: "10:30",
-    duration: 45,
-    type: "follow-up",
-    status: "confirmed",
-    notes: "Diabetes management follow-up",
-    room: "Room 102"
-  },
-  {
-    id: "3",
-    patientName: "Emily Davis",
-    patientId: "3",
-    doctorName: "Dr. Johnson",
-    date: "2024-02-01",
-    time: "14:00",
-    duration: 60,
-    type: "routine",
-    status: "scheduled",
-    notes: "Prenatal care",
-    room: "Room 103"
-  },
-  {
-    id: "4",
-    patientName: "John Wilson",
-    patientId: "4",
-    doctorName: "Dr. Smith",
-    date: "2024-02-01",
-    time: "15:30",
-    duration: 30,
-    type: "consultation",
-    status: "scheduled",
-    notes: "Headache evaluation",
-    room: "Room 101"
-  }
-]
 
 export default function AppointmentsPage() {
   const { user, isAuthenticated, isLoading } = useAuthStore()
   const router = useRouter()
-  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments)
+  const [appointments, setAppointments] = useState<Appointment[]>([])
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')

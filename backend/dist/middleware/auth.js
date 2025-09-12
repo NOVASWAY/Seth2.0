@@ -11,7 +11,7 @@ const authenticate = async (req, res, next) => {
                 message: "Access token required",
             });
         }
-        const token = authHeader.substring(7);
+        const token = authHeader.substring(7); // Remove 'Bearer ' prefix
         const user = await AuthService_1.AuthService.verifyAccessToken(token);
         if (!user) {
             return res.status(401).json({
@@ -54,4 +54,3 @@ const authorizeSingle = (role) => {
 exports.authorizeSingle = authorizeSingle;
 exports.requireRole = exports.authorize;
 exports.authenticateToken = exports.authenticate;
-//# sourceMappingURL=auth.js.map

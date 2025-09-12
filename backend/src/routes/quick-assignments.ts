@@ -3,6 +3,7 @@ import { body, validationResult } from "express-validator"
 import { authenticate, authorize } from "../middleware/auth"
 import { PatientAssignmentModel } from "../models/PatientAssignment"
 import { EventLoggerService } from "../services/EventLoggerService"
+import { UserRole } from "../types"
 
 const router = express.Router()
 
@@ -10,7 +11,7 @@ const router = express.Router()
 router.post(
   "/quick-assign",
   authenticate,
-  authorize(["ADMIN", "CLINICAL_OFFICER", "NURSE", "PHARMACIST"]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE, UserRole.PHARMACIST]),
   [
     body("patient_id").isUUID().withMessage("Valid patient ID is required"),
     body("assigned_to_user_id").isUUID().withMessage("Valid user ID is required"),

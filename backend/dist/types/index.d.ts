@@ -7,8 +7,16 @@ export declare enum UserRole {
     INVENTORY_MANAGER = "INVENTORY_MANAGER",
     CLAIMS_MANAGER = "CLAIMS_MANAGER",
     LAB_TECHNICIAN = "LAB_TECHNICIAN",
-    DOCTOR = "DOCTOR",
     CASHIER = "CASHIER"
+}
+export interface AuthenticatedRequest {
+    user?: {
+        id: string;
+        username: string;
+        email?: string;
+        role: UserRole;
+        isActive: boolean;
+    };
 }
 export interface User {
     id: string;

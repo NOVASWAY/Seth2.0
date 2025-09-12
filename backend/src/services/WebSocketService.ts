@@ -1,22 +1,16 @@
-import { Server as SocketIOServer, Socket } from 'socket.io'
+import { Server as SocketIOServer, Socket as SocketIOSocket } from 'socket.io'
 import { Server as HTTPServer } from 'http'
-import jwt from 'jsonwebtoken'
+import * as jwt from 'jsonwebtoken'
 import { EventLoggerService } from './EventLoggerService'
 
-interface AuthenticatedSocket extends Socket {
-  userId?: string
-  username?: string
-  role?: string
-}
-
-interface Socket extends any {
+interface AuthenticatedSocket extends SocketIOSocket {
   userId?: string
   username?: string
   role?: string
 }
 
 interface NotificationData {
-  type: 'patient_assignment' | 'prescription_update' | 'lab_result' | 'payment_received' | 'visit_update' | 'system_alert'
+  type: 'patient_assignment' | 'prescription_update' | 'lab_result' | 'payment_received' | 'visit_update' | 'system_alert' | 'sync_event'
   title: string
   message: string
   data?: any
@@ -26,12 +20,13 @@ interface NotificationData {
 }
 
 interface SyncEvent {
-  type: 'patient_update' | 'prescription_update' | 'lab_update' | 'visit_update' | 'assignment_update'
+  type: 'patient_update' | 'prescription_update' | 'lab_update' | 'visit_update' | 'assignment_update' | 'user_update' | 'payment_update'
   entityId: string
   entityType: string
   action: 'create' | 'update' | 'delete'
   data: any
   userId: string
+  username?: string
   timestamp: Date
 }
 

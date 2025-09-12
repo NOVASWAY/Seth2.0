@@ -40,12 +40,19 @@ import familyPlanningRoutes from "./routes/family-planning"
 import mchServicesRoutes from "./routes/mch-services"
 import stockCategoryRoutes from "./routes/stock-categories"
 import stockItemRoutes from "./routes/stock-items"
+import migrationRoutes from "./routes/migration"
+import analyticsRoutes from "./routes/analytics"
+import backupRoutes from "./routes/backup"
+import performanceRoutes from "./routes/performance"
+import dataSyncRoutes from "./routes/sync"
+import healthRoutes from "./routes/health"
 
 // Import middleware
 import { errorHandler } from "./middleware/errorHandler"
 import { auditLogger } from "./middleware/auditLogger"
 import { authenticate } from "./middleware/auth"
-import { initializeWebSocket } from "./services/WebSocketService"
+// import { initializeWebSocket } from "./services/WebSocketService"
+import { databaseService } from "./services/DatabaseService"
 
 // Load environment variables
 dotenv.config()
@@ -163,6 +170,12 @@ app.use("/api/family-planning", authenticate, familyPlanningRoutes)
 app.use("/api/mch-services", authenticate, mchServicesRoutes)
 app.use("/api/stock-categories", authenticate, stockCategoryRoutes)
 app.use("/api/stock-items", authenticate, stockItemRoutes)
+app.use("/api/migration", authenticate, migrationRoutes)
+app.use("/api/analytics", authenticate, analyticsRoutes)
+app.use("/api/backup", authenticate, backupRoutes)
+app.use("/api/performance", authenticate, performanceRoutes)
+app.use("/api/sync", authenticate, dataSyncRoutes)
+app.use("/api/health", healthRoutes)
 
 // Audit logging middleware (after routes)
 app.use(auditLogger)
@@ -180,17 +193,31 @@ app.use("*", (req, res) => {
 
 const PORT = process.env.PORT || 5000
 
+// Initialize databases and start server
+async function startServer() {
+  try {
+    // Initialize both PostgreSQL and MongoDB
+    await databaseService.initialize()
+    
+    // Start the server
+    server.listen(PORT, () => {
+      console.log(`🚀 Seth Clinic API Server running on port ${PORT}`)
+      console.log(`📊 Health check: http://localhost:${PORT}/health`)
+      console.log(`🔒 Environment: ${process.env.NODE_ENV}`)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🛠️  Dev endpoint: http://localhost:${PORT}/api/dev/reset-rate-limits`)
+      }
+    })
 
-server.listen(PORT, () => {
-  console.log(`🚀 Seth Clinic API Server running on port ${PORT}`)
-  console.log(`📊 Health check: http://localhost:${PORT}/health`)
-  console.log(`🔒 Environment: ${process.env.NODE_ENV}`)
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`🛠️  Dev endpoint: http://localhost:${PORT}/api/dev/reset-rate-limits`)
+    // Initialize WebSocket service
+        // initializeWebSocket(server) // Temporarily disabled
+  } catch (error) {
+    console.error('❌ Failed to start server:', error)
+    process.exit(1)
   }
-})
+}
 
-// Initialize WebSocket service
-initializeWebSocket(server)
+// Start the server
+startServer()
 
 export default app

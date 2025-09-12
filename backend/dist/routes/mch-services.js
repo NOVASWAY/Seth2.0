@@ -8,7 +8,9 @@ const express_validator_1 = require("express-validator");
 const MCHServices_1 = require("../models/MCHServices");
 const auth_1 = require("../middleware/auth");
 const auditLogger_1 = require("../middleware/auditLogger");
+const types_1 = require("../types");
 const router = express_1.default.Router();
+// Get all MCH services
 router.get("/services", auth_1.authenticate, async (req, res) => {
     try {
         const services = await MCHServices_1.MCHServicesModel.getServices();
@@ -25,6 +27,7 @@ router.get("/services", auth_1.authenticate, async (req, res) => {
         });
     }
 });
+// Get MCH services by category
 router.get("/services/category/:category", auth_1.authenticate, (0, express_validator_1.param)("category").isIn(["ANTENATAL", "POSTNATAL", "CHILD_HEALTH", "NUTRITION", "FAMILY_PLANNING"]).withMessage("Invalid category"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
@@ -50,6 +53,7 @@ router.get("/services/category/:category", auth_1.authenticate, (0, express_vali
         });
     }
 });
+// Get patient MCH services history
 router.get("/patients/:patientId/history", auth_1.authenticate, (0, express_validator_1.param)("patientId").isUUID().withMessage("Invalid patient ID"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
@@ -75,6 +79,7 @@ router.get("/patients/:patientId/history", auth_1.authenticate, (0, express_vali
         });
     }
 });
+// Get patient MCH services by category
 router.get("/patients/:patientId/category/:category", auth_1.authenticate, (0, express_validator_1.param)("patientId").isUUID().withMessage("Invalid patient ID"), (0, express_validator_1.param)("category").isIn(["ANTENATAL", "POSTNATAL", "CHILD_HEALTH", "NUTRITION", "FAMILY_PLANNING"]).withMessage("Invalid category"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
@@ -100,7 +105,8 @@ router.get("/patients/:patientId/category/:category", auth_1.authenticate, (0, e
         });
     }
 });
-router.post("/patients/:patientId/services", auth_1.authenticate, (0, auth_1.authorize)(["NURSE", "CLINICAL_OFFICER", "ADMIN"]), auditLogger_1.auditLogger, (0, express_validator_1.param)("patientId").isUUID().withMessage("Invalid patient ID"), (0, express_validator_1.body)("serviceId").isUUID().withMessage("Invalid service ID"), (0, express_validator_1.body)("serviceDate").optional().isISO8601().withMessage("Invalid service date"), (0, express_validator_1.body)("serviceDetails").optional().isObject().withMessage("Invalid service details"), (0, express_validator_1.body)("findings").optional().isString().withMessage("Invalid findings"), (0, express_validator_1.body)("recommendations").optional().isString().withMessage("Invalid recommendations"), (0, express_validator_1.body)("nextAppointmentDate").optional().isISO8601().withMessage("Invalid next appointment date"), (0, express_validator_1.body)("status").optional().isIn(["SCHEDULED", "COMPLETED", "CANCELLED", "NO_SHOW"]).withMessage("Invalid status"), (0, express_validator_1.body)("notes").optional().isString().withMessage("Invalid notes"), async (req, res) => {
+// Create patient MCH service record
+router.post("/patients/:patientId/services", auth_1.authenticate, (0, auth_1.authorize)([types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.ADMIN]), auditLogger_1.auditLogger, (0, express_validator_1.param)("patientId").isUUID().withMessage("Invalid patient ID"), (0, express_validator_1.body)("serviceId").isUUID().withMessage("Invalid service ID"), (0, express_validator_1.body)("serviceDate").optional().isISO8601().withMessage("Invalid service date"), (0, express_validator_1.body)("serviceDetails").optional().isObject().withMessage("Invalid service details"), (0, express_validator_1.body)("findings").optional().isString().withMessage("Invalid findings"), (0, express_validator_1.body)("recommendations").optional().isString().withMessage("Invalid recommendations"), (0, express_validator_1.body)("nextAppointmentDate").optional().isISO8601().withMessage("Invalid next appointment date"), (0, express_validator_1.body)("status").optional().isIn(["SCHEDULED", "COMPLETED", "CANCELLED", "NO_SHOW"]).withMessage("Invalid status"), (0, express_validator_1.body)("notes").optional().isString().withMessage("Invalid notes"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -131,7 +137,8 @@ router.post("/patients/:patientId/services", auth_1.authenticate, (0, auth_1.aut
         });
     }
 });
-router.put("/services/:serviceRecordId", auth_1.authenticate, (0, auth_1.authorize)(["NURSE", "CLINICAL_OFFICER", "ADMIN"]), auditLogger_1.auditLogger, (0, express_validator_1.param)("serviceRecordId").isUUID().withMessage("Invalid service record ID"), (0, express_validator_1.body)("serviceDate").optional().isISO8601().withMessage("Invalid service date"), (0, express_validator_1.body)("serviceDetails").optional().isObject().withMessage("Invalid service details"), (0, express_validator_1.body)("findings").optional().isString().withMessage("Invalid findings"), (0, express_validator_1.body)("recommendations").optional().isString().withMessage("Invalid recommendations"), (0, express_validator_1.body)("nextAppointmentDate").optional().isISO8601().withMessage("Invalid next appointment date"), (0, express_validator_1.body)("status").optional().isIn(["SCHEDULED", "COMPLETED", "CANCELLED", "NO_SHOW"]).withMessage("Invalid status"), (0, express_validator_1.body)("notes").optional().isString().withMessage("Invalid notes"), async (req, res) => {
+// Update patient MCH service record
+router.put("/services/:serviceRecordId", auth_1.authenticate, (0, auth_1.authorize)([types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.ADMIN]), auditLogger_1.auditLogger, (0, express_validator_1.param)("serviceRecordId").isUUID().withMessage("Invalid service record ID"), (0, express_validator_1.body)("serviceDate").optional().isISO8601().withMessage("Invalid service date"), (0, express_validator_1.body)("serviceDetails").optional().isObject().withMessage("Invalid service details"), (0, express_validator_1.body)("findings").optional().isString().withMessage("Invalid findings"), (0, express_validator_1.body)("recommendations").optional().isString().withMessage("Invalid recommendations"), (0, express_validator_1.body)("nextAppointmentDate").optional().isISO8601().withMessage("Invalid next appointment date"), (0, express_validator_1.body)("status").optional().isIn(["SCHEDULED", "COMPLETED", "CANCELLED", "NO_SHOW"]).withMessage("Invalid status"), (0, express_validator_1.body)("notes").optional().isString().withMessage("Invalid notes"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -163,7 +170,8 @@ router.put("/services/:serviceRecordId", auth_1.authenticate, (0, auth_1.authori
         });
     }
 });
-router.get("/statistics", auth_1.authenticate, (0, auth_1.authorize)(["ADMIN", "CLINICAL_OFFICER"]), async (req, res) => {
+// Get MCH service statistics
+router.get("/statistics", auth_1.authenticate, (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER]), async (req, res) => {
     try {
         const stats = await MCHServices_1.MCHServicesModel.getMCHServiceStats();
         res.json({
@@ -179,6 +187,7 @@ router.get("/statistics", auth_1.authenticate, (0, auth_1.authorize)(["ADMIN", "
         });
     }
 });
+// Get upcoming MCH appointments
 router.get("/appointments/upcoming", auth_1.authenticate, (0, express_validator_1.query)("days").optional().isInt({ min: 1, max: 30 }).withMessage("Invalid days parameter"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
@@ -204,7 +213,8 @@ router.get("/appointments/upcoming", auth_1.authenticate, (0, express_validator_
         });
     }
 });
-router.delete("/services/:serviceRecordId", auth_1.authenticate, (0, auth_1.authorize)(["NURSE", "CLINICAL_OFFICER", "ADMIN"]), auditLogger_1.auditLogger, (0, express_validator_1.param)("serviceRecordId").isUUID().withMessage("Invalid service record ID"), async (req, res) => {
+// Delete MCH service record
+router.delete("/services/:serviceRecordId", auth_1.authenticate, (0, auth_1.authorize)([types_1.UserRole.NURSE, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.ADMIN]), auditLogger_1.auditLogger, (0, express_validator_1.param)("serviceRecordId").isUUID().withMessage("Invalid service record ID"), async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -236,4 +246,3 @@ router.delete("/services/:serviceRecordId", auth_1.authenticate, (0, auth_1.auth
     }
 });
 exports.default = router;
-//# sourceMappingURL=mch-services.js.map

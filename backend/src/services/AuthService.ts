@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken"
+import * as jwt from "jsonwebtoken"
 import { UserModel, type User } from "../models/User"
 import redisClient from "../config/redis"
 import { EventLoggerService } from "./EventLoggerService"

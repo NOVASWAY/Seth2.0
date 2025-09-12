@@ -7,6 +7,7 @@ exports.UserPresenceModel = void 0;
 const database_1 = __importDefault(require("../config/database"));
 class UserPresenceModel {
     static async createOrUpdate(userId, data) {
+        // First, try to update existing record
         const updateQuery = `
       UPDATE user_presence 
       SET 
@@ -34,6 +35,7 @@ class UserPresenceModel {
         if (updateResult.rows.length > 0) {
             return this.mapRowToUserPresence(updateResult.rows[0]);
         }
+        // If no existing record, create new one
         const insertQuery = `
       INSERT INTO user_presence (
         id, user_id, status, current_page, current_activity,
@@ -74,6 +76,7 @@ class UserPresenceModel {
         let whereConditions = [];
         let queryParams = [];
         let paramIndex = 1;
+        // Build WHERE conditions
         if (filters.status) {
             whereConditions.push(`up.status = $${paramIndex}`);
             queryParams.push(filters.status);
@@ -85,6 +88,7 @@ class UserPresenceModel {
             paramIndex++;
         }
         const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+        // Get total count
         const countQuery = `
       SELECT COUNT(*) as total 
       FROM user_presence up
@@ -93,6 +97,7 @@ class UserPresenceModel {
     `;
         const countResult = await database_1.default.query(countQuery, queryParams);
         const total = parseInt(countResult.rows[0].total);
+        // Get presences with pagination
         const limit = filters.limit || 50;
         const offset = filters.offset || 0;
         const presencesQuery = `
@@ -188,6 +193,9 @@ class UserPresenceModel {
         const result = await database_1.default.query(query);
         return result.rowCount || 0;
     }
+    /**
+     * Get all active users (online, away, busy)
+     */
     static async getActiveUsers() {
         const query = `
       SELECT up.*, u.username, u.role
@@ -219,4 +227,3 @@ class UserPresenceModel {
     }
 }
 exports.UserPresenceModel = UserPresenceModel;
-//# sourceMappingURL=UserPresence.js.map

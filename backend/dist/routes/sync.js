@@ -1,160 +1,131 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const express_validator_1 = require("express-validator");
+const express_1 = require("express");
+const DataSyncService_1 = require("../services/DataSyncService");
 const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
-const WebSocketService_1 = require("../services/WebSocketService");
-const EventLoggerService_1 = require("../services/EventLoggerService");
-const UserPresence_1 = require("../models/UserPresence");
-const Notification_1 = require("../models/Notification");
-const database_1 = require("../config/database");
-const router = express_1.default.Router();
-router.get("/stats", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
+const router = (0, express_1.Router)();
+/**
+ * @route GET /api/sync/status
+ * @desc Get data sync service status
+ * @access Admin only
+ */
+router.get('/status', (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
-        const connectedUsers = await UserPresence_1.UserPresenceModel.getActiveUsers();
-        const recentSyncEvents = await EventLoggerService_1.EventLoggerService.getRecentEvents(24);
-        const unreadNotifications = await Notification_1.NotificationModel.getUnreadCount(req.user.id);
-        const dbStatus = await checkDatabaseConnection();
-        const wsService = (0, WebSocketService_1.getWebSocketService)();
-        const wsStatus = wsService ? 'connected' : 'disconnected';
-        const stats = {
-            connectedUsers: connectedUsers.length,
-            activeUsers: connectedUsers.filter(u => u.status === 'online').length,
-            recentSyncEvents: recentSyncEvents.length,
-            pendingNotifications: unreadNotifications,
-            databaseStatus: dbStatus,
-            websocketStatus: wsStatus,
-            lastUpdated: new Date().toISOString()
-        };
+        const syncService = DataSyncService_1.DataSyncService.getInstance();
+        const status = syncService.getStatus();
         res.json({
             success: true,
-            message: "Sync statistics retrieved successfully",
-            data: stats
+            data: status
         });
     }
     catch (error) {
-        console.error("Error fetching sync stats:", error);
         res.status(500).json({
             success: false,
-            message: error.message || "Failed to fetch sync statistics"
+            message: 'Failed to get sync status',
+            error: error.message
         });
     }
 });
-router.get("/health", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
+/**
+ * @route POST /api/sync/start
+ * @desc Start data sync service
+ * @access Admin only
+ */
+router.post('/start', (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
-        const health = {
-            status: 'healthy',
-            timestamp: new Date().toISOString(),
-            services: {
-                database: await checkDatabaseConnection(),
-                websocket: (0, WebSocketService_1.getWebSocketService)() ? 'connected' : 'disconnected',
-                api: 'healthy'
-            },
-            uptime: process.uptime(),
-            environment: process.env.NODE_ENV || 'development',
-            version: '1.0.0'
-        };
-        res.json(health);
-    }
-    catch (error) {
-        console.error("Error checking system health:", error);
-        res.status(500).json({
-            status: 'unhealthy',
-            timestamp: new Date().toISOString(),
-            error: error.message || "Health check failed"
-        });
-    }
-});
-router.get("/users", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
-    try {
-        const users = await UserPresence_1.UserPresenceModel.getActiveUsers();
+        const syncService = DataSyncService_1.DataSyncService.getInstance();
+        syncService.start();
         res.json({
             success: true,
-            message: "Connected users retrieved successfully",
-            data: users
+            message: 'Data sync service started'
         });
     }
     catch (error) {
-        console.error("Error fetching connected users:", error);
         res.status(500).json({
             success: false,
-            message: error.message || "Failed to fetch connected users"
+            message: 'Failed to start sync service',
+            error: error.message
         });
     }
 });
-router.get("/events", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), [
-    (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 100 }),
-    (0, express_validator_1.query)("hours").optional().isInt({ min: 1, max: 168 })
-], async (req, res) => {
+/**
+ * @route POST /api/sync/stop
+ * @desc Stop data sync service
+ * @access Admin only
+ */
+router.post('/stop', (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
-        const errors = (0, express_validator_1.validationResult)(req);
-        if (!errors.isEmpty()) {
+        const syncService = DataSyncService_1.DataSyncService.getInstance();
+        syncService.stop();
+        res.json({
+            success: true,
+            message: 'Data sync service stopped'
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to stop sync service',
+            error: error.message
+        });
+    }
+});
+/**
+ * @route POST /api/sync/event
+ * @desc Add sync event manually
+ * @access Admin only
+ */
+router.post('/event', (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
+    try {
+        const { table, operation, recordId, data } = req.body;
+        if (!table || !operation || !recordId) {
             return res.status(400).json({
                 success: false,
-                message: "Validation failed",
-                errors: errors.array()
+                message: 'table, operation, and recordId are required'
             });
         }
-        const limit = parseInt(req.query.limit) || 50;
-        const hours = parseInt(req.query.hours) || 24;
-        const events = await EventLoggerService_1.EventLoggerService.getRecentEvents(hours, limit);
+        const syncService = DataSyncService_1.DataSyncService.getInstance();
+        syncService.addSyncEvent({
+            table,
+            operation,
+            recordId,
+            data: data || {},
+            timestamp: new Date()
+        });
         res.json({
             success: true,
-            message: "Sync events retrieved successfully",
-            data: events
+            message: 'Sync event added successfully'
         });
     }
     catch (error) {
-        console.error("Error fetching sync events:", error);
         res.status(500).json({
             success: false,
-            message: error.message || "Failed to fetch sync events"
+            message: 'Failed to add sync event',
+            error: error.message
         });
     }
 });
-router.get("/notifications", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), [
-    (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 100 }),
-    (0, express_validator_1.query)("unread_only").optional().isBoolean()
-], async (req, res) => {
+/**
+ * @route DELETE /api/sync/queue
+ * @desc Clear sync queue
+ * @access Admin only
+ */
+router.delete('/queue', (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
-        const errors = (0, express_validator_1.validationResult)(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({
-                success: false,
-                message: "Validation failed",
-                errors: errors.array()
-            });
-        }
-        const limit = parseInt(req.query.limit) || 50;
-        const unreadOnly = req.query.unread_only === 'true';
-        const notifications = await Notification_1.NotificationModel.getUserNotifications(req.user.id, { limit, unreadOnly });
+        const syncService = DataSyncService_1.DataSyncService.getInstance();
+        syncService.clearQueue();
         res.json({
             success: true,
-            message: "Notifications retrieved successfully",
-            data: notifications
+            message: 'Sync queue cleared'
         });
     }
     catch (error) {
-        console.error("Error fetching notifications:", error);
         res.status(500).json({
             success: false,
-            message: error.message || "Failed to fetch notifications"
+            message: 'Failed to clear sync queue',
+            error: error.message
         });
     }
 });
-async function checkDatabaseConnection() {
-    try {
-        await database_1.db.query('SELECT 1');
-        return 'connected';
-    }
-    catch (error) {
-        console.error('Database connection check failed:', error);
-        return 'disconnected';
-    }
-}
 exports.default = router;
-//# sourceMappingURL=sync.js.map

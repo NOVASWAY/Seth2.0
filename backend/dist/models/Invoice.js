@@ -61,4 +61,3 @@ class Invoice {
     }
 }
 exports.Invoice = Invoice;
-//# sourceMappingURL=Invoice.js.map

@@ -74,7 +74,7 @@ router.get(
       const visits = visitsResult.rows
 
       // Get patient encounters with diagnoses and treatments
-      const encountersQuery = `
+      let encountersQuery = `
         SELECT 
           pe.id, pe.encounter_type, pe.encounter_date, pe.chief_complaint,
           pe.department, pe.location, pe.sha_eligible, pe.private_pay,
@@ -136,7 +136,7 @@ router.get(
       const encounters = encountersResult.rows
 
       // Get prescriptions for the patient
-      const prescriptionsQuery = `
+      let prescriptionsQuery = `
         SELECT 
           pr.id, pr.consultation_id, pr.visit_id, pr.status, pr.created_at,
           u.username as prescribed_by_name,
@@ -181,7 +181,7 @@ router.get(
       const prescriptions = prescriptionsResult.rows
 
       // Get lab requests and results
-      const labRequestsQuery = `
+      let labRequestsQuery = `
         SELECT 
           lr.id, lr.request_date, lr.status, lr.urgency, lr.notes,
           u.username as requested_by_name,
@@ -226,7 +226,7 @@ router.get(
       const labRequests = labRequestsResult.rows
 
       // Get existing SHA claims for this patient
-      const claimsQuery = `
+      let claimsQuery = `
         SELECT 
           sc.id, sc.claim_number, sc.visit_id, sc.claim_amount, sc.status,
           sc.primary_diagnosis_code, sc.primary_diagnosis_description,

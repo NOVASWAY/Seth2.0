@@ -1,16 +1,49 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ClinicalAutocompleteService = void 0;
 const database_1 = require("../config/database");
-const crypto_1 = __importDefault(require("crypto"));
+const crypto = __importStar(require("crypto"));
 class ClinicalAutocompleteService {
     constructor() {
         this.DEFAULT_LIMIT = 20;
         this.MIN_SEARCH_LENGTH = 2;
     }
+    /**
+     * Search diagnosis codes (ICD-10) with intelligent ranking
+     */
     async searchDiagnosisCodes(searchTerm, options = {}) {
         if (searchTerm.length < this.MIN_SEARCH_LENGTH) {
             return this.getUserFavorites('DIAGNOSIS', options.userId);
@@ -21,11 +54,13 @@ class ClinicalAutocompleteService {
         const params = [];
         let paramCount = 1;
         if (!includeInactive) {
+            // Already handled above
         }
         if (category) {
             whereClause += ` AND category = $${paramCount++}`;
             params.push(category);
         }
+        // Add search term matching
         whereClause += ` AND (
       code ILIKE $${paramCount} OR
       description ILIKE $${paramCount + 1} OR
@@ -34,6 +69,7 @@ class ClinicalAutocompleteService {
     )`;
         params.push(`%${searchTerm}%`, `%${searchTerm}%`, searchTerm, searchTerm.toLowerCase());
         paramCount += 4;
+        // Build the main query with ranking
         const query = `
       SELECT 
         d.*,
@@ -64,6 +100,7 @@ class ClinicalAutocompleteService {
     `;
         params.push(`${searchTerm}%`, `${searchTerm}%`, searchTerm, searchTerm, userId || null, limit, offset);
         const result = await database_1.pool.query(query, params);
+        // Log search analytics
         if (userId) {
             await this.logSearchAnalytics(userId, searchTerm, 'DIAGNOSIS', result.rows.length, Date.now() - startTime);
         }
@@ -81,6 +118,9 @@ class ClinicalAutocompleteService {
             isFavorite: row.favorite_score > 0
         }));
     }
+    /**
+     * Search medications with comprehensive matching
+     */
     async searchMedications(searchTerm, options = {}) {
         if (searchTerm.length < this.MIN_SEARCH_LENGTH) {
             return this.getUserFavorites('MEDICATION', options.userId);
@@ -94,6 +134,7 @@ class ClinicalAutocompleteService {
             whereClause += ` AND drug_class = $${paramCount++}`;
             params.push(category);
         }
+        // Complex search across multiple fields
         whereClause += ` AND (
       generic_name ILIKE $${paramCount} OR
       brand_names::text ILIKE $${paramCount + 1} OR
@@ -160,6 +201,9 @@ class ClinicalAutocompleteService {
             isFavorite: row.favorite_score > 0
         }));
     }
+    /**
+     * Search lab tests with enhanced matching
+     */
     async searchLabTests(searchTerm, options = {}) {
         if (searchTerm.length < this.MIN_SEARCH_LENGTH) {
             return this.getUserFavorites('LAB_TEST', options.userId);
@@ -239,6 +283,9 @@ class ClinicalAutocompleteService {
             isFavorite: row.favorite_score > 0
         }));
     }
+    /**
+     * Search procedures
+     */
     async searchProcedures(searchTerm, options = {}) {
         if (searchTerm.length < this.MIN_SEARCH_LENGTH) {
             return this.getUserFavorites('PROCEDURE', options.userId);
@@ -316,6 +363,9 @@ class ClinicalAutocompleteService {
             isFavorite: row.favorite_score > 0
         }));
     }
+    /**
+     * Get user's favorite clinical items for quick access
+     */
     async getUserFavorites(itemType, userId, limit = 10) {
         if (!userId)
             return [];
@@ -357,6 +407,9 @@ class ClinicalAutocompleteService {
             }
         }));
     }
+    /**
+     * Add or update user favorite
+     */
     async toggleFavorite(userId, itemType, itemId, itemName) {
         const result = await database_1.pool.query(`
       INSERT INTO user_clinical_favorites (
@@ -368,7 +421,8 @@ class ClinicalAutocompleteService {
         last_used_at = CURRENT_TIMESTAMP,
         updated_at = CURRENT_TIMESTAMP
       RETURNING usage_frequency
-    `, [crypto_1.default.randomUUID(), userId, itemType, itemId, itemName]);
+    `, [crypto.randomUUID(), userId, itemType, itemId, itemName]);
+        // Update the main table usage count
         const tableMap = {
             'DIAGNOSIS': 'clinical_diagnosis_codes',
             'MEDICATION': 'clinical_medications',
@@ -381,8 +435,11 @@ class ClinicalAutocompleteService {
       SET usage_count = usage_count + 1 
       WHERE id = $1
     `, [itemId]);
-        return result.rows[0].usage_frequency === 1;
+        return result.rows[0].usage_frequency === 1; // true if newly added
     }
+    /**
+     * Get categories for a specific clinical data type
+     */
     async getCategories(itemType) {
         const tableMap = {
             'DIAGNOSIS': { table: 'clinical_diagnosis_codes', field: 'category' },
@@ -400,6 +457,9 @@ class ClinicalAutocompleteService {
     `);
         return result.rows.map(row => row.category);
     }
+    /**
+     * Get search suggestions based on popular terms
+     */
     async getSearchSuggestions(itemType, limit = 10) {
         const result = await database_1.pool.query(`
       SELECT search_term, COUNT(*) as frequency
@@ -413,6 +473,9 @@ class ClinicalAutocompleteService {
     `, [itemType, limit]);
         return result.rows.map(row => row.search_term);
     }
+    /**
+     * Log search analytics for improving autocomplete
+     */
     async logSearchAnalytics(userId, searchTerm, searchType, resultsCount, durationMs, selectedItemId, selectedItemName) {
         try {
             await database_1.pool.query(`
@@ -421,7 +484,7 @@ class ClinicalAutocompleteService {
           selected_item_id, selected_item_name, search_duration_ms
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       `, [
-                crypto_1.default.randomUUID(),
+                crypto.randomUUID(),
                 userId,
                 searchTerm,
                 searchType,
@@ -435,9 +498,11 @@ class ClinicalAutocompleteService {
             console.error('Failed to log search analytics:', error);
         }
     }
+    /**
+     * Record when a user selects an item from search results
+     */
     async recordSelection(userId, searchTerm, searchType, selectedItemId, selectedItemName) {
         await this.logSearchAnalytics(userId, searchTerm, searchType, 1, 0, selectedItemId, selectedItemName);
     }
 }
 exports.ClinicalAutocompleteService = ClinicalAutocompleteService;
-//# sourceMappingURL=ClinicalAutocompleteService.js.map

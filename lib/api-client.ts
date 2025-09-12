@@ -73,9 +73,74 @@ class ApiClient {
           message: data.message,
         }
       } else if (response.status === 401) {
-        // Handle authentication error
-        console.error("Authentication error - token may be expired")
+        // Try to refresh token before giving up
+        const refreshToken = localStorage.getItem('refreshToken')
+        console.log("🔍 API Client - 401 error, attempting token refresh:", {
+          hasRefreshToken: !!refreshToken,
+          endpoint: endpoint
+        })
         
+        if (refreshToken) {
+          try {
+            const refreshResponse = await fetch(`${this.baseURL}/auth/refresh`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ refreshToken }),
+            })
+
+            console.log("🔍 Token refresh response:", {
+              status: refreshResponse.status,
+              ok: refreshResponse.ok
+            })
+
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json()
+              console.log("🔍 Token refresh data:", {
+                success: refreshData.success,
+                hasAccessToken: !!refreshData.data?.accessToken,
+                hasRefreshToken: !!refreshData.data?.refreshToken
+              })
+              
+              if (refreshData.success) {
+                // Store new tokens
+                localStorage.setItem('accessToken', refreshData.data.accessToken)
+                localStorage.setItem('refreshToken', refreshData.data.refreshToken)
+                
+                console.log("🔍 Stored new tokens, retrying request...")
+                
+                // Retry the original request with new token
+                const retryResponse = await fetch(url, {
+                  ...config,
+                  headers: {
+                    ...config.headers,
+                    Authorization: `Bearer ${refreshData.data.accessToken}`,
+                  },
+                  signal: controller.signal,
+                })
+
+                console.log("🔍 Retry response:", {
+                  status: retryResponse.status,
+                  ok: retryResponse.ok
+                })
+
+                if (retryResponse.ok) {
+                  const retryData = await retryResponse.json()
+                  return {
+                    success: true,
+                    data: retryData.data || retryData,
+                    message: retryData.message,
+                  }
+                }
+              }
+            }
+          } catch (refreshError) {
+            console.error("Token refresh failed:", refreshError)
+          }
+        }
+
+        // If refresh failed or no refresh token, handle as auth error
         if (this.toast) {
           this.toast({
             title: "Session Expired",
@@ -152,7 +217,7 @@ export const apiClient = new ApiClient()
 // Hook to initialize the API client with router and toast
 export function useApiClient() {
   const router = useRouter()
-  const toast = useToast()
+  const { toast } = useToast()
 
   // Initialize the client
   apiClient.setRouter(router)

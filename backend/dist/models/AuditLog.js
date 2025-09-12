@@ -72,5 +72,5 @@ class AuditLog {
     }
 }
 exports.AuditLog = AuditLog;
+// Export as AuditLogModel for consistency with other models
 exports.AuditLogModel = AuditLog;
-//# sourceMappingURL=AuditLog.js.map

@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -7,41 +40,52 @@ exports.SHAExportService = void 0;
 const pdfkit_1 = __importDefault(require("pdfkit"));
 const exceljs_1 = __importDefault(require("exceljs"));
 const database_1 = require("../config/database");
-const path_1 = __importDefault(require("path"));
-const fs_1 = __importDefault(require("fs"));
-const crypto_1 = __importDefault(require("crypto"));
+const path = __importStar(require("path"));
+const fs = __importStar(require("fs"));
+const crypto = __importStar(require("crypto"));
 class SHAExportService {
     ensureExportDirectory() {
-        const exportDir = path_1.default.join(process.cwd(), 'exports', 'sha');
-        if (!fs_1.default.existsSync(exportDir)) {
-            fs_1.default.mkdirSync(exportDir, { recursive: true });
+        const exportDir = path.join(process.cwd(), 'exports', 'sha');
+        if (!fs.existsSync(exportDir)) {
+            fs.mkdirSync(exportDir, { recursive: true });
         }
         return exportDir;
     }
+    /**
+     * Export single invoice as PDF
+     */
     async exportInvoicePDF(invoiceId, options, exportedBy) {
         try {
+            // Get invoice with all related data
             const invoiceData = await this.getInvoiceData(invoiceId);
             if (!invoiceData) {
                 throw new Error("Invoice not found");
             }
             const exportDir = this.ensureExportDirectory();
             const filename = `SHA-Invoice-${invoiceData.invoice_number}-${Date.now()}.pdf`;
-            const filePath = path_1.default.join(exportDir, filename);
+            const filePath = path.join(exportDir, filename);
+            // Create PDF
             const doc = new pdfkit_1.default({ margin: 50 });
-            doc.pipe(fs_1.default.createWriteStream(filePath));
+            doc.pipe(fs.createWriteStream(filePath));
+            // Header
             this.addPDFHeader(doc, 'SHA INSURANCE INVOICE');
+            // Invoice Details
             this.addInvoiceDetails(doc, invoiceData);
+            // Patient Information
             this.addPatientInfo(doc, invoiceData);
+            // Services Table
             this.addServicesTable(doc, invoiceData.items);
+            // Footer with compliance info
             this.addPDFFooter(doc, invoiceData);
             doc.end();
+            // Log export
             const exportId = await this.logExport({
                 exportType: 'PDF',
                 exportScope: 'SINGLE_INVOICE',
                 invoiceIds: [invoiceId],
                 totalRecords: 1,
                 filePath,
-                fileSize: fs_1.default.statSync(filePath).size,
+                fileSize: fs.statSync(filePath).size,
                 exportReason: options.reason,
                 complianceApproved: options.complianceApproved || false,
                 approvedBy: options.approvedBy,
@@ -54,6 +98,9 @@ class SHAExportService {
             throw error;
         }
     }
+    /**
+     * Export multiple invoices as Excel
+     */
     async exportInvoicesExcel(filters, options, exportedBy) {
         try {
             const invoicesData = await this.getInvoicesData(filters);
@@ -62,24 +109,29 @@ class SHAExportService {
             }
             const exportDir = this.ensureExportDirectory();
             const filename = `SHA-Invoices-Export-${Date.now()}.xlsx`;
-            const filePath = path_1.default.join(exportDir, filename);
+            const filePath = path.join(exportDir, filename);
             const workbook = new exceljs_1.default.Workbook();
+            // Invoice Summary Sheet
             const summarySheet = workbook.addWorksheet('Invoice Summary');
             this.addExcelSummarySheet(summarySheet, invoicesData);
+            // Detailed Invoices Sheet
             const detailSheet = workbook.addWorksheet('Invoice Details');
             this.addExcelDetailSheet(detailSheet, invoicesData);
+            // Services Breakdown Sheet
             const servicesSheet = workbook.addWorksheet('Services Breakdown');
             this.addExcelServicesSheet(servicesSheet, invoicesData);
+            // Compliance Sheet
             const complianceSheet = workbook.addWorksheet('Compliance Status');
             this.addExcelComplianceSheet(complianceSheet, invoicesData);
             await workbook.xlsx.writeFile(filePath);
+            // Log export
             const exportId = await this.logExport({
                 exportType: 'EXCEL',
                 exportScope: options.scope,
                 ...filters,
                 totalRecords: invoicesData.length,
                 filePath,
-                fileSize: fs_1.default.statSync(filePath).size,
+                fileSize: fs.statSync(filePath).size,
                 exportReason: options.reason,
                 complianceApproved: options.complianceApproved || false,
                 approvedBy: options.approvedBy,
@@ -92,6 +144,9 @@ class SHAExportService {
             throw error;
         }
     }
+    /**
+     * Export claims data as CSV for SHA portal upload
+     */
     async exportClaimsCSV(filters, options, exportedBy) {
         try {
             const claimsData = await this.getClaimsData(filters);
@@ -100,7 +155,8 @@ class SHAExportService {
             }
             const exportDir = this.ensureExportDirectory();
             const filename = `SHA-Claims-Upload-${Date.now()}.csv`;
-            const filePath = path_1.default.join(exportDir, filename);
+            const filePath = path.join(exportDir, filename);
+            // Create CSV content in SHA portal format
             const csvHeaders = [
                 'CLAIM_NUMBER',
                 'BENEFICIARY_ID',
@@ -139,14 +195,15 @@ class SHAExportService {
                     csvContent += row.join(',') + '\n';
                 });
             });
-            fs_1.default.writeFileSync(filePath, csvContent, 'utf8');
+            fs.writeFileSync(filePath, csvContent, 'utf8');
+            // Log export
             const exportId = await this.logExport({
                 exportType: 'CSV',
                 exportScope: options.scope,
                 ...filters,
                 totalRecords: claimsData.length,
                 filePath,
-                fileSize: fs_1.default.statSync(filePath).size,
+                fileSize: fs.statSync(filePath).size,
                 exportReason: options.reason,
                 complianceApproved: options.complianceApproved || false,
                 approvedBy: options.approvedBy,
@@ -159,6 +216,9 @@ class SHAExportService {
             throw error;
         }
     }
+    /**
+     * Generate batch submission report
+     */
     async exportBatchReport(batchId, options, exportedBy) {
         try {
             const batchData = await this.getBatchData(batchId);
@@ -167,21 +227,26 @@ class SHAExportService {
             }
             const exportDir = this.ensureExportDirectory();
             const filename = `SHA-Batch-${batchData.batch_number}-Report-${Date.now()}.pdf`;
-            const filePath = path_1.default.join(exportDir, filename);
+            const filePath = path.join(exportDir, filename);
             const doc = new pdfkit_1.default({ margin: 50 });
-            doc.pipe(fs_1.default.createWriteStream(filePath));
+            doc.pipe(fs.createWriteStream(filePath));
+            // Header
             this.addPDFHeader(doc, 'SHA BATCH SUBMISSION REPORT');
+            // Batch Summary
             this.addBatchSummary(doc, batchData);
+            // Claims List
             this.addBatchClaimsList(doc, batchData.claims);
+            // Compliance Summary
             this.addBatchComplianceSummary(doc, batchData);
             doc.end();
+            // Log export
             const exportId = await this.logExport({
                 exportType: 'PDF',
                 exportScope: 'BATCH',
                 batchIds: [batchId],
                 totalRecords: batchData.claims.length,
                 filePath,
-                fileSize: fs_1.default.statSync(filePath).size,
+                fileSize: fs.statSync(filePath).size,
                 exportReason: options.reason,
                 complianceApproved: options.complianceApproved || false,
                 approvedBy: options.approvedBy,
@@ -194,6 +259,9 @@ class SHAExportService {
             throw error;
         }
     }
+    /**
+     * Private helper methods
+     */
     async getInvoiceData(invoiceId) {
         const result = await database_1.pool.query(`
       SELECT i.*,
@@ -217,6 +285,7 @@ class SHAExportService {
         if (result.rows.length === 0)
             return null;
         const invoice = result.rows[0];
+        // Get invoice items
         const itemsResult = await database_1.pool.query(`
       SELECT ci.*
       FROM sha_claim_items ci
@@ -266,6 +335,7 @@ class SHAExportService {
       ${whereClause}
       ORDER BY i.invoice_date DESC
     `, params);
+        // Get items for each invoice
         for (const invoice of result.rows) {
             const itemsResult = await database_1.pool.query(`
         SELECT ci.*
@@ -302,6 +372,7 @@ class SHAExportService {
       ${whereClause}
       ORDER BY c.visit_date DESC
     `, params);
+        // Get items for each claim
         for (const claim of result.rows) {
             const itemsResult = await database_1.pool.query(`
         SELECT * FROM sha_claim_items
@@ -321,6 +392,7 @@ class SHAExportService {
         if (result.rows.length === 0)
             return null;
         const batch = result.rows[0];
+        // Get batch claims
         const claimsResult = await database_1.pool.query(`
       SELECT c.*,
              p.first_name || ' ' || p.last_name as patient_name
@@ -333,7 +405,7 @@ class SHAExportService {
         return batch;
     }
     async logExport(logData) {
-        const exportId = crypto_1.default.randomUUID();
+        const exportId = crypto.randomUUID();
         await database_1.pool.query(`
       INSERT INTO sha_export_logs (
         id, export_type, export_scope, date_from, date_to,
@@ -364,6 +436,7 @@ class SHAExportService {
         ]);
         return exportId;
     }
+    // PDF helper methods
     addPDFHeader(doc, title) {
         doc.fontSize(20).text(title, { align: 'center' });
         doc.moveDown();
@@ -417,16 +490,19 @@ class SHAExportService {
                 }).format(Number.parseFloat(item.total_amount))
             ])
         };
+        // Simple table implementation
         doc.fontSize(9);
         const startY = doc.y;
         const colWidths = [200, 60, 30, 80, 80];
         let currentY = startY;
+        // Headers
         let currentX = 50;
         table.headers.forEach((header, i) => {
             doc.text(header, currentX, currentY, { width: colWidths[i], align: 'left' });
             currentX += colWidths[i];
         });
         currentY += 20;
+        // Rows
         table.rows.forEach(row => {
             currentX = 50;
             row.forEach((cell, i) => {
@@ -479,6 +555,7 @@ class SHAExportService {
         doc.text(`Printed: ${batch.printed_invoices ? 'Yes' : 'No'}`);
         doc.text('All required documents attached and verified.');
     }
+    // Excel helper methods
     addExcelSummarySheet(sheet, invoices) {
         sheet.columns = [
             { header: 'Invoice Number', key: 'invoice_number', width: 20 },
@@ -502,6 +579,7 @@ class SHAExportService {
                 sha_reference: invoice.sha_reference || 'N/A'
             });
         });
+        // Style header
         sheet.getRow(1).font = { bold: true };
     }
     addExcelDetailSheet(sheet, invoices) {
@@ -577,4 +655,3 @@ class SHAExportService {
     }
 }
 exports.SHAExportService = SHAExportService;
-//# sourceMappingURL=SHAExportService.js.map

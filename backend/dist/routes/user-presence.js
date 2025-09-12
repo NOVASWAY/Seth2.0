@@ -10,10 +10,12 @@ const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
 const WebSocketService_1 = require("../services/WebSocketService");
 const router = express_1.default.Router();
+// Get current user's presence
 router.get("/me", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const presence = await UserPresence_1.UserPresenceModel.findByUserId(req.user.id);
         if (!presence) {
+            // Create initial presence record
             const newPresence = await UserPresence_1.UserPresenceModel.createOrUpdate(req.user.id, {
                 status: 'online'
             });
@@ -35,6 +37,7 @@ router.get("/me", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRol
         });
     }
 });
+// Update current user's presence
 router.patch("/me", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), [
     (0, express_validator_1.body)("status").optional().isIn(["online", "away", "busy", "offline"]),
     (0, express_validator_1.body)("current_page").optional().isString(),
@@ -53,6 +56,7 @@ router.patch("/me", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserR
             });
         }
         const presence = await UserPresence_1.UserPresenceModel.createOrUpdate(req.user.id, req.body);
+        // Broadcast presence update via WebSocket
         const wsService = (0, WebSocketService_1.getWebSocketService)();
         if (wsService) {
             wsService.getIO().emit('presence_update', {
@@ -83,6 +87,7 @@ router.patch("/me", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserR
         });
     }
 });
+// Get all active users
 router.get("/active", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), [
     (0, express_validator_1.query)("status").optional().isIn(["online", "away", "busy", "offline"]),
     (0, express_validator_1.query)("role").optional().isString(),
@@ -124,6 +129,7 @@ router.get("/active", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.Use
         });
     }
 });
+// Get online users
 router.get("/online", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const onlineUsers = await UserPresence_1.UserPresenceModel.getOnlineUsers();
@@ -140,6 +146,7 @@ router.get("/online", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.Use
         });
     }
 });
+// Get users by activity
 router.get("/activity/:activity", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const { activity } = req.params;
@@ -157,6 +164,7 @@ router.get("/activity/:activity", (0, auth_1.authorize)([types_1.UserRole.ADMIN,
         });
     }
 });
+// Get users typing in specific entity
 router.get("/typing/:entityType/:entityId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const { entityType, entityId } = req.params;
@@ -174,6 +182,7 @@ router.get("/typing/:entityType/:entityId", (0, auth_1.authorize)([types_1.UserR
         });
     }
 });
+// Update last seen timestamp
 router.patch("/me/last-seen", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         await UserPresence_1.UserPresenceModel.updateLastSeen(req.user.id);
@@ -190,9 +199,11 @@ router.patch("/me/last-seen", (0, auth_1.authorize)([types_1.UserRole.ADMIN, typ
         });
     }
 });
+// Set user as offline
 router.patch("/me/offline", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         await UserPresence_1.UserPresenceModel.setOffline(req.user.id);
+        // Broadcast offline status via WebSocket
         const wsService = (0, WebSocketService_1.getWebSocketService)();
         if (wsService) {
             wsService.getIO().emit('user_offline', {
@@ -215,6 +226,7 @@ router.patch("/me/offline", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types
         });
     }
 });
+// Cleanup old presence records (admin only)
 router.delete("/cleanup", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { minutesOld = 30 } = req.body;
@@ -234,4 +246,3 @@ router.delete("/cleanup", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async
     }
 });
 exports.default = router;
-//# sourceMappingURL=user-presence.js.map

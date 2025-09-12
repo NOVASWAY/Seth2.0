@@ -4,7 +4,7 @@ import { authenticateToken, requireRole } from "../middleware/auth"
 import { SHAService } from "../services/SHAService"
 import { body, validationResult } from "express-validator"
 import { UserRole } from "../types"
-import crypto from "crypto"
+import * as crypto from "crypto"
 
 const router = Router()
 const shaService = new SHAService()

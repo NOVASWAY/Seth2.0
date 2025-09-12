@@ -1,7 +1,37 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const database_1 = require("../config/database");
@@ -9,10 +39,11 @@ const auth_1 = require("../middleware/auth");
 const SHAService_1 = require("../services/SHAService");
 const express_validator_1 = require("express-validator");
 const types_1 = require("../types");
-const crypto_1 = __importDefault(require("crypto"));
+const crypto = __importStar(require("crypto"));
 const router = (0, express_1.Router)();
 const shaService = new SHAService_1.SHAService();
-router.post("/claims", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.ADMIN]), [
+// Create claim from visit/invoice
+router.post("/claims", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.ADMIN, types_1.UserRole.RECEPTIONIST]), [
     (0, express_validator_1.body)("op_number").notEmpty().withMessage("OP Number is required"),
     (0, express_validator_1.body)("diagnosis_code").notEmpty().withMessage("Diagnosis code is required"),
     (0, express_validator_1.body)("diagnosis_description").notEmpty().withMessage("Diagnosis description is required"),
@@ -27,8 +58,11 @@ router.post("/claims", auth_1.authenticateToken, (0, auth_1.requireRole)([types_
         const client = await database_1.pool.connect();
         try {
             await client.query("BEGIN");
+            // Generate claim number
             const claimNumber = `CLM-${Date.now()}`;
+            // Calculate total amount
             const totalAmount = services.reduce((sum, service) => sum + service.total_price, 0);
+            // Create claim
             const claimResult = await client.query(`
           INSERT INTO claims (
             id, claim_number, op_number, patient_id, provider_code, member_number,
@@ -37,7 +71,7 @@ router.post("/claims", auth_1.authenticateToken, (0, auth_1.requireRole)([types_
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
           RETURNING *
         `, [
-                crypto_1.default.randomUUID(),
+                crypto.randomUUID(),
                 claimNumber,
                 op_number,
                 patient_id,
@@ -53,6 +87,7 @@ router.post("/claims", auth_1.authenticateToken, (0, auth_1.requireRole)([types_
                 new Date(),
             ]);
             const claim = claimResult.rows[0];
+            // Create claim items
             for (const service of services) {
                 await client.query(`
             INSERT INTO claim_items (
@@ -60,7 +95,7 @@ router.post("/claims", auth_1.authenticateToken, (0, auth_1.requireRole)([types_
               unit_price, total_price, item_type, item_reference_id, created_at
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
           `, [
-                    crypto_1.default.randomUUID(),
+                    crypto.randomUUID(),
                     claim.id,
                     service.service_code,
                     service.service_description,
@@ -94,7 +129,8 @@ router.post("/claims", auth_1.authenticateToken, (0, auth_1.requireRole)([types_
         });
     }
 });
-router.get("/claims", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.ADMIN]), async (req, res) => {
+// Get claims with filters
+router.get("/claims", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.ADMIN, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const { status, batch_id, op_number, limit = 50, offset = 0 } = req.query;
         let query = `
@@ -145,7 +181,8 @@ router.get("/claims", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1
         });
     }
 });
-router.post("/batches", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.ADMIN]), [(0, express_validator_1.body)("claim_ids").isArray().withMessage("Claim IDs must be an array")], async (req, res) => {
+// Create claim batch
+router.post("/batches", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.ADMIN, types_1.UserRole.RECEPTIONIST]), [(0, express_validator_1.body)("claim_ids").isArray().withMessage("Claim IDs must be an array")], async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
@@ -155,6 +192,7 @@ router.post("/batches", auth_1.authenticateToken, (0, auth_1.requireRole)([types
         const client = await database_1.pool.connect();
         try {
             await client.query("BEGIN");
+            // Validate claims are ready for batching
             const claimsResult = await client.query(`
           SELECT * FROM claims 
           WHERE id = ANY($1) AND status = 'ready_to_submit' AND batch_id IS NULL
@@ -162,9 +200,12 @@ router.post("/batches", auth_1.authenticateToken, (0, auth_1.requireRole)([types
             if (claimsResult.rows.length !== claim_ids.length) {
                 throw new Error("Some claims are not ready for batching or already in a batch");
             }
+            // Calculate batch totals
             const totalAmount = claimsResult.rows.reduce((sum, claim) => sum + Number.parseFloat(claim.total_amount), 0);
             const totalClaims = claimsResult.rows.length;
+            // Generate batch number
             const batchNumber = `BATCH-${Date.now()}`;
+            // Create batch
             const batchResult = await client.query(`
           INSERT INTO claim_batches (
             id, batch_number, batch_date, total_claims, total_amount,
@@ -172,7 +213,7 @@ router.post("/batches", auth_1.authenticateToken, (0, auth_1.requireRole)([types
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
           RETURNING *
         `, [
-                crypto_1.default.randomUUID(),
+                crypto.randomUUID(),
                 batchNumber,
                 new Date(),
                 totalClaims,
@@ -183,6 +224,7 @@ router.post("/batches", auth_1.authenticateToken, (0, auth_1.requireRole)([types
                 new Date(),
             ]);
             const batch = batchResult.rows[0];
+            // Update claims with batch_id
             await client.query(`
           UPDATE claims 
           SET batch_id = $1, updated_at = $2
@@ -210,9 +252,11 @@ router.post("/batches", auth_1.authenticateToken, (0, auth_1.requireRole)([types
         });
     }
 });
-router.post("/batches/:id/submit", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.ADMIN]), async (req, res) => {
+// Submit batch to SHA
+router.post("/batches/:id/submit", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.ADMIN, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const { id } = req.params;
+        // Get batch and claims
         const batchResult = await database_1.pool.query(`
         SELECT * FROM claim_batches WHERE id = $1 AND status = 'draft'
       `, [id]);
@@ -226,6 +270,7 @@ router.post("/batches/:id/submit", auth_1.authenticateToken, (0, auth_1.requireR
         const claimsResult = await database_1.pool.query(`
         SELECT * FROM claims WHERE batch_id = $1
       `, [id]);
+        // Submit to SHA
         const result = await shaService.submitClaimBatch(batch, claimsResult.rows);
         res.json({
             success: result.success,
@@ -242,13 +287,16 @@ router.post("/batches/:id/submit", auth_1.authenticateToken, (0, auth_1.requireR
         });
     }
 });
-router.get("/dashboard", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.ADMIN]), async (req, res) => {
+// Get claim dashboard data
+router.get("/dashboard", auth_1.authenticateToken, (0, auth_1.requireRole)([types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.ADMIN, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
+        // Claims by status
         const statusResult = await database_1.pool.query(`
       SELECT status, COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total_amount
       FROM claims 
       GROUP BY status
     `);
+        // Recent submissions
         const recentResult = await database_1.pool.query(`
       SELECT c.*, p.first_name, p.last_name
       FROM claims c
@@ -257,6 +305,7 @@ router.get("/dashboard", auth_1.authenticateToken, (0, auth_1.requireRole)([type
       ORDER BY c.submission_date DESC
       LIMIT 10
     `);
+        // Pending claims (ready to submit)
         const pendingResult = await database_1.pool.query(`
       SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total_amount
       FROM claims 
@@ -280,4 +329,3 @@ router.get("/dashboard", auth_1.authenticateToken, (0, auth_1.requireRole)([type
     }
 });
 exports.default = router;
-//# sourceMappingURL=claims.js.map

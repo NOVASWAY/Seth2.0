@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -8,9 +41,10 @@ const express_validator_1 = require("express-validator");
 const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
 const database_1 = require("../config/database");
-const crypto_1 = __importDefault(require("crypto"));
+const crypto = __importStar(require("crypto"));
 const router = express_1.default.Router();
-router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER]), [
+// Get all SHA claims with pagination and filtering
+router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.RECEPTIONIST]), [
     (0, express_validator_1.query)("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
     (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100"),
     (0, express_validator_1.query)("status").optional().isString().withMessage("Status must be a string"),
@@ -28,6 +62,7 @@ router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.
         }
         const { page = 1, limit = 20, status, startDate, endDate, search } = req.query;
         const offset = (Number(page) - 1) * Number(limit);
+        // Build WHERE clause
         let whereClause = "WHERE 1=1";
         const params = [];
         let paramCount = 0;
@@ -51,11 +86,13 @@ router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.
             whereClause += ` AND (p.op_number ILIKE $${paramCount} OR p.first_name ILIKE $${paramCount} OR p.last_name ILIKE $${paramCount} OR c.claim_number ILIKE $${paramCount})`;
             params.push(`%${search}%`);
         }
+        // Get total count
         const countResult = await database_1.pool.query(`SELECT COUNT(*) as total
          FROM sha_claims c
          JOIN patients p ON c.patient_id = p.id
          ${whereClause}`, params);
         const total = parseInt(countResult.rows[0].total);
+        // Get claims
         paramCount++;
         params.push(Number(limit));
         paramCount++;
@@ -98,7 +135,8 @@ router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.
         });
     }
 });
-router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER]), async (req, res) => {
+// Get single SHA claim
+router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const { id } = req.params;
         const result = await database_1.pool.query(`SELECT 
@@ -125,8 +163,10 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
                 message: "SHA claim not found"
             });
         }
+        // Get claim items
         const itemsResult = await database_1.pool.query(`SELECT * FROM sha_claim_items WHERE claim_id = $1 ORDER BY created_at`, [id]);
         const claim = result.rows[0];
+        // Get comprehensive patient clinical data for this claim
         const clinicalDataQuery = `
         SELECT 
           -- Patient encounters
@@ -152,6 +192,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
       `;
         const clinicalResult = await database_1.pool.query(clinicalDataQuery, [claim.patient_id, claim.visit_id]);
         const clinicalData = clinicalResult.rows;
+        // Organize clinical data
         const organizedClinicalData = {
             encounters: [],
             diagnoses: [],
@@ -159,6 +200,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
             lab_tests: []
         };
         clinicalData.forEach(row => {
+            // Add encounter if not already added
             if (row.encounter_id && !organizedClinicalData.encounters.find(e => e.id === row.encounter_id)) {
                 organizedClinicalData.encounters.push({
                     id: row.encounter_id,
@@ -170,6 +212,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
                     sha_eligible: row.sha_eligible
                 });
             }
+            // Add diagnosis if not already added
             if (row.diagnosis_code && !organizedClinicalData.diagnoses.find(d => d.code === row.diagnosis_code)) {
                 organizedClinicalData.diagnoses.push({
                     code: row.diagnosis_code,
@@ -177,6 +220,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
                     type: row.diagnosis_type
                 });
             }
+            // Add prescription if not already added
             if (row.prescription_id && !organizedClinicalData.prescriptions.find(p => p.id === row.prescription_id)) {
                 organizedClinicalData.prescriptions.push({
                     id: row.prescription_id,
@@ -190,6 +234,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
                         }]
                 });
             }
+            // Add lab test if not already added
             if (row.lab_request_id && !organizedClinicalData.lab_tests.find(l => l.id === row.lab_request_id)) {
                 organizedClinicalData.lab_tests.push({
                     id: row.lab_request_id,
@@ -221,6 +266,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
         });
     }
 });
+// Create new SHA claim
 router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER]), [
     (0, express_validator_1.body)("patient_id").isUUID().withMessage("Patient ID must be a valid UUID"),
     (0, express_validator_1.body)("visit_id").isUUID().withMessage("Visit ID must be a valid UUID"),
@@ -237,6 +283,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
             });
         }
         const { patient_id, visit_id, primary_diagnosis_code, primary_diagnosis_description, secondary_diagnosis_codes = [], secondary_diagnosis_descriptions = [], claim_amount, notes } = req.body;
+        // Get patient details
         const patientResult = await database_1.pool.query(`SELECT op_number, first_name, last_name, insurance_number, phone_number, date_of_birth, gender
          FROM patients WHERE id = $1`, [patient_id]);
         if (patientResult.rows.length === 0) {
@@ -246,8 +293,10 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
             });
         }
         const patient = patientResult.rows[0];
+        // Generate claim number
         const claimNumber = `SHA-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-        const claimId = crypto_1.default.randomUUID();
+        // Create claim
+        const claimId = crypto.randomUUID();
         const result = await database_1.pool.query(`INSERT INTO sha_claims (
           id, claim_number, patient_id, op_number, visit_id,
           patient_name, sha_beneficiary_id, national_id, phone_number, visit_date,
@@ -263,7 +312,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
             visit_id,
             `${patient.first_name} ${patient.last_name}`,
             patient.insurance_number,
-            patient.insurance_number,
+            patient.insurance_number, // Using insurance number as national ID for now
             patient.phone_number,
             new Date(),
             primary_diagnosis_code,
@@ -294,7 +343,8 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
         });
     }
 });
-router.put("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER]), [
+// Update SHA claim
+router.put("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.RECEPTIONIST]), [
     (0, express_validator_1.body)("status").optional().isIn(["DRAFT", "READY_TO_SUBMIT", "SUBMITTED", "APPROVED", "REJECTED", "PAID"]),
     (0, express_validator_1.body)("claim_amount").optional().isNumeric(),
 ], async (req, res) => {
@@ -308,6 +358,7 @@ router.put("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
         }
         const { id } = req.params;
         const updates = req.body;
+        // Build update query
         const updateFields = [];
         const params = [];
         let paramCount = 0;
@@ -353,6 +404,7 @@ router.put("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
         });
     }
 });
+// Delete SHA claim
 router.delete("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -377,4 +429,3 @@ router.delete("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (re
     }
 });
 exports.default = router;
-//# sourceMappingURL=sha-claims.js.map

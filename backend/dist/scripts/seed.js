@@ -9,13 +9,16 @@ const path_1 = __importDefault(require("path"));
 async function seed() {
     try {
         console.log('Starting database seeding...');
+        // Read the seed file
         const seedPath = path_1.default.join(process.cwd(), '..', 'database', 'seed.sql');
         const seed = fs_1.default.readFileSync(seedPath, 'utf8');
+        // Split the seed into individual statements
         const statements = seed
             .split(';')
             .map(stmt => stmt.trim())
             .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
         console.log(`Found ${statements.length} SQL statements to execute`);
+        // Execute each statement
         for (let i = 0; i < statements.length; i++) {
             const statement = statements[i];
             if (statement.trim()) {
@@ -25,6 +28,7 @@ async function seed() {
                 }
                 catch (error) {
                     console.error(`Error executing seed statement ${i + 1}:`, error);
+                    // Continue with other statements even if one fails
                 }
             }
         }
@@ -37,4 +41,3 @@ async function seed() {
     }
 }
 seed();
-//# sourceMappingURL=seed.js.map

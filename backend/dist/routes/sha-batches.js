@@ -12,6 +12,7 @@ const invoiceUtils_1 = require("../utils/invoiceUtils");
 const SHAService_1 = require("../services/SHAService");
 const router = express_1.default.Router();
 const shaService = new SHAService_1.SHAService();
+// Get all SHA batches with pagination and filtering
 router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), [
     (0, express_validator_1.query)("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
     (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100"),
@@ -91,6 +92,7 @@ router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.
         });
     }
 });
+// Create new batch (weekly, monthly, or custom)
 router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), [
     (0, express_validator_1.body)("batchType").isIn(["weekly", "monthly", "custom"]).withMessage("Invalid batch type"),
     (0, express_validator_1.body)("batchDate").optional().isISO8601().withMessage("Batch date must be valid"),
@@ -110,11 +112,13 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
         const finalBatchDate = batchDate ? new Date(batchDate) : new Date();
         let claims = [];
         if (batchType === "custom" && claimIds && claimIds.length > 0) {
+            // Custom batch with specific claims
             const placeholders = claimIds.map((_, index) => `$${index + 1}`).join(", ");
             const claimsResult = await database_1.pool.query(`SELECT * FROM sha_claims WHERE id IN (${placeholders}) AND status = 'ready_to_submit'`, claimIds);
             claims = claimsResult.rows;
         }
         else {
+            // Auto-generated batch based on date range
             let startDate;
             const endDate = new Date(finalBatchDate);
             if (batchType === "weekly") {
@@ -124,7 +128,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
                 startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
             }
             else {
-                startDate = new Date(endDate.getTime() - (24 * 60 * 60 * 1000));
+                startDate = new Date(endDate.getTime() - (24 * 60 * 60 * 1000)); // Last 24 hours for custom
             }
             const claimsResult = await database_1.pool.query(`SELECT * FROM sha_claims 
            WHERE status = 'ready_to_submit' 
@@ -139,7 +143,9 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
                 message: "No eligible claims found for batch creation"
             });
         }
+        // Calculate total amount
         const totalAmount = claims.reduce((sum, claim) => sum + parseFloat(claim.claim_amount), 0);
+        // Create batch
         const batchResult = await database_1.pool.query(`INSERT INTO sha_claim_batches (
           id, batch_number, batch_date, batch_type, total_claims, 
           total_amount, status, created_by, created_at, updated_at
@@ -157,6 +163,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
             new Date()
         ]);
         const batch = batchResult.rows[0];
+        // Update claims with batch reference
         for (const claim of claims) {
             await database_1.pool.query(`UPDATE sha_claims SET batch_id = $1, updated_at = $2 WHERE id = $3`, [batchNumber, new Date(), claim.id]);
         }
@@ -177,9 +184,11 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole
         });
     }
 });
+// Get batch details with claims
 router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { id } = req.params;
+        // Get batch details
         const batchResult = await database_1.pool.query(`SELECT 
           b.*,
           u.username as created_by_username
@@ -193,6 +202,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
             });
         }
         const batch = batchResult.rows[0];
+        // Get claims in batch
         const claimsResult = await database_1.pool.query(`SELECT 
           c.*,
           p.op_number,
@@ -221,9 +231,11 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
         });
     }
 });
+// Submit batch to SHA
 router.patch("/:id/submit", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { id } = req.params;
+        // Get batch and claims
         const batchResult = await database_1.pool.query(`SELECT * FROM sha_claim_batches WHERE id = $1`, [id]);
         if (batchResult.rows.length === 0) {
             return res.status(404).json({
@@ -238,6 +250,7 @@ router.patch("/:id/submit", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types
                 message: "Only draft batches can be submitted"
             });
         }
+        // Get claims in batch
         const claimsResult = await database_1.pool.query(`SELECT * FROM sha_claims WHERE batch_id = $1`, [batch.batch_number]);
         if (claimsResult.rows.length === 0) {
             return res.status(400).json({
@@ -245,6 +258,7 @@ router.patch("/:id/submit", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types
                 message: "No claims found in batch"
             });
         }
+        // Submit batch to SHA
         const result = await shaService.submitClaimBatch(batch, claimsResult.rows);
         if (result.success) {
             res.json({
@@ -269,6 +283,7 @@ router.patch("/:id/submit", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types
         });
     }
 });
+// Mark batch invoices as printed
 router.patch("/:id/mark-printed", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -281,12 +296,14 @@ router.patch("/:id/mark-printed", (0, auth_1.authorize)([types_1.UserRole.ADMIN,
         }
         const batch = batchResult.rows[0];
         const now = new Date();
+        // Update batch
         await database_1.pool.query(`UPDATE sha_claim_batches SET 
           printed_invoices = true,
           printed_at = $1,
           printed_by = $2,
           updated_at = $3
          WHERE id = $4`, [now, req.user.id, now, id]);
+        // Get and mark all invoices in batch as printed
         const invoicesResult = await database_1.pool.query(`SELECT i.id FROM sha_invoices i
          JOIN sha_claims c ON i.claim_id = c.id
          WHERE c.batch_id = $1`, [batch.batch_number]);
@@ -306,6 +323,7 @@ router.patch("/:id/mark-printed", (0, auth_1.authorize)([types_1.UserRole.ADMIN,
         });
     }
 });
+// Delete batch (only if draft status)
 router.delete("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -323,7 +341,9 @@ router.delete("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.Use
                 message: "Only draft batches can be deleted"
             });
         }
+        // Remove batch reference from claims
         await database_1.pool.query(`UPDATE sha_claims SET batch_id = NULL, updated_at = $1 WHERE batch_id = $2`, [new Date(), batch.batch_number]);
+        // Delete batch
         await database_1.pool.query(`DELETE FROM sha_claim_batches WHERE id = $1`, [id]);
         res.json({
             success: true,
@@ -338,6 +358,7 @@ router.delete("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.Use
         });
     }
 });
+// Get batch statistics
 router.get("/stats/summary", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), [
     (0, express_validator_1.query)("startDate").optional().isISO8601().withMessage("Start date must be valid"),
     (0, express_validator_1.query)("endDate").optional().isISO8601().withMessage("End date must be valid"),
@@ -378,4 +399,3 @@ router.get("/stats/summary", (0, auth_1.authorize)([types_1.UserRole.ADMIN, type
     }
 });
 exports.default = router;
-//# sourceMappingURL=sha-batches.js.map

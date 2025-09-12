@@ -5,8 +5,8 @@ import { authorize } from "../middleware/auth"
 import { UserRole } from "../types"
 import { AuthenticatedRequest } from "../types/auth"
 import { SHAExportService, ExportFilters, ExportOptions } from "../services/SHAExportService"
-import fs from "fs"
-import path from "path"
+import * as fs from "fs"
+import * as path from "path"
 
 const router = Router()
 const exportService = new SHAExportService()

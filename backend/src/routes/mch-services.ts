@@ -4,6 +4,7 @@ import { MCHServicesModel } from "../models/MCHServices"
 import { authenticate, authorize } from "../middleware/auth"
 import { auditLogger } from "../middleware/auditLogger"
 import type { AuthenticatedRequest } from "../types"
+import { UserRole } from "../types"
 
 const router = express.Router()
 
@@ -124,7 +125,7 @@ router.get("/patients/:patientId/category/:category",
 // Create patient MCH service record
 router.post("/patients/:patientId/services",
   authenticate,
-  authorize(["NURSE", "CLINICAL_OFFICER", "ADMIN"]),
+  authorize([UserRole.NURSE, UserRole.CLINICAL_OFFICER, UserRole.ADMIN]),
   auditLogger,
   param("patientId").isUUID().withMessage("Invalid patient ID"),
   body("serviceId").isUUID().withMessage("Invalid service ID"),
@@ -173,7 +174,7 @@ router.post("/patients/:patientId/services",
 // Update patient MCH service record
 router.put("/services/:serviceRecordId",
   authenticate,
-  authorize(["NURSE", "CLINICAL_OFFICER", "ADMIN"]),
+  authorize([UserRole.NURSE, UserRole.CLINICAL_OFFICER, UserRole.ADMIN]),
   auditLogger,
   param("serviceRecordId").isUUID().withMessage("Invalid service record ID"),
   body("serviceDate").optional().isISO8601().withMessage("Invalid service date"),
@@ -222,7 +223,7 @@ router.put("/services/:serviceRecordId",
 // Get MCH service statistics
 router.get("/statistics",
   authenticate,
-  authorize(["ADMIN", "CLINICAL_OFFICER"]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const stats = await MCHServicesModel.getMCHServiceStats()
@@ -276,7 +277,7 @@ router.get("/appointments/upcoming",
 // Delete MCH service record
 router.delete("/services/:serviceRecordId",
   authenticate,
-  authorize(["NURSE", "CLINICAL_OFFICER", "ADMIN"]),
+  authorize([UserRole.NURSE, UserRole.CLINICAL_OFFICER, UserRole.ADMIN]),
   auditLogger,
   param("serviceRecordId").isUUID().withMessage("Invalid service record ID"),
   async (req: AuthenticatedRequest, res) => {

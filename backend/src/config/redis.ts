@@ -1,5 +1,5 @@
 import { createClient } from "redis"
-import dotenv from "dotenv"
+import * as dotenv from "dotenv"
 
 dotenv.config()
 

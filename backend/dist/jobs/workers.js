@@ -8,15 +8,19 @@ const child_process_1 = require("child_process");
 const util_1 = require("util");
 const execAsync = (0, util_1.promisify)(child_process_1.exec);
 const shaService = new SHAService_1.SHAService();
+// Claims processing worker
 queue_1.claimsQueue.process("submit_single_claim", async (job) => {
     const { claimId } = job.data;
     try {
+        // Get claim data
         const claimResult = await database_1.pool.query("SELECT * FROM claims WHERE id = $1", [claimId]);
         if (claimResult.rows.length === 0) {
             throw new Error("Claim not found");
         }
         const claim = claimResult.rows[0];
+        // Get claim items
         const itemsResult = await database_1.pool.query("SELECT * FROM claim_items WHERE claim_id = $1", [claimId]);
+        // Submit to SHA
         const result = await shaService.submitSingleClaim(claim.id, claim.created_by);
         if (!result.success) {
             throw new Error(`SHA submission failed: ${result.error}`);
@@ -31,12 +35,15 @@ queue_1.claimsQueue.process("submit_single_claim", async (job) => {
 queue_1.claimsQueue.process("submit_claim_batch", async (job) => {
     const { batchId } = job.data;
     try {
+        // Get batch data
         const batchResult = await database_1.pool.query("SELECT * FROM claim_batches WHERE id = $1", [batchId]);
         if (batchResult.rows.length === 0) {
             throw new Error("Batch not found");
         }
         const batch = batchResult.rows[0];
+        // Get claims in batch
         const claimsResult = await database_1.pool.query("SELECT * FROM claims WHERE batch_id = $1", [batchId]);
+        // Submit batch to SHA
         const result = await shaService.submitClaimBatch(batch, claimsResult.rows);
         if (!result.success) {
             throw new Error(`SHA batch submission failed: ${result.error}`);
@@ -58,6 +65,7 @@ queue_1.claimsQueue.process("reconcile_claims", async (job) => {
         throw error;
     }
 });
+// Inventory alerts worker
 queue_1.inventoryQueue.process("check_low_stock", async (job) => {
     try {
         const result = await database_1.pool.query(`
@@ -69,6 +77,7 @@ queue_1.inventoryQueue.process("check_low_stock", async (job) => {
     `);
         const lowStockItems = result.rows;
         if (lowStockItems.length > 0) {
+            // Create notification job for each low stock item
             for (const item of lowStockItems) {
                 await queue_1.notificationQueue.add("send_email", {
                     type: "send_email",
@@ -98,6 +107,7 @@ queue_1.inventoryQueue.process("check_expiring_items", async (job) => {
     `, [thirtyDaysFromNow]);
         const expiringItems = result.rows;
         if (expiringItems.length > 0) {
+            // Create notification for expiring items
             await queue_1.notificationQueue.add("send_email", {
                 type: "send_email",
                 recipient: process.env.ADMIN_EMAIL || "admin@sethclinic.com",
@@ -112,10 +122,13 @@ queue_1.inventoryQueue.process("check_expiring_items", async (job) => {
         throw error;
     }
 });
+// Notification worker
 queue_1.notificationQueue.process("send_email", async (job) => {
     const { recipient, message, metadata } = job.data;
     try {
+        // In production, integrate with email service (SendGrid, AWS SES, etc.)
         console.log(`[EMAIL] To: ${recipient}, Message: ${message}`);
+        // Log notification
         await database_1.pool.query(`
       INSERT INTO audit_logs (
         id, action, target_type, details, created_at
@@ -131,7 +144,9 @@ queue_1.notificationQueue.process("send_email", async (job) => {
 queue_1.notificationQueue.process("send_sms", async (job) => {
     const { recipient, message, metadata } = job.data;
     try {
+        // In production, integrate with SMS service (Twilio, Africa's Talking, etc.)
         console.log(`[SMS] To: ${recipient}, Message: ${message}`);
+        // Log notification
         await database_1.pool.query(`
       INSERT INTO audit_logs (
         id, action, target_type, details, created_at
@@ -144,14 +159,18 @@ queue_1.notificationQueue.process("send_sms", async (job) => {
         throw error;
     }
 });
+// Backup worker
 queue_1.backupQueue.process("database_backup", async (job) => {
     try {
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
         const backupFile = `backup-${timestamp}.sql`;
         const backupPath = process.env.BACKUP_PATH || "/tmp";
+        // Create database backup using pg_dump
         const command = `pg_dump ${process.env.DATABASE_URL} > ${backupPath}/${backupFile}`;
         await execAsync(command);
+        // In production, upload to cloud storage (S3, Google Cloud, etc.)
         console.log(`Database backup created: ${backupPath}/${backupFile}`);
+        // Log backup
         await database_1.pool.query(`
       INSERT INTO audit_logs (
         id, action, target_type, details, created_at
@@ -170,22 +189,27 @@ queue_1.backupQueue.process("database_backup", async (job) => {
         throw error;
     }
 });
+// Schedule recurring jobs
 const scheduleRecurringJobs = () => {
+    // Check low stock every 6 hours
     queue_1.inventoryQueue.add("check_low_stock", {}, {
         repeat: { cron: "0 */6 * * *" },
         removeOnComplete: 10,
         removeOnFail: 5,
     });
+    // Check expiring items daily at 9 AM
     queue_1.inventoryQueue.add("check_expiring_items", {}, {
         repeat: { cron: "0 9 * * *" },
         removeOnComplete: 10,
         removeOnFail: 5,
     });
+    // Reconcile claims every 4 hours
     queue_1.claimsQueue.add("reconcile_claims", {}, {
         repeat: { cron: "0 */4 * * *" },
         removeOnComplete: 10,
         removeOnFail: 5,
     });
+    // Database backup daily at 2 AM
     queue_1.backupQueue.add("database_backup", {}, {
         repeat: { cron: "0 2 * * *" },
         removeOnComplete: 7,
@@ -194,6 +218,7 @@ const scheduleRecurringJobs = () => {
     console.log("Recurring jobs scheduled");
 };
 exports.scheduleRecurringJobs = scheduleRecurringJobs;
+// Error handling
 queue_1.claimsQueue.on("failed", (job, err) => {
     console.error(`Claims job ${job.id} failed:`, err);
 });
@@ -206,4 +231,3 @@ queue_1.notificationQueue.on("failed", (job, err) => {
 queue_1.backupQueue.on("failed", (job, err) => {
     console.error(`Backup job ${job.id} failed:`, err);
 });
-//# sourceMappingURL=workers.js.map

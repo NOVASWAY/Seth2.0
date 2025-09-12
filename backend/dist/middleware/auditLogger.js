@@ -12,16 +12,23 @@ const auditLog = async (params) => {
 };
 exports.auditLog = auditLog;
 const auditLogger = (req, res, next) => {
+    // Skip audit logging for GET requests and health checks
     if (req.method === "GET" || req.path === "/health") {
         return next();
     }
+    // Store original end function
     const originalEnd = res.end;
+    // Override end function to capture response
     res.end = function (chunk, encoding) {
+        // Only log successful operations (2xx status codes)
         if (res.statusCode >= 200 && res.statusCode < 300) {
+            // Extract resource and action from path and method
             const pathParts = req.path.split("/").filter(Boolean);
-            const resource = pathParts[1] || "unknown";
+            const resource = pathParts[1] || "unknown"; // Skip 'api' prefix
             const action = getActionFromMethod(req.method);
+            // Extract resource ID from path if present
             const resourceId = pathParts[2] && !isNaN(Number(pathParts[2])) ? pathParts[2] : undefined;
+            // Extract OP Number from request body or params
             const opNumber = req.body?.opNumber || req.body?.op_number || req.params?.opNumber;
             (0, exports.auditLog)({
                 userId: req.user?.id,
@@ -39,6 +46,7 @@ const auditLogger = (req, res, next) => {
                 userAgent: req.get("User-Agent"),
             });
         }
+        // Call original end function
         return originalEnd.call(this, chunk, encoding);
     };
     next();
@@ -62,6 +70,7 @@ function sanitizeBody(body) {
         return body;
     }
     const sanitized = { ...body };
+    // Remove sensitive fields
     const sensitiveFields = ["password", "token", "secret", "key"];
     sensitiveFields.forEach((field) => {
         if (sanitized[field]) {
@@ -70,4 +79,3 @@ function sanitizeBody(body) {
     });
     return sanitized;
 }
-//# sourceMappingURL=auditLogger.js.map

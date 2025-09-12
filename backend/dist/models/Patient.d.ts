@@ -12,6 +12,9 @@ export interface CreatePatientData {
     nextOfKinPhone?: string;
     insuranceType: "SHA" | "PRIVATE" | "CASH";
     insuranceNumber?: string;
+    registrationType?: "NEW_PATIENT" | "IMPORT_PATIENT";
+    registeredBy?: string;
+    registrationDate?: Date;
 }
 export interface UpdatePatientData {
     firstName?: string;

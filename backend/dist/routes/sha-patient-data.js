@@ -9,7 +9,8 @@ const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
 const database_1 = require("../config/database");
 const router = express_1.default.Router();
-router.get("/patient/:patientId/clinical-data", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER]), [
+// Get comprehensive patient clinical data for SHA claims
+router.get("/patient/:patientId/clinical-data", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.RECEPTIONIST]), [
     (0, express_validator_1.query)("visitId").optional().isUUID().withMessage("Visit ID must be a valid UUID"),
     (0, express_validator_1.query)("includeHistory").optional().isBoolean().withMessage("Include history must be a boolean")
 ], async (req, res) => {
@@ -24,6 +25,7 @@ router.get("/patient/:patientId/clinical-data", (0, auth_1.authorize)([types_1.U
         }
         const { patientId } = req.params;
         const { visitId, includeHistory = false } = req.query;
+        // Get patient basic information
         const patientResult = await database_1.pool.query(`SELECT 
           p.id, p.op_number, p.first_name, p.last_name, p.date_of_birth, p.age, p.gender,
           p.phone_number, p.area, p.insurance_type, p.insurance_number,
@@ -37,6 +39,7 @@ router.get("/patient/:patientId/clinical-data", (0, auth_1.authorize)([types_1.U
             });
         }
         const patient = patientResult.rows[0];
+        // Get visits for the patient
         let visitsQuery = `
         SELECT 
           v.id, v.visit_date, v.visit_type, v.status, v.notes,
@@ -56,7 +59,8 @@ router.get("/patient/:patientId/clinical-data", (0, auth_1.authorize)([types_1.U
         }
         const visitsResult = await database_1.pool.query(visitsQuery, visitsParams);
         const visits = visitsResult.rows;
-        const encountersQuery = `
+        // Get patient encounters with diagnoses and treatments
+        let encountersQuery = `
         SELECT 
           pe.id, pe.encounter_type, pe.encounter_date, pe.chief_complaint,
           pe.department, pe.location, pe.sha_eligible, pe.private_pay,
@@ -112,7 +116,8 @@ router.get("/patient/:patientId/clinical-data", (0, auth_1.authorize)([types_1.U
         }
         const encountersResult = await database_1.pool.query(encountersQuery, encountersParams);
         const encounters = encountersResult.rows;
-        const prescriptionsQuery = `
+        // Get prescriptions for the patient
+        let prescriptionsQuery = `
         SELECT 
           pr.id, pr.consultation_id, pr.visit_id, pr.status, pr.created_at,
           u.username as prescribed_by_name,
@@ -151,7 +156,8 @@ router.get("/patient/:patientId/clinical-data", (0, auth_1.authorize)([types_1.U
         }
         const prescriptionsResult = await database_1.pool.query(prescriptionsQuery, prescriptionsParams);
         const prescriptions = prescriptionsResult.rows;
-        const labRequestsQuery = `
+        // Get lab requests and results
+        let labRequestsQuery = `
         SELECT 
           lr.id, lr.request_date, lr.status, lr.urgency, lr.notes,
           u.username as requested_by_name,
@@ -190,7 +196,8 @@ router.get("/patient/:patientId/clinical-data", (0, auth_1.authorize)([types_1.U
         }
         const labRequestsResult = await database_1.pool.query(labRequestsQuery, labRequestsParams);
         const labRequests = labRequestsResult.rows;
-        const claimsQuery = `
+        // Get existing SHA claims for this patient
+        let claimsQuery = `
         SELECT 
           sc.id, sc.claim_number, sc.visit_id, sc.claim_amount, sc.status,
           sc.primary_diagnosis_code, sc.primary_diagnosis_description,
@@ -208,6 +215,7 @@ router.get("/patient/:patientId/clinical-data", (0, auth_1.authorize)([types_1.U
         }
         const claimsResult = await database_1.pool.query(claimsQuery, claimsParams);
         const existingClaims = claimsResult.rows;
+        // Calculate total costs for SHA eligibility
         let totalCost = 0;
         encounters.forEach(encounter => {
             if (encounter.treatments && Array.isArray(encounter.treatments)) {
@@ -243,7 +251,7 @@ router.get("/patient/:patientId/clinical-data", (0, auth_1.authorize)([types_1.U
                     area: patient.area,
                     insurance_type: patient.insurance_type,
                     insurance_number: patient.insurance_number,
-                    sha_beneficiary_id: patient.insurance_number,
+                    sha_beneficiary_id: patient.insurance_number, // For SHA claims
                     next_of_kin: patient.next_of_kin,
                     next_of_kin_phone: patient.next_of_kin_phone,
                     created_at: patient.created_at
@@ -272,7 +280,8 @@ router.get("/patient/:patientId/clinical-data", (0, auth_1.authorize)([types_1.U
         });
     }
 });
-router.get("/patient/:patientId/sha-invoice-data", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER]), [
+// Get patient data for SHA invoice generation
+router.get("/patient/:patientId/sha-invoice-data", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.RECEPTIONIST]), [
     (0, express_validator_1.query)("visitId").isUUID().withMessage("Visit ID is required"),
     (0, express_validator_1.query)("encounterId").optional().isUUID().withMessage("Encounter ID must be a valid UUID")
 ], async (req, res) => {
@@ -287,6 +296,7 @@ router.get("/patient/:patientId/sha-invoice-data", (0, auth_1.authorize)([types_
         }
         const { patientId } = req.params;
         const { visitId, encounterId } = req.query;
+        // Get patient data
         const patientResult = await database_1.pool.query(`SELECT 
           p.op_number, p.first_name, p.last_name, p.insurance_number,
           p.phone_number, p.date_of_birth, p.gender
@@ -299,6 +309,7 @@ router.get("/patient/:patientId/sha-invoice-data", (0, auth_1.authorize)([types_
             });
         }
         const patient = patientResult.rows[0];
+        // Get visit data
         const visitResult = await database_1.pool.query(`SELECT v.*, u.username as provider_name
          FROM visits v
          LEFT JOIN users u ON v.provider_id = u.id
@@ -310,6 +321,7 @@ router.get("/patient/:patientId/sha-invoice-data", (0, auth_1.authorize)([types_
             });
         }
         const visit = visitResult.rows[0];
+        // Get encounter data with services
         let encounterQuery = `
         SELECT 
           pe.*, u.username as provider_name,
@@ -344,6 +356,7 @@ router.get("/patient/:patientId/sha-invoice-data", (0, auth_1.authorize)([types_
       `;
         const encounterResult = await database_1.pool.query(encounterQuery, encounterParams);
         const encounters = encounterResult.rows;
+        // Calculate total amount
         let totalAmount = 0;
         encounters.forEach(encounter => {
             if (encounter.services && Array.isArray(encounter.services)) {
@@ -354,6 +367,7 @@ router.get("/patient/:patientId/sha-invoice-data", (0, auth_1.authorize)([types_
                 });
             }
         });
+        // Generate invoice data in SHA format
         const invoiceData = {
             patient: {
                 name: `${patient.first_name} ${patient.last_name}`,
@@ -397,4 +411,3 @@ router.get("/patient/:patientId/sha-invoice-data", (0, auth_1.authorize)([types_
     }
 });
 exports.default = router;
-//# sourceMappingURL=sha-patient-data.js.map

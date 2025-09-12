@@ -1,12 +1,48 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EventLoggerService = void 0;
 const database_1 = __importDefault(require("../config/database"));
-const crypto_1 = __importDefault(require("crypto"));
+const crypto = __importStar(require("crypto"));
 class EventLoggerService {
+    /**
+     * Log an event to the system
+     */
     static async logEvent(eventData) {
         try {
             const query = `
@@ -16,7 +52,7 @@ class EventLoggerService {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       `;
             const values = [
-                crypto_1.default.randomUUID(),
+                crypto.randomUUID(),
                 eventData.event_type,
                 eventData.user_id || null,
                 eventData.username || null,
@@ -33,13 +69,18 @@ class EventLoggerService {
         }
         catch (error) {
             console.error('Error logging event:', error);
+            // Don't throw error to prevent breaking the main application flow
         }
     }
+    /**
+     * Get events with filtering and pagination
+     */
     static async getEvents(filters = {}) {
         try {
             let whereConditions = [];
             let queryParams = [];
             let paramIndex = 1;
+            // Build WHERE conditions
             if (filters.event_type) {
                 whereConditions.push(`event_type = $${paramIndex}`);
                 queryParams.push(filters.event_type);
@@ -76,9 +117,11 @@ class EventLoggerService {
                 paramIndex++;
             }
             const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+            // Get total count
             const countQuery = `SELECT COUNT(*) as total FROM event_logs ${whereClause}`;
             const countResult = await database_1.default.query(countQuery, queryParams);
             const total = parseInt(countResult.rows[0].total);
+            // Get events with pagination
             const limit = filters.limit || 50;
             const offset = filters.offset || 0;
             const eventsQuery = `
@@ -113,6 +156,9 @@ class EventLoggerService {
             throw error;
         }
     }
+    /**
+     * Get recent events for sync dashboard
+     */
     static async getRecentEvents(hours = 24, limit = 50) {
         try {
             const startDate = new Date();
@@ -147,10 +193,14 @@ class EventLoggerService {
             throw error;
         }
     }
+    /**
+     * Get event statistics
+     */
     static async getEventStats(days = 30) {
         try {
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - days);
+            // Total events
             const totalQuery = `
         SELECT COUNT(*) as total 
         FROM event_logs 
@@ -158,6 +208,7 @@ class EventLoggerService {
       `;
             const totalResult = await database_1.default.query(totalQuery, [startDate]);
             const total_events = parseInt(totalResult.rows[0].total);
+            // Events by type
             const typeQuery = `
         SELECT event_type, COUNT(*) as count
         FROM event_logs 
@@ -170,6 +221,7 @@ class EventLoggerService {
                 acc[row.event_type] = parseInt(row.count);
                 return acc;
             }, {});
+            // Events by severity
             const severityQuery = `
         SELECT severity, COUNT(*) as count
         FROM event_logs 
@@ -182,6 +234,7 @@ class EventLoggerService {
                 acc[row.severity] = parseInt(row.count);
                 return acc;
             }, {});
+            // Recent events
             const recentQuery = `
         SELECT 
           id, event_type, user_id, username, target_type, target_id,
@@ -218,11 +271,15 @@ class EventLoggerService {
             throw error;
         }
     }
+    /**
+     * Clean up old events based on retention policy
+     */
     static async cleanupOldEvents() {
         try {
             const client = await database_1.default.connect();
             try {
                 await client.query('BEGIN');
+                // Clean up events based on retention policy
                 for (const [eventType, retentionDays] of Object.entries(this.RETENTION_DAYS)) {
                     const cutoffDate = new Date();
                     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
@@ -248,6 +305,9 @@ class EventLoggerService {
             throw error;
         }
     }
+    /**
+     * Get available event types
+     */
     static async getEventTypes() {
         try {
             const query = `
@@ -263,6 +323,9 @@ class EventLoggerService {
             return [];
         }
     }
+    /**
+     * Get available actions for a specific event type
+     */
     static async getActionsForEventType(eventType) {
         try {
             const query = `
@@ -282,11 +345,10 @@ class EventLoggerService {
 }
 exports.EventLoggerService = EventLoggerService;
 EventLoggerService.RETENTION_DAYS = {
-    LOGIN_EVENTS: 90,
-    USER_EVENTS: 180,
-    PATIENT_EVENTS: 365,
-    SYSTEM_EVENTS: 30,
-    SECURITY_EVENTS: 365,
-    AUDIT_EVENTS: 2555
+    LOGIN_EVENTS: 90, // 3 months
+    USER_EVENTS: 180, // 6 months
+    PATIENT_EVENTS: 365, // 1 year
+    SYSTEM_EVENTS: 30, // 1 month
+    SECURITY_EVENTS: 365, // 1 year
+    AUDIT_EVENTS: 2555 // 7 years (compliance)
 };
-//# sourceMappingURL=EventLoggerService.js.map

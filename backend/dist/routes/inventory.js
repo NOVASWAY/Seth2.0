@@ -9,6 +9,7 @@ const Inventory_1 = require("../models/Inventory");
 const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
 const router = express_1.default.Router();
+// Get all inventory items
 router.get("/items", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.INVENTORY_MANAGER, types_1.UserRole.PHARMACIST]), [
     (0, express_validator_1.query)("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
     (0, express_validator_1.query)("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100"),
@@ -55,6 +56,7 @@ router.get("/items", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.User
         });
     }
 });
+// Create new inventory item (Inventory Manager only)
 router.post("/items", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.INVENTORY_MANAGER]), [
     (0, express_validator_1.body)("name").trim().isLength({ min: 1 }).withMessage("Name is required"),
     (0, express_validator_1.body)("category").trim().isLength({ min: 1 }).withMessage("Category is required"),
@@ -91,6 +93,7 @@ router.post("/items", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.Use
         });
     }
 });
+// Get item details with batches
 router.get("/items/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.INVENTORY_MANAGER, types_1.UserRole.PHARMACIST]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -119,6 +122,7 @@ router.get("/items/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.
         });
     }
 });
+// Create new batch (Inventory Manager only)
 router.post("/batches", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.INVENTORY_MANAGER]), [
     (0, express_validator_1.body)("inventoryItemId").isUUID().withMessage("Invalid inventory item ID"),
     (0, express_validator_1.body)("batchNumber").trim().isLength({ min: 1 }).withMessage("Batch number is required"),
@@ -142,6 +146,7 @@ router.post("/batches", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.U
             receivedBy: req.user.id,
         };
         const batch = await Inventory_1.InventoryModel.createBatch(batchData);
+        // Create receive movement
         await Inventory_1.InventoryModel.createMovement({
             inventoryItemId: batch.inventoryItemId,
             batchId: batch.id,
@@ -170,6 +175,7 @@ router.post("/batches", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.U
         });
     }
 });
+// Dispense from batch (Pharmacist only)
 router.post("/dispense", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.PHARMACIST]), [
     (0, express_validator_1.body)("batchId").isUUID().withMessage("Invalid batch ID"),
     (0, express_validator_1.body)("quantity").isInt({ min: 1 }).withMessage("Quantity must be positive"),
@@ -205,6 +211,7 @@ router.post("/dispense", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.
         });
     }
 });
+// Get stock levels and alerts
 router.get("/stock-levels", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.INVENTORY_MANAGER, types_1.UserRole.PHARMACIST]), async (req, res) => {
     try {
         const stockLevels = await Inventory_1.InventoryModel.getStockLevels();
@@ -220,6 +227,7 @@ router.get("/stock-levels", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types
         });
     }
 });
+// Get expiring batches
 router.get("/expiring", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.INVENTORY_MANAGER]), [(0, express_validator_1.query)("days").optional().isInt({ min: 1, max: 365 }).withMessage("Days must be between 1 and 365")], async (req, res) => {
     try {
         const errors = (0, express_validator_1.validationResult)(req);
@@ -244,6 +252,7 @@ router.get("/expiring", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.U
         });
     }
 });
+// Get available stock for prescriptions
 router.get("/available-stock", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.PHARMACIST]), [
     (0, express_validator_1.query)("search").optional().isString().withMessage("Search must be a string"),
     (0, express_validator_1.query)("category").optional().isString().withMessage("Category must be a string"),
@@ -273,4 +282,3 @@ router.get("/available-stock", (0, auth_1.authorize)([types_1.UserRole.ADMIN, ty
     }
 });
 exports.default = router;
-//# sourceMappingURL=inventory.js.map

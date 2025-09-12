@@ -4,6 +4,7 @@ exports.createError = exports.errorHandler = void 0;
 const errorHandler = (err, req, res, next) => {
     let error = { ...err };
     error.message = err.message;
+    // Log error
     console.error('Error:', {
         message: err.message,
         stack: err.stack,
@@ -13,6 +14,7 @@ const errorHandler = (err, req, res, next) => {
         userAgent: req.get('User-Agent'),
         timestamp: new Date().toISOString()
     });
+    // Default error
     const statusCode = error.statusCode || 500;
     const message = error.message || 'Server Error';
     res.status(statusCode).json({
@@ -31,4 +33,3 @@ const createError = (message, statusCode = 500) => {
     return error;
 };
 exports.createError = createError;
-//# sourceMappingURL=errorHandler.js.map

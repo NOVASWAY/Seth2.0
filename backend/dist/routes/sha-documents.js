@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -9,27 +42,28 @@ const database_1 = require("../config/database");
 const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
 const multer_1 = __importDefault(require("multer"));
-const path_1 = __importDefault(require("path"));
-const crypto_1 = __importDefault(require("crypto"));
-const fs_1 = __importDefault(require("fs"));
+const path = __importStar(require("path"));
+const crypto = __importStar(require("crypto"));
+const fs = __importStar(require("fs"));
 const router = (0, express_1.Router)();
+// Configure multer for file uploads
 const storage = multer_1.default.diskStorage({
     destination: (req, file, cb) => {
-        const uploadDir = path_1.default.join(process.cwd(), 'uploads', 'sha-documents');
-        if (!fs_1.default.existsSync(uploadDir)) {
-            fs_1.default.mkdirSync(uploadDir, { recursive: true });
+        const uploadDir = path.join(process.cwd(), 'uploads', 'sha-documents');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
         }
         cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-        const uniqueName = `${crypto_1.default.randomUUID()}-${Date.now()}${path_1.default.extname(file.originalname)}`;
+        const uniqueName = `${crypto.randomUUID()}-${Date.now()}${path.extname(file.originalname)}`;
         cb(null, uniqueName);
     }
 });
 const upload = (0, multer_1.default)({
     storage,
     limits: {
-        fileSize: 10 * 1024 * 1024,
+        fileSize: 10 * 1024 * 1024, // 10MB limit
     },
     fileFilter: (req, file, cb) => {
         const allowedTypes = [
@@ -47,7 +81,8 @@ const upload = (0, multer_1.default)({
         }
     }
 });
-router.post("/upload/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.DOCTOR]), upload.single('document'), [
+// Upload document for a claim
+router.post("/upload/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER]), upload.single('document'), [
     (0, express_validator_1.body)("documentType").isIn([
         'LAB_RESULTS', 'DISCHARGE_SUMMARY', 'PRESCRIPTION', 'REFERRAL_LETTER',
         'MEDICAL_REPORT', 'IMAGING_REPORT', 'CONSENT_FORM', 'INSURANCE_CARD',
@@ -72,15 +107,18 @@ router.post("/upload/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, t
         }
         const { claimId } = req.params;
         const { documentType, documentDescription = "", isRequired = false } = req.body;
+        // Verify claim exists
         const claimResult = await database_1.pool.query(`SELECT id FROM sha_claims WHERE id = $1`, [claimId]);
         if (claimResult.rows.length === 0) {
-            fs_1.default.unlinkSync(req.file.path);
+            // Clean up uploaded file
+            fs.unlinkSync(req.file.path);
             return res.status(404).json({
                 success: false,
                 message: "Claim not found"
             });
         }
-        const documentId = crypto_1.default.randomUUID();
+        // Save document record to database
+        const documentId = crypto.randomUUID();
         const result = await database_1.pool.query(`INSERT INTO sha_document_attachments (
           id, claim_id, document_type, document_name, document_description,
           file_path, file_size, mime_type, is_required, uploaded_by,
@@ -101,6 +139,7 @@ router.post("/upload/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, t
             new Date(),
             new Date()
         ]);
+        // Update claim documents count
         await database_1.pool.query(`UPDATE sha_claims 
          SET documents_attached = (
            SELECT COUNT(*) FROM sha_document_attachments 
@@ -116,8 +155,9 @@ router.post("/upload/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, t
     }
     catch (error) {
         console.error("Error uploading document:", error);
-        if (req.file && fs_1.default.existsSync(req.file.path)) {
-            fs_1.default.unlinkSync(req.file.path);
+        // Clean up uploaded file on error
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
         }
         res.status(500).json({
             success: false,
@@ -125,7 +165,8 @@ router.post("/upload/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, t
         });
     }
 });
-router.get("/claim/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.DOCTOR]), async (req, res) => {
+// Get documents for a claim
+router.get("/claim/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { claimId } = req.params;
         const result = await database_1.pool.query(`SELECT d.*,
@@ -150,7 +191,8 @@ router.get("/claim/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, typ
         });
     }
 });
-router.get("/:documentId/download", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER, types_1.UserRole.DOCTOR]), async (req, res) => {
+// Download document
+router.get("/:documentId/download", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { documentId } = req.params;
         const result = await database_1.pool.query(`SELECT * FROM sha_document_attachments WHERE id = $1`, [documentId]);
@@ -161,21 +203,25 @@ router.get("/:documentId/download", (0, auth_1.authorize)([types_1.UserRole.ADMI
             });
         }
         const document = result.rows[0];
-        if (!fs_1.default.existsSync(document.file_path)) {
+        // Check if file exists
+        if (!fs.existsSync(document.file_path)) {
             return res.status(404).json({
                 success: false,
                 message: "Document file not found on disk"
             });
         }
+        // Update access tracking
         await database_1.pool.query(`UPDATE sha_document_attachments 
          SET access_count = access_count + 1,
              last_accessed_at = CURRENT_TIMESTAMP,
              last_accessed_by = $1
          WHERE id = $2`, [req.user.id, documentId]);
+        // Set appropriate headers
         res.setHeader('Content-Type', document.mime_type);
         res.setHeader('Content-Disposition', `attachment; filename="${document.document_name}"`);
         res.setHeader('Content-Length', document.file_size);
-        const fileStream = fs_1.default.createReadStream(document.file_path);
+        // Stream file
+        const fileStream = fs.createReadStream(document.file_path);
         fileStream.pipe(res);
     }
     catch (error) {
@@ -186,6 +232,7 @@ router.get("/:documentId/download", (0, auth_1.authorize)([types_1.UserRole.ADMI
         });
     }
 });
+// Update document details
 router.patch("/:documentId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER]), [
     (0, express_validator_1.body)("documentType").optional().isIn([
         'LAB_RESULTS', 'DISCHARGE_SUMMARY', 'PRESCRIPTION', 'REFERRAL_LETTER',
@@ -208,6 +255,7 @@ router.patch("/:documentId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, type
         }
         const { documentId } = req.params;
         const updateData = req.body;
+        // Check if document exists
         const existingResult = await database_1.pool.query(`SELECT * FROM sha_document_attachments WHERE id = $1`, [documentId]);
         if (existingResult.rows.length === 0) {
             return res.status(404).json({
@@ -215,6 +263,7 @@ router.patch("/:documentId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, type
                 message: "Document not found"
             });
         }
+        // Build update query dynamically
         const updateFields = [];
         const values = [];
         let paramCount = 1;
@@ -251,6 +300,7 @@ router.patch("/:documentId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, type
         });
     }
 });
+// Delete document
 router.delete("/:documentId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { documentId } = req.params;
@@ -262,10 +312,13 @@ router.delete("/:documentId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, typ
             });
         }
         const document = result.rows[0];
-        if (fs_1.default.existsSync(document.file_path)) {
-            fs_1.default.unlinkSync(document.file_path);
+        // Delete file from disk
+        if (fs.existsSync(document.file_path)) {
+            fs.unlinkSync(document.file_path);
         }
+        // Delete from database
         await database_1.pool.query(`DELETE FROM sha_document_attachments WHERE id = $1`, [documentId]);
+        // Update claim documents count
         await database_1.pool.query(`UPDATE sha_claims 
          SET documents_attached = (
            SELECT COUNT(*) FROM sha_document_attachments 
@@ -286,9 +339,11 @@ router.delete("/:documentId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, typ
         });
     }
 });
+// Get required documents checklist for a claim
 router.get("/checklist/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.CLAIMS_MANAGER]), async (req, res) => {
     try {
         const { claimId } = req.params;
+        // Get claim details
         const claimResult = await database_1.pool.query(`SELECT c.*, 
                 ci.service_type,
                 COUNT(DISTINCT ci.id) as service_count
@@ -303,8 +358,11 @@ router.get("/checklist/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN,
             });
         }
         const claim = claimResult.rows[0];
+        // Define required documents based on service types and encounter type
         const requiredDocuments = [];
+        // Always required
         requiredDocuments.push({ type: 'INSURANCE_CARD', description: 'Patient SHA insurance card copy', required: true }, { type: 'IDENTIFICATION', description: 'Patient national ID copy', required: true });
+        // Service-specific requirements
         if (claim.service_type?.includes('LABORATORY')) {
             requiredDocuments.push({ type: 'LAB_RESULTS', description: 'Laboratory test results', required: true });
         }
@@ -317,6 +375,7 @@ router.get("/checklist/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN,
         if (claim.service_type?.includes('PROCEDURE')) {
             requiredDocuments.push({ type: 'CONSENT_FORM', description: 'Procedure consent form', required: true });
         }
+        // Get uploaded documents
         const uploadedResult = await database_1.pool.query(`SELECT document_type, COUNT(*) as count,
                 BOOL_AND(compliance_verified) as all_verified
          FROM sha_document_attachments 
@@ -329,6 +388,7 @@ router.get("/checklist/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN,
             };
             return acc;
         }, {});
+        // Build checklist
         const checklist = requiredDocuments.map(doc => ({
             ...doc,
             uploaded: uploadedDocs[doc.type]?.count || 0,
@@ -360,6 +420,7 @@ router.get("/checklist/:claimId", (0, auth_1.authorize)([types_1.UserRole.ADMIN,
         });
     }
 });
+// Bulk upload documents for multiple claims
 router.post("/bulk-upload", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLAIMS_MANAGER]), upload.array('documents', 10), [
     (0, express_validator_1.body)("claimMappings").isArray().withMessage("Claim mappings must be an array"),
     (0, express_validator_1.body)("documentType").isIn([
@@ -389,11 +450,13 @@ router.post("/bulk-upload", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types
             const file = files[i];
             const claimId = claimMappings[i]?.claimId;
             if (!claimId) {
-                fs_1.default.unlinkSync(file.path);
+                // Clean up file
+                fs.unlinkSync(file.path);
                 continue;
             }
             try {
-                const documentId = crypto_1.default.randomUUID();
+                // Save document record
+                const documentId = crypto.randomUUID();
                 const result = await database_1.pool.query(`INSERT INTO sha_document_attachments (
               id, claim_id, document_type, document_name, file_path,
               file_size, mime_type, uploaded_by, uploaded_at,
@@ -420,7 +483,8 @@ router.post("/bulk-upload", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types
                 });
             }
             catch (error) {
-                fs_1.default.unlinkSync(file.path);
+                // Clean up file on error
+                fs.unlinkSync(file.path);
                 results.push({
                     success: false,
                     claim_id: claimId,
@@ -437,10 +501,11 @@ router.post("/bulk-upload", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types
     }
     catch (error) {
         console.error("Error in bulk upload:", error);
+        // Clean up uploaded files on error
         if (req.files) {
             req.files.forEach(file => {
-                if (fs_1.default.existsSync(file.path)) {
-                    fs_1.default.unlinkSync(file.path);
+                if (fs.existsSync(file.path)) {
+                    fs.unlinkSync(file.path);
                 }
             });
         }
@@ -451,4 +516,3 @@ router.post("/bulk-upload", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types
     }
 });
 exports.default = router;
-//# sourceMappingURL=sha-documents.js.map

@@ -5,7 +5,7 @@ import { authorize } from "../middleware/auth"
 import { UserRole } from "../types"
 import { AuthenticatedRequest } from "../types/auth"
 import { AutoInvoiceService } from "../services/AutoInvoiceService"
-import crypto from "crypto"
+import * as crypto from "crypto"
 
 const router = Router()
 const autoInvoiceService = new AutoInvoiceService()

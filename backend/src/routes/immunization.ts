@@ -4,6 +4,7 @@ import { ImmunizationModel } from "../models/Immunization"
 import { authenticate, authorize } from "../middleware/auth"
 import { auditLogger } from "../middleware/auditLogger"
 import type { AuthenticatedRequest } from "../types"
+import { UserRole } from "../types"
 
 const router = express.Router()
 
@@ -140,7 +141,7 @@ router.get("/patients/:patientId/immunizations",
 // Create patient immunization
 router.post("/patients/:patientId/immunizations",
   authenticate,
-  authorize(["NURSE", "CLINICAL_OFFICER", "ADMIN"]),
+  authorize([UserRole.NURSE, UserRole.CLINICAL_OFFICER, UserRole.ADMIN]),
   auditLogger,
   param("patientId").isUUID().withMessage("Invalid patient ID"),
   body("vaccineId").isUUID().withMessage("Invalid vaccine ID"),
@@ -192,7 +193,7 @@ router.post("/patients/:patientId/immunizations",
 // Update patient immunization
 router.put("/immunizations/:immunizationId",
   authenticate,
-  authorize(["NURSE", "CLINICAL_OFFICER", "ADMIN"]),
+  authorize([UserRole.NURSE, UserRole.CLINICAL_OFFICER, UserRole.ADMIN]),
   auditLogger,
   param("immunizationId").isUUID().withMessage("Invalid immunization ID"),
   body("immunizationDate").optional().isISO8601().withMessage("Invalid immunization date"),
@@ -244,7 +245,7 @@ router.put("/immunizations/:immunizationId",
 // Delete patient immunization
 router.delete("/immunizations/:immunizationId",
   authenticate,
-  authorize(["NURSE", "CLINICAL_OFFICER", "ADMIN"]),
+  authorize([UserRole.NURSE, UserRole.CLINICAL_OFFICER, UserRole.ADMIN]),
   auditLogger,
   param("immunizationId").isUUID().withMessage("Invalid immunization ID"),
   async (req: AuthenticatedRequest, res) => {

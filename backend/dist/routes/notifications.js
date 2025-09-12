@@ -10,6 +10,7 @@ const auth_1 = require("../middleware/auth");
 const types_1 = require("../types");
 const WebSocketService_1 = require("../services/WebSocketService");
 const router = express_1.default.Router();
+// Get user notifications with filtering and pagination
 router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), [
     (0, express_validator_1.query)("is_read").optional().isBoolean(),
     (0, express_validator_1.query)("type").optional().isIn(["patient_assignment", "prescription_update", "lab_result", "payment_received", "visit_update", "system_alert", "sync_event"]),
@@ -53,6 +54,7 @@ router.get("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.
         });
     }
 });
+// Get notification statistics
 router.get("/stats", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const stats = await Notification_1.NotificationModel.getNotificationStats(req.user.id);
@@ -69,6 +71,7 @@ router.get("/stats", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.User
         });
     }
 });
+// Get notification by ID
 router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -79,6 +82,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
                 message: "Notification not found",
             });
         }
+        // Check if user owns this notification
         if (notification.user_id !== req.user.id && req.user.role !== types_1.UserRole.ADMIN) {
             return res.status(403).json({
                 success: false,
@@ -98,6 +102,7 @@ router.get("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRo
         });
     }
 });
+// Mark notification as read
 router.patch("/:id/read", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -108,6 +113,7 @@ router.patch("/:id/read", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1
                 message: "Notification not found",
             });
         }
+        // Check if user owns this notification
         if (notification.user_id !== req.user.id && req.user.role !== types_1.UserRole.ADMIN) {
             return res.status(403).json({
                 success: false,
@@ -129,6 +135,7 @@ router.patch("/:id/read", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1
         });
     }
 });
+// Mark all notifications as read
 router.patch("/read-all", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const count = await Notification_1.NotificationModel.markAllAsRead(req.user.id);
@@ -146,6 +153,7 @@ router.patch("/read-all", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1
         });
     }
 });
+// Delete notification
 router.delete("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.UserRole.CLINICAL_OFFICER, types_1.UserRole.NURSE, types_1.UserRole.PHARMACIST, types_1.UserRole.CASHIER, types_1.UserRole.RECEPTIONIST]), async (req, res) => {
     try {
         const { id } = req.params;
@@ -156,6 +164,7 @@ router.delete("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.Use
                 message: "Notification not found",
             });
         }
+        // Check if user owns this notification
         if (notification.user_id !== req.user.id && req.user.role !== types_1.UserRole.ADMIN) {
             return res.status(403).json({
                 success: false,
@@ -182,6 +191,7 @@ router.delete("/:id", (0, auth_1.authorize)([types_1.UserRole.ADMIN, types_1.Use
         });
     }
 });
+// Create notification (admin only)
 router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { user_id, type, title, message, data, priority } = req.body;
@@ -193,6 +203,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, re
             data,
             priority: priority || 'medium'
         });
+        // Send real-time notification via WebSocket
         const wsService = (0, WebSocketService_1.getWebSocketService)();
         if (wsService) {
             wsService.notifyUser(user_id, {
@@ -217,6 +228,7 @@ router.post("/", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, re
         });
     }
 });
+// Cleanup old notifications (admin only)
 router.delete("/cleanup/old", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), async (req, res) => {
     try {
         const { daysOld = 30 } = req.body;
@@ -236,4 +248,3 @@ router.delete("/cleanup/old", (0, auth_1.authorize)([types_1.UserRole.ADMIN]), a
     }
 });
 exports.default = router;
-//# sourceMappingURL=notifications.js.map

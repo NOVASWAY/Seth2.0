@@ -11,9 +11,9 @@ var UserRole;
     UserRole["INVENTORY_MANAGER"] = "INVENTORY_MANAGER";
     UserRole["CLAIMS_MANAGER"] = "CLAIMS_MANAGER";
     UserRole["LAB_TECHNICIAN"] = "LAB_TECHNICIAN";
-    UserRole["DOCTOR"] = "DOCTOR";
     UserRole["CASHIER"] = "CASHIER";
 })(UserRole || (exports.UserRole = UserRole = {}));
+// Visit types
 var VisitStatus;
 (function (VisitStatus) {
     VisitStatus["SCHEDULED"] = "SCHEDULED";
@@ -29,4 +29,3 @@ var VisitStatus;
     VisitStatus["WAITING_LAB"] = "WAITING_LAB";
     VisitStatus["LAB_RESULTS_READY"] = "LAB_RESULTS_READY";
 })(VisitStatus || (exports.VisitStatus = VisitStatus = {}));
-//# sourceMappingURL=index.js.map

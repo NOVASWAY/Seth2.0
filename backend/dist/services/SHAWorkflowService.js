@@ -11,11 +11,15 @@ class SHAWorkflowService {
     constructor() {
         this.shaService = new SHAService_1.SHAService();
     }
+    /**
+     * Initialize the complete SHA claim processing workflow
+     */
     async initializeSHAWorkflow(claimId, initiatedBy) {
         const client = await database_1.pool.connect();
         try {
             await client.query("BEGIN");
             const workflowId = crypto_1.default.randomUUID();
+            // Create workflow instance
             await client.query(`INSERT INTO sha_workflow_instances (
           id, claim_id, workflow_type, current_step, overall_status,
           initiated_by, created_at, updated_at
@@ -29,6 +33,7 @@ class SHAWorkflowService {
                 new Date(),
                 new Date()
             ]);
+            // Create workflow steps
             const steps = this.getDefaultSHAWorkflowSteps();
             for (const step of steps) {
                 await client.query(`INSERT INTO sha_workflow_steps (
@@ -50,8 +55,10 @@ class SHAWorkflowService {
                     new Date()
                 ]);
             }
+            // Start the first step
             await this.startWorkflowStep(workflowId, 'claim_creation', initiatedBy, client);
             await client.query("COMMIT");
+            // Return the complete workflow instance
             return await this.getWorkflowInstance(workflowId);
         }
         catch (error) {
@@ -62,10 +69,14 @@ class SHAWorkflowService {
             client.release();
         }
     }
+    /**
+     * Complete a workflow step and advance to next step
+     */
     async completeWorkflowStep(workflowId, stepName, completedBy, notes, autoAdvance = true) {
         const client = await database_1.pool.connect();
         try {
             await client.query("BEGIN");
+            // Complete current step
             await client.query(`UPDATE sha_workflow_steps 
          SET status = 'completed',
              completed_by = $1,
@@ -74,19 +85,23 @@ class SHAWorkflowService {
              notes = $2,
              updated_at = CURRENT_TIMESTAMP
          WHERE workflow_id = $3 AND step_name = $4`, [completedBy, notes, workflowId, stepName]);
+            // Log step completion
             await this.logWorkflowActivity(workflowId, stepName, 'STEP_COMPLETED', completedBy, {
                 notes,
                 completed_at: new Date()
             }, client);
             if (autoAdvance) {
+                // Determine next step
                 const nextStep = await this.getNextWorkflowStep(workflowId, stepName, client);
                 if (nextStep) {
                     await this.startWorkflowStep(workflowId, nextStep.step_name, completedBy, client);
+                    // Update workflow current step
                     await client.query(`UPDATE sha_workflow_instances 
              SET current_step = $1, updated_at = CURRENT_TIMESTAMP
              WHERE id = $2`, [nextStep.step_name, workflowId]);
                 }
                 else {
+                    // No more steps - complete workflow
                     await client.query(`UPDATE sha_workflow_instances 
              SET overall_status = 'completed',
                  completed_at = CURRENT_TIMESTAMP,
@@ -109,6 +124,9 @@ class SHAWorkflowService {
             client.release();
         }
     }
+    /**
+     * Handle automated workflow steps
+     */
     async processAutomatedSteps(workflowId, triggeredBy) {
         const workflow = await this.getWorkflowInstance(workflowId);
         for (const step of workflow.steps) {
@@ -118,6 +136,7 @@ class SHAWorkflowService {
                 }
                 catch (error) {
                     console.error(`Failed to execute automated step ${step.step_name}:`, error);
+                    // Mark step as failed and stop automation
                     await database_1.pool.query(`UPDATE sha_workflow_steps 
              SET status = 'failed',
                  notes = $1,
@@ -128,6 +147,9 @@ class SHAWorkflowService {
             }
         }
     }
+    /**
+     * Get workflow instance with all steps
+     */
     async getWorkflowInstance(workflowId) {
         const workflowResult = await database_1.pool.query(`SELECT wi.*, c.claim_number, p.first_name || ' ' || p.last_name as patient_name
        FROM sha_workflow_instances wi
@@ -138,6 +160,7 @@ class SHAWorkflowService {
             throw new Error("Workflow instance not found");
         }
         const workflow = workflowResult.rows[0];
+        // Get workflow steps
         const stepsResult = await database_1.pool.query(`SELECT ws.*, u1.username as assigned_to_name, u2.username as completed_by_name
        FROM sha_workflow_steps ws
        LEFT JOIN users u1 ON ws.assigned_to = u1.id
@@ -151,6 +174,9 @@ class SHAWorkflowService {
         }));
         return workflow;
     }
+    /**
+     * Get workflows by status or claim
+     */
     async getWorkflows(filters) {
         let whereClause = "WHERE 1=1";
         const params = [];
@@ -183,6 +209,7 @@ class SHAWorkflowService {
       ${whereClause}
       ORDER BY wi.created_at DESC
     `, params);
+        // Get steps for each workflow (simplified for list view)
         for (const workflow of result.rows) {
             const stepsResult = await database_1.pool.query(`SELECT step_name, status, step_order FROM sha_workflow_steps 
          WHERE workflow_id = $1 ORDER BY step_order`, [workflow.id]);
@@ -190,6 +217,9 @@ class SHAWorkflowService {
         }
         return result.rows;
     }
+    /**
+     * Get workflow statistics
+     */
     async getWorkflowStatistics(dateFrom, dateTo) {
         let dateFilter = "";
         const params = [];
@@ -230,6 +260,9 @@ class SHAWorkflowService {
             }
         };
     }
+    /**
+     * Private helper methods
+     */
     getDefaultSHAWorkflowSteps() {
         return [
             {
@@ -336,6 +369,7 @@ class SHAWorkflowService {
         }, client);
     }
     async getNextWorkflowStep(workflowId, completedStepName, client) {
+        // Get the next step in order that has prerequisites met
         const result = await client.query(`SELECT ws.*, 
               (SELECT COUNT(*) FROM sha_workflow_steps ws2 
                WHERE ws2.workflow_id = ws.workflow_id 
@@ -373,7 +407,9 @@ class SHAWorkflowService {
         await this.completeWorkflowStep(workflowId, step.step_name, 'system', 'Automated execution completed');
     }
     async executeComplianceVerification(workflowId) {
+        // Get workflow claim and check compliance
         const workflow = await this.getWorkflowInstance(workflowId);
+        // Verify all required documents are attached
         const docResult = await database_1.pool.query(`SELECT COUNT(*) as required_docs,
               COUNT(CASE WHEN compliance_verified THEN 1 END) as verified_docs
        FROM sha_document_attachments 
@@ -382,6 +418,7 @@ class SHAWorkflowService {
         if (Number.parseInt(required_docs) === 0 || Number.parseInt(verified_docs) < Number.parseInt(required_docs)) {
             throw new Error("Not all required documents are uploaded and verified");
         }
+        // Update claim compliance status
         await database_1.pool.query(`UPDATE sha_claims 
        SET compliance_status = 'verified',
            last_reviewed_at = CURRENT_TIMESTAMP
@@ -389,13 +426,17 @@ class SHAWorkflowService {
     }
     async executeInvoiceGeneration(workflowId) {
         const workflow = await this.getWorkflowInstance(workflowId);
+        // Generate invoice using SHA service
         const result = await this.shaService.generateInvoiceForClaim(workflow.claim_id, 'system');
+        // Update workflow with invoice ID
         await database_1.pool.query(`UPDATE sha_workflow_instances 
        SET invoice_id = $1, updated_at = CURRENT_TIMESTAMP
        WHERE id = $2`, [result.invoice.id, workflowId]);
     }
     async executePaymentTracking(workflowId) {
+        // Set up automated payment tracking
         const workflow = await this.getWorkflowInstance(workflowId);
+        // Create payment tracking record
         await database_1.pool.query(`INSERT INTO sha_payment_tracking (
         id, claim_id, invoice_id, tracking_started_at, 
         auto_check_enabled, next_check_at, created_at
@@ -405,7 +446,7 @@ class SHAWorkflowService {
             workflow.invoice_id,
             new Date(),
             true,
-            new Date(Date.now() + 24 * 60 * 60 * 1000),
+            new Date(Date.now() + 24 * 60 * 60 * 1000), // Check again tomorrow
             new Date()
         ]);
     }
@@ -426,4 +467,3 @@ class SHAWorkflowService {
     }
 }
 exports.SHAWorkflowService = SHAWorkflowService;
-//# sourceMappingURL=SHAWorkflowService.js.map
