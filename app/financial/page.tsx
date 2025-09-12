@@ -109,7 +109,7 @@ export default function FinancialPage() {
           today_revenue: dashboardData.data.today_revenue || 0,
           today_payments: dashboardData.data.recent_transactions?.length || 0,
           today_sales: 0, // This would need to be calculated separately
-          pending_receivables: Object.values(dashboardData.data.receivables || {}).reduce((sum: number, val: any) => sum + (val || 0), 0),
+          pending_receivables: (Object.values(dashboardData.data.receivables || {}) as number[]).reduce((sum: number, val: number) => sum + val, 0),
           total_transactions: dashboardData.data.recent_transactions?.length || 0,
           receivables: dashboardData.data.receivables || {
             current: 0,
@@ -159,7 +159,7 @@ export default function FinancialPage() {
   }
 
   return (
-    <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.PHARMACIST, UserRole.RECEPTIONIST, UserRole.CLAIMS_MANAGER]}>
+    <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.PHARMACIST]}>
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex">
         <Sidebar
           user={user}

@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useAuthStore } from "../../lib/auth"
 import { ProtectedRoute } from "../../components/auth/ProtectedRoute"
 import { UserRole } from "../../types"
 import Sidebar from "../../components/dashboard/Sidebar"
+import { useApiClient } from "../../lib/api-client"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
 import { Badge } from "../../components/ui/badge"
@@ -65,8 +67,10 @@ interface LabRequest {
 }
 
 export default function LabTestsPage() {
+  const router = useRouter()
   const { accessToken } = useAuthStore()
   const { toast } = useToast()
+  const apiClient = useApiClient()
   const [labTests, setLabTests] = useState<LabTest[]>([])
   const [labRequests, setLabRequests] = useState<LabRequest[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -123,48 +127,39 @@ export default function LabTestsPage() {
   ]
 
   useEffect(() => {
+    // Only fetch data if we have a valid access token
     if (accessToken) {
+      console.log("Access token found, fetching lab data...")
       fetchLabTests()
       fetchLabRequests()
+    } else {
+      // If no access token, redirect to login
+      console.log("No access token found, redirecting to login")
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to access lab tests",
+        variant: "destructive"
+      })
+      router.push('/login')
     }
-  }, [accessToken])
+  }, [accessToken, router, toast])
 
   const fetchLabTests = async () => {
     try {
       setIsLoading(true)
       
-      // Check if user is authenticated
-      if (!accessToken) {
-        console.error("No access token available")
+      const response = await apiClient.get<LabTest[]>('/lab-tests')
+      
+      if (response.success) {
+        setLabTests(response.data || [])
+      } else {
+        console.error("Error fetching lab tests:", response.message)
         toast({
-          title: "Authentication Error",
-          description: "Please log in to access lab tests data.",
+          title: "Error",
+          description: response.message || "Failed to fetch lab tests",
           variant: "destructive",
         })
-        return
       }
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/lab-tests`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json"
-        }
-      })
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          toast({
-            title: "Authentication Error",
-            description: "Your session has expired. Please log in again.",
-            variant: "destructive",
-          })
-          return
-        }
-        throw new Error(`Failed to fetch lab tests: ${response.status}`)
-      }
-
-      const data = await response.json()
-      setLabTests(data.labTests || [])
     } catch (error) {
       console.error("Error fetching lab tests:", error)
       toast({
@@ -179,27 +174,25 @@ export default function LabTestsPage() {
 
   const fetchLabRequests = async () => {
     try {
-      // Check if user is authenticated
-      if (!accessToken) {
-        console.error("No access token available for lab requests")
-        return
-      }
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/lab-requests`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json"
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setLabRequests(data.labRequests || [])
-      } else if (response.status === 401) {
-        console.error("Authentication error when fetching lab requests")
+      const response = await apiClient.get<LabRequest[]>('/lab-requests')
+      
+      if (response.success) {
+        setLabRequests(response.data || [])
+      } else {
+        console.error("Error fetching lab requests:", response.message)
+        toast({
+          title: "Error",
+          description: response.message || "Failed to fetch lab requests",
+          variant: "destructive"
+        })
       }
     } catch (error) {
       console.error("Error fetching lab requests:", error)
+      toast({
+        title: "Error",
+        description: "Failed to fetch lab requests. Please try again.",
+        variant: "destructive"
+      })
     }
   }
 
@@ -449,10 +442,10 @@ Lab Test Details:
 
   return (
     <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.NURSE, UserRole.LAB_TECHNICIAN]}>
-      <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
         <Sidebar />
         
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col">
           <div className="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700">
             <div className="px-6 py-4">
               <div className="flex items-center justify-between">

@@ -534,10 +534,10 @@ export default function SHAPage() {
 
   return (
     <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER, UserRole.RECEPTIONIST]}>
-      <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
         <Sidebar />
         
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col">
           <div className="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700">
             <div className="px-6 py-4">
               <div className="flex items-center justify-between">
@@ -737,7 +737,7 @@ export default function SHAPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-auto p-6">
+          <div className="flex-1 p-6">
             {/* Filters */}
             <div className="mb-6 flex flex-col sm:flex-row gap-4">
               <div className="flex-1">

@@ -11,7 +11,7 @@ const autocompleteService = new ClinicalAutocompleteService()
 // Search diagnosis codes (ICD-10)
 router.get(
   "/diagnosis",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.DOCTOR]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER]),
   [
     query("q").isLength({ min: 1 }).withMessage("Search term is required"),
     query("limit").optional().isInt({ min: 1, max: 50 }),
@@ -77,7 +77,7 @@ router.get(
 // Search medications
 router.get(
   "/medications",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.DOCTOR, UserRole.PHARMACIST]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.PHARMACIST]),
   [
     query("q").isLength({ min: 1 }).withMessage("Search term is required"),
     query("limit").optional().isInt({ min: 1, max: 50 }),
@@ -140,7 +140,7 @@ router.get(
 // Search lab tests
 router.get(
   "/lab-tests",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.DOCTOR, UserRole.LAB_TECHNICIAN]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.LAB_TECHNICIAN]),
   [
     query("q").isLength({ min: 1 }).withMessage("Search term is required"),
     query("limit").optional().isInt({ min: 1, max: 50 }),
@@ -203,7 +203,7 @@ router.get(
 // Search procedures
 router.get(
   "/procedures",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.DOCTOR]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER]),
   [
     query("q").isLength({ min: 1 }).withMessage("Search term is required"),
     query("limit").optional().isInt({ min: 1, max: 50 }),
@@ -266,7 +266,7 @@ router.get(
 // Get user favorites
 router.get(
   "/favorites/:itemType",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.DOCTOR, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN]),
   [
     query("limit").optional().isInt({ min: 1, max: 20 })
   ],
@@ -307,7 +307,7 @@ router.get(
 // Toggle favorite status
 router.post(
   "/favorites",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.DOCTOR, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN]),
   [
     body("itemType").isIn(['DIAGNOSIS', 'MEDICATION', 'LAB_TEST', 'PROCEDURE', 'SYMPTOM']).withMessage("Invalid item type"),
     body("itemId").isUUID().withMessage("Valid item ID is required"),
@@ -354,7 +354,7 @@ router.post(
 // Get categories for a clinical data type
 router.get(
   "/categories/:itemType",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.DOCTOR, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { itemType } = req.params
@@ -389,7 +389,7 @@ router.get(
 // Get search suggestions
 router.get(
   "/suggestions/:itemType",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.DOCTOR, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN]),
   [
     query("limit").optional().isInt({ min: 1, max: 20 })
   ],
@@ -429,7 +429,7 @@ router.get(
 // Record selection (for analytics)
 router.post(
   "/selection",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.DOCTOR, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN]),
   [
     body("searchTerm").notEmpty().withMessage("Search term is required"),
     body("searchType").isIn(['DIAGNOSIS', 'MEDICATION', 'LAB_TEST', 'PROCEDURE', 'SYMPTOM']).withMessage("Invalid search type"),

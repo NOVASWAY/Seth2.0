@@ -31,8 +31,8 @@ const patientEditSchema = z.object({
   area: z.string().optional(),
   nextOfKin: z.string().optional(),
   nextOfKinPhone: z.string().optional(),
-  insuranceType: z.enum(["SHA", "PRIVATE", "CASH"]),
-  insuranceNumber: z.string().optional(),
+  paymentMethod: z.enum(["CASH", "MPESA", "SHA", "PRIVATE"]),
+  paymentReference: z.string().optional(),
 })
 
 type PatientEditData = z.infer<typeof patientEditSchema>
@@ -49,8 +49,8 @@ interface Patient {
   area?: string
   next_of_kin?: string
   next_of_kin_phone?: string
-  insurance_type: 'SHA' | 'PRIVATE' | 'CASH'
-  insurance_number?: string
+  payment_method: 'CASH' | 'MPESA' | 'SHA' | 'PRIVATE'
+  payment_reference?: string
   created_at: string
   updated_at: string
 }
@@ -87,7 +87,7 @@ export default function PatientEditPage() {
     resolver: zodResolver(patientEditSchema),
   })
 
-  const insuranceType = watch("insuranceType")
+  const paymentMethod = watch("paymentMethod")
 
   // Load patient data
   useEffect(() => {
@@ -118,8 +118,8 @@ export default function PatientEditPage() {
         setValue("area", patientData.area || "")
         setValue("nextOfKin", patientData.next_of_kin || "")
         setValue("nextOfKinPhone", patientData.next_of_kin_phone || "")
-        setValue("insuranceType", patientData.insurance_type || "CASH")
-        setValue("insuranceNumber", patientData.insurance_number || "")
+        setValue("paymentMethod", patientData.payment_method || "CASH")
+        setValue("paymentReference", patientData.payment_reference || "")
 
       } catch (err: any) {
         setError(err.message || "Failed to load patient")
@@ -150,10 +150,20 @@ export default function PatientEditPage() {
 
         if (response.ok) {
           const result = await response.json()
-          setSystemUsers(result.data || [])
+          // Ensure we always set an array
+          if (Array.isArray(result.data)) {
+            setSystemUsers(result.data)
+          } else {
+            console.warn("System users data is not an array:", result.data)
+            setSystemUsers([])
+          }
+        } else {
+          console.error("Failed to fetch system users:", response.status)
+          setSystemUsers([])
         }
       } catch (err) {
         console.error("Failed to load system users:", err)
+        setSystemUsers([])
       }
     }
 
@@ -176,13 +186,22 @@ export default function PatientEditPage() {
 
         if (response.ok) {
           const result = await response.json()
-          const activeAssignments = result.data.filter((assignment: any) => 
-            assignment.status === 'ACTIVE'
-          )
-          setAssignedUsers(activeAssignments.map((assignment: any) => assignment.assigned_to_user_id))
+          if (Array.isArray(result.data)) {
+            const activeAssignments = result.data.filter((assignment: any) => 
+              assignment.status === 'ACTIVE'
+            )
+            setAssignedUsers(activeAssignments.map((assignment: any) => assignment.assigned_to_user_id))
+          } else {
+            console.warn("Assignments data is not an array:", result.data)
+            setAssignedUsers([])
+          }
+        } else {
+          console.error("Failed to fetch assignments:", response.status)
+          setAssignedUsers([])
         }
       } catch (err) {
         console.error("Failed to load assignments:", err)
+        setAssignedUsers([])
       }
     }
 
@@ -212,8 +231,8 @@ export default function PatientEditPage() {
           area: data.area,
           nextOfKin: data.nextOfKin,
           nextOfKinPhone: data.nextOfKinPhone,
-          insuranceType: data.insuranceType,
-          insuranceNumber: data.insuranceNumber,
+          paymentMethod: data.paymentMethod,
+          paymentReference: data.paymentReference,
         }),
       })
 
@@ -450,18 +469,27 @@ export default function PatientEditPage() {
                           value={watch("gender")}
                           onValueChange={(value) => setValue("gender", value as any)}
                         >
-                          <SelectTrigger className="border-2 border-blue-300 dark:border-blue-600 shadow-md h-12">
+                          <SelectTrigger className="border-2 border-blue-300 dark:border-blue-600 shadow-md h-12 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100">
                             <SelectValue placeholder="Select gender" />
                           </SelectTrigger>
-                          <SelectContent className="shadow-xl z-50 max-h-60">
-                            <SelectItem value="MALE" className="hover:bg-blue-100 font-medium py-3">
-                              Male
+                          <SelectContent className="shadow-2xl z-50 max-h-60 bg-white dark:bg-slate-800 border-2 border-blue-200 dark:border-blue-700">
+                            <SelectItem 
+                              value="MALE" 
+                              className="hover:bg-blue-100 dark:hover:bg-blue-900 font-medium py-3 text-gray-900 dark:text-slate-100 cursor-pointer"
+                            >
+                              👨 Male
                             </SelectItem>
-                            <SelectItem value="FEMALE" className="hover:bg-blue-100 font-medium py-3">
-                              Female
+                            <SelectItem 
+                              value="FEMALE" 
+                              className="hover:bg-pink-100 dark:hover:bg-pink-900 font-medium py-3 text-gray-900 dark:text-slate-100 cursor-pointer"
+                            >
+                              👩 Female
                             </SelectItem>
-                            <SelectItem value="OTHER" className="hover:bg-blue-100 font-medium py-3">
-                              Other
+                            <SelectItem 
+                              value="OTHER" 
+                              className="hover:bg-purple-100 dark:hover:bg-purple-900 font-medium py-3 text-gray-900 dark:text-slate-100 cursor-pointer"
+                            >
+                              🏳️‍⚧️ Other
                             </SelectItem>
                           </SelectContent>
                         </Select>
@@ -514,49 +542,94 @@ export default function PatientEditPage() {
                       </div>
                     </div>
 
-                    {/* Insurance Information */}
+                    {/* Payment Method Information */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium flex items-center gap-2">
                         <Shield className="h-4 w-4" />
-                        Insurance Information
+                        Form of Payment
                       </h3>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <Label htmlFor="insuranceType">Insurance Type *</Label>
+                          <Label htmlFor="paymentMethod">Form of Payment *</Label>
                           <Select
-                            value={watch("insuranceType")}
-                            onValueChange={(value) => setValue("insuranceType", value as any)}
+                            value={watch("paymentMethod")}
+                            onValueChange={(value) => setValue("paymentMethod", value as any)}
                           >
-                            <SelectTrigger className="border-2 border-blue-300 dark:border-blue-600 shadow-md h-12">
-                              <SelectValue placeholder="Select insurance type" />
+                            <SelectTrigger className="border-2 border-blue-300 dark:border-blue-600 shadow-md h-12 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100">
+                              <SelectValue placeholder="Select form of payment" />
                             </SelectTrigger>
-                            <SelectContent className="shadow-xl z-50 max-h-60">
-                              <SelectItem value="CASH" className="hover:bg-blue-100 font-medium py-3">
-                                Cash Payment
+                            <SelectContent className="shadow-2xl z-50 max-h-60 bg-white dark:bg-slate-800 border-2 border-blue-200 dark:border-blue-700">
+                              <SelectItem 
+                                value="CASH" 
+                                className="hover:bg-blue-100 dark:hover:bg-blue-900 font-medium py-3 text-gray-900 dark:text-slate-100 cursor-pointer"
+                              >
+                                💵 Cash Payment
                               </SelectItem>
-                              <SelectItem value="SHA" className="hover:bg-blue-100 font-medium py-3">
-                                SHA (Social Health Authority)
+                              <SelectItem 
+                                value="MPESA" 
+                                className="hover:bg-green-100 dark:hover:bg-green-900 font-medium py-3 text-gray-900 dark:text-slate-100 cursor-pointer"
+                              >
+                                📱 M-Pesa
                               </SelectItem>
-                              <SelectItem value="PRIVATE" className="hover:bg-blue-100 font-medium py-3">
-                                Private Insurance
+                              <SelectItem 
+                                value="SHA" 
+                                className="hover:bg-purple-100 dark:hover:bg-purple-900 font-medium py-3 text-gray-900 dark:text-slate-100 cursor-pointer"
+                              >
+                                🏥 SHA (Social Health Authority)
+                              </SelectItem>
+                              <SelectItem 
+                                value="PRIVATE" 
+                                className="hover:bg-orange-100 dark:hover:bg-orange-900 font-medium py-3 text-gray-900 dark:text-slate-100 cursor-pointer"
+                              >
+                                🛡️ Private Insurance
                               </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
 
-                        {(insuranceType === "SHA" || insuranceType === "PRIVATE") && (
+                        {(paymentMethod === "SHA" || paymentMethod === "PRIVATE" || paymentMethod === "MPESA") && (
                           <div className="space-y-2">
-                            <Label htmlFor="insuranceNumber">
-                              {insuranceType === "SHA" ? "SHA Beneficiary ID" : "Insurance Number"}
+                            <Label htmlFor="paymentReference">
+                              {paymentMethod === "SHA" 
+                                ? "SHA Beneficiary ID" 
+                                : paymentMethod === "PRIVATE" 
+                                ? "Insurance Number" 
+                                : "M-Pesa Transaction ID"
+                              }
                             </Label>
                             <Input
-                              id="insuranceNumber"
-                              {...register("insuranceNumber")}
-                              className="border-2 border-blue-300 dark:border-blue-600 shadow-md h-12"
+                              id="paymentReference"
+                              {...register("paymentReference")}
+                              placeholder={
+                                paymentMethod === "SHA" 
+                                  ? "Enter SHA Beneficiary ID" 
+                                  : paymentMethod === "PRIVATE" 
+                                  ? "Enter Insurance Number" 
+                                  : "Enter M-Pesa Transaction ID"
+                              }
+                              className="border-2 border-blue-300 dark:border-blue-600 shadow-md h-12 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                             />
                           </div>
                         )}
+                      </div>
+
+                      {/* Payment Method Change Notice */}
+                      <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0">
+                            <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+                              Payment Method Flexibility
+                            </h4>
+                            <p className="text-sm text-blue-700 dark:text-blue-300">
+                              Patients can use different payment methods for different services. 
+                              This form of payment can be changed at any time during billing or visit recording.
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -603,11 +676,11 @@ export default function PatientEditPage() {
                 <CardContent>
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {(systemUsers || []).map((systemUser) => (
+                      {Array.isArray(systemUsers) ? systemUsers.map((systemUser) => (
                         <div
                           key={systemUser.id}
                           className={`p-4 border-2 rounded-lg transition-all ${
-                            (assignedUsers || []).includes(systemUser.id)
+                            Array.isArray(assignedUsers) && assignedUsers.includes(systemUser.id)
                               ? "border-green-500 bg-green-50 dark:bg-green-900/20"
                               : "border-gray-200 dark:border-slate-700"
                           }`}
@@ -626,23 +699,28 @@ export default function PatientEditPage() {
                             </div>
                             <Button
                               size="sm"
-                              variant={(assignedUsers || []).includes(systemUser.id) ? "destructive" : "default"}
+                              variant={Array.isArray(assignedUsers) && assignedUsers.includes(systemUser.id) ? "destructive" : "default"}
                               onClick={() => handleUserAssignment(
                                 systemUser.id, 
-                                !(assignedUsers || []).includes(systemUser.id)
+                                !(Array.isArray(assignedUsers) && assignedUsers.includes(systemUser.id))
                               )}
                             >
-                              {(assignedUsers || []).includes(systemUser.id) ? "Remove" : "Assign"}
+                              {Array.isArray(assignedUsers) && assignedUsers.includes(systemUser.id) ? "Remove" : "Assign"}
                             </Button>
                           </div>
                         </div>
-                      ))}
+                      )) : (
+                        <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
+                          <Users className="h-8 w-8 mx-auto mb-2" />
+                          <p>No system users available</p>
+                        </div>
+                      )}
                     </div>
 
-                    {(assignedUsers || []).length > 0 && (
+                    {Array.isArray(assignedUsers) && assignedUsers.length > 0 && (
                       <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                         <p className="text-sm text-blue-700 dark:text-blue-300">
-                          <strong>Assigned to {(assignedUsers || []).length} user(s):</strong> This patient is currently assigned to system users for management and care coordination.
+                          <strong>Assigned to {assignedUsers.length} user(s):</strong> This patient is currently assigned to system users for management and care coordination.
                         </p>
                       </div>
                     )}

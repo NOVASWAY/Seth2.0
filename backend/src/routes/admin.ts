@@ -328,4 +328,77 @@ router.get(
   }
 )
 
+// Generate new password for user (Admin only)
+router.get(
+  "/staff/:id/password",
+  authorize([UserRole.ADMIN]),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params
+      
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "User ID is required"
+        })
+      }
+
+      const user = await UserModel.findById(id)
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        })
+      }
+
+      // Generate a new password
+      const newPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)
+      const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+      // Update the user's password
+      await UserModel.update(id, {
+        passwordHash: hashedPassword,
+        isLocked: false,
+        failedLoginAttempts: 0,
+        lastFailedLoginAt: null
+      })
+
+      // Log this sensitive action (optional - don't fail if audit logging fails)
+      try {
+        await AuditLogModel.create({
+          userId: req.user?.id,
+          action: "GENERATE_NEW_PASSWORD",
+          resource: "user",
+          resourceId: id,
+          details: {
+            targetUserId: id,
+            targetUsername: user.username
+          },
+          ipAddress: req.ip,
+          userAgent: req.get("User-Agent")
+        })
+      } catch (auditError) {
+        console.warn("Failed to log password generation action:", auditError)
+        // Continue with the main operation even if audit logging fails
+      }
+
+      res.json({
+        success: true,
+        message: "New password generated successfully",
+        data: {
+          password: newPassword, // Return the actual new password
+          username: user.username,
+          note: "This password has been set for the user. Please share it securely."
+        }
+      })
+    } catch (error) {
+      console.error("Error generating new password:", error)
+      res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      })
+    }
+  }
+)
+
 export default router

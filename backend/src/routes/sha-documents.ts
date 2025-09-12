@@ -52,7 +52,7 @@ const upload = multer({
 // Upload document for a claim
 router.post(
   "/upload/:claimId",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER, UserRole.DOCTOR]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER]),
   upload.single('document'),
   [
     body("documentType").isIn([
@@ -161,7 +161,7 @@ router.post(
 // Get documents for a claim
 router.get(
   "/claim/:claimId",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER, UserRole.DOCTOR]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { claimId } = req.params
@@ -197,7 +197,7 @@ router.get(
 // Download document
 router.get(
   "/:documentId/download",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER, UserRole.DOCTOR]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { documentId } = req.params

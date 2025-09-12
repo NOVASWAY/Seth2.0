@@ -109,7 +109,7 @@ export const getQuickActionsForRole = (userRole: string): QuickAction[] => {
       icon: "🏥",
       href: "/sha",
       color: "red",
-      roles: ["ADMIN", "CLINICAL_OFFICER", "CLAIMS_MANAGER", "DOCTOR", "RECEPTIONIST"]
+      roles: ["ADMIN", "CLINICAL_OFFICER", "CLAIMS_MANAGER", "RECEPTIONIST"]
     }
   ]
 

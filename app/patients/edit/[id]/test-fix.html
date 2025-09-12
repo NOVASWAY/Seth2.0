@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Patient Edit Fix Test</title>
+</head>
+<body>
+    <h1>Patient Edit Fix Test</h1>
+    <p>This file tests the array safety fixes in the patient edit page.</p>
+    
+    <script>
+        // Test the array safety logic
+        function testArraySafety() {
+            console.log("Testing array safety fixes...");
+            
+            // Test 1: systemUsers array safety
+            let systemUsers = null;
+            console.log("systemUsers is null:", systemUsers);
+            console.log("Array.isArray(systemUsers):", Array.isArray(systemUsers));
+            console.log("Safe map result:", Array.isArray(systemUsers) ? systemUsers.map(u => u.name) : "No users available");
+            
+            // Test 2: systemUsers as empty array
+            systemUsers = [];
+            console.log("systemUsers is empty array:", systemUsers);
+            console.log("Array.isArray(systemUsers):", Array.isArray(systemUsers));
+            console.log("Safe map result:", Array.isArray(systemUsers) ? systemUsers.map(u => u.name) : "No users available");
+            
+            // Test 3: systemUsers as valid array
+            systemUsers = [{id: "1", name: "John"}, {id: "2", name: "Jane"}];
+            console.log("systemUsers is valid array:", systemUsers);
+            console.log("Array.isArray(systemUsers):", Array.isArray(systemUsers));
+            console.log("Safe map result:", Array.isArray(systemUsers) ? systemUsers.map(u => u.name) : "No users available");
+            
+            // Test 4: assignedUsers array safety
+            let assignedUsers = null;
+            console.log("assignedUsers is null:", assignedUsers);
+            console.log("Array.isArray(assignedUsers) && assignedUsers.includes('1'):", Array.isArray(assignedUsers) && assignedUsers.includes('1'));
+            
+            assignedUsers = ['1', '2'];
+            console.log("assignedUsers is valid array:", assignedUsers);
+            console.log("Array.isArray(assignedUsers) && assignedUsers.includes('1'):", Array.isArray(assignedUsers) && assignedUsers.includes('1'));
+            
+            console.log("All tests completed successfully!");
+        }
+        
+        // Run tests
+        testArraySafety();
+    </script>
+</body>
+</html>

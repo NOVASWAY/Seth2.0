@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
-import { Search, Package, Eye } from "lucide-react"
-import type { InventoryItem } from "../../types"
+import { Search, Package, Eye, DollarSign, TrendingUp, Info } from "lucide-react"
+import type { InventoryItem, InventoryBatch } from "../../types"
 
 interface InventoryItemsListProps {
   onRefresh?: () => void
@@ -17,6 +17,7 @@ interface InventoryItemsListProps {
 export function InventoryItemsList({ onRefresh }: InventoryItemsListProps) {
   const { accessToken } = useAuthStore()
   const [items, setItems] = useState<InventoryItem[]>([])
+  const [batches, setBatches] = useState<InventoryBatch[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [pagination, setPagination] = useState({
@@ -38,19 +39,31 @@ export function InventoryItemsList({ onRefresh }: InventoryItemsListProps) {
         params.append("search", search)
       }
 
-      const response = await fetch(`http://localhost:5000/api/inventory/items?${params}`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      })
+      const [itemsResponse, batchesResponse] = await Promise.all([
+        fetch(`http://localhost:5000/api/inventory/items?${params}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }),
+        fetch(`http://localhost:5000/api/inventory/batches?${params}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        })
+      ])
 
-      if (!response.ok) {
+      if (!itemsResponse.ok) {
         throw new Error("Failed to fetch items")
       }
 
-      const result = await response.json()
-      setItems(result.data.items)
-      setPagination(result.data.pagination)
+      const itemsResult = await itemsResponse.json()
+      setItems(itemsResult.data.items)
+      setPagination(itemsResult.data.pagination)
+
+      if (batchesResponse.ok) {
+        const batchesResult = await batchesResponse.json()
+        setBatches(batchesResult.data.batches || [])
+      }
     } catch (error) {
       console.error("Failed to fetch items:", error)
     } finally {
@@ -69,6 +82,35 @@ export function InventoryItemsList({ onRefresh }: InventoryItemsListProps) {
 
   const handlePageChange = (newPage: number) => {
     fetchItems(newPage, searchTerm)
+  }
+
+  // Helper function to get pricing info for an item
+  const getItemPricing = (itemId: string) => {
+    const itemBatches = batches.filter(batch => batch.inventoryItemId === itemId)
+    
+    if (itemBatches.length === 0) {
+      return { hasPricing: false, minPrice: 0, maxPrice: 0, avgPrice: 0, totalQuantity: 0 }
+    }
+
+    const prices = itemBatches.map(batch => batch.sellingPrice)
+    const quantities = itemBatches.map(batch => batch.quantity)
+    const totalQuantity = quantities.reduce((sum, qty) => sum + qty, 0)
+    
+    return {
+      hasPricing: true,
+      minPrice: Math.min(...prices),
+      maxPrice: Math.max(...prices),
+      avgPrice: prices.reduce((sum, price) => sum + price, 0) / prices.length,
+      totalQuantity
+    }
+  }
+
+  // Helper function to format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-KE', {
+      style: 'currency',
+      currency: 'KES'
+    }).format(amount)
   }
 
   return (
@@ -107,32 +149,61 @@ export function InventoryItemsList({ onRefresh }: InventoryItemsListProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            {items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h4 className="font-medium">{item.name}</h4>
-                    {item.genericName && (
-                      <Badge variant="outline" className="text-xs">
-                        {item.genericName}
-                      </Badge>
+            {items.map((item) => {
+              const pricing = getItemPricing(item.id)
+              return (
+                <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h4 className="font-medium">{item.name}</h4>
+                      {item.genericName && (
+                        <Badge variant="outline" className="text-xs">
+                          {item.genericName}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                      <span>Category: {item.category}</span>
+                      <span>Unit: {item.unit}</span>
+                      <span>Reorder Level: {item.reorderLevel}</span>
+                    </div>
+                    
+                    {/* Pricing Information */}
+                    {pricing.hasPricing ? (
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                          <DollarSign className="h-3 w-3" />
+                          <span className="font-medium">Price Range:</span>
+                          <span>{formatCurrency(pricing.minPrice)} - {formatCurrency(pricing.maxPrice)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                          <TrendingUp className="h-3 w-3" />
+                          <span className="font-medium">Avg:</span>
+                          <span>{formatCurrency(pricing.avgPrice)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-purple-600 dark:text-purple-400">
+                          <Package className="h-3 w-3" />
+                          <span className="font-medium">Stock:</span>
+                          <span>{pricing.totalQuantity} {item.unit}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-sm">
+                        <Info className="h-3 w-3" />
+                        <span>No pricing information available</span>
+                      </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>Category: {item.category}</span>
-                    <span>Unit: {item.unit}</span>
-                    <span>Reorder Level: {item.reorderLevel}</span>
+
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm">
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Details
+                    </Button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Details
-                  </Button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
 
             {/* Pagination */}
             {pagination.totalPages > 1 && (

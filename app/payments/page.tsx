@@ -254,7 +254,7 @@ export default function PaymentsPage() {
 
   if (!isAuthenticated) {
     return (
-      <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.CASHIER, UserRole.CLINICAL_OFFICER]}>
+      <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.PHARMACIST]}>
         <div className="flex h-screen bg-slate-50 dark:bg-slate-900 items-center justify-center">
           <div className="text-center">
             <CreditCard className="h-12 w-12 text-slate-400 mx-auto mb-4" />
@@ -271,7 +271,7 @@ export default function PaymentsPage() {
   }
 
   return (
-    <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.CASHIER, UserRole.CLINICAL_OFFICER]}>
+    <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.PHARMACIST]}>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
         <Sidebar
           user={user}

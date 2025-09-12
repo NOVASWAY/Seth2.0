@@ -74,6 +74,8 @@ export default function StaffManagementPage() {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [selectedUser, setSelectedUser] = useState<StaffMember | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [userPassword, setUserPassword] = useState<string>('')
+  const [showPassword, setShowPassword] = useState(false)
 
   // Check if user is admin
   useEffect(() => {
@@ -262,6 +264,79 @@ export default function StaffManagementPage() {
       toast({
         title: "Error",
         description: "Failed to reset password",
+        variant: "destructive"
+      })
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleGeneratePassword = async (member: StaffMember) => {
+    if (!accessToken) {
+      toast({
+        title: "Authentication Error",
+        description: "Please log in to generate passwords",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      setActionLoading(member.id)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/admin/staff/${member.id}/password`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setUserPassword(result.data.password)
+          setSelectedUser(member)
+          setShowPasswordDialog(true)
+          setShowPassword(false)
+          toast({
+            title: "New Password Generated",
+            description: `A new password has been generated for ${member.username}`,
+            variant: "default"
+          })
+        } else {
+          throw new Error(result.message || 'Failed to generate password')
+        }
+      } else if (response.status === 401) {
+        toast({
+          title: "Authentication Error",
+          description: "Your session has expired. Please log in again.",
+          variant: "destructive"
+        })
+        // Clear tokens and redirect
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+        window.location.href = '/login'
+      } else if (response.status === 404) {
+        toast({
+          title: "User Not Found",
+          description: "The selected user could not be found.",
+          variant: "destructive"
+        })
+      } else if (response.status === 500) {
+        toast({
+          title: "Server Error",
+          description: "An error occurred on the server. Please try again later.",
+          variant: "destructive"
+        })
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `Failed to generate password (${response.status})`)
+      }
+    } catch (error) {
+      console.error('Error generating password:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate user password",
         variant: "destructive"
       })
     } finally {
@@ -542,6 +617,20 @@ export default function StaffManagementPage() {
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() => handleGeneratePassword(member)}
+                            disabled={actionLoading === member.id}
+                            className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                          >
+                            {actionLoading === member.id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                            Generate Password
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => handleResetPassword(member.id)}
                             disabled={actionLoading === member.id}
                             className="text-blue-600 border-blue-200 hover:bg-blue-50"
@@ -572,6 +661,75 @@ export default function StaffManagementPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Password View Dialog */}
+          <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-purple-600" />
+                  Generated Password
+                </DialogTitle>
+                <DialogDescription>
+                  New password generated for {selectedUser?.firstName} {selectedUser?.lastName} (@{selectedUser?.username})
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password">New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={userPassword}
+                      readOnly
+                      className="pr-10 font-mono"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                    <div className="text-sm text-yellow-800 dark:text-yellow-200">
+                      <p className="font-medium">Security Notice</p>
+                      <p>This password is sensitive information. Please ensure you're in a secure environment before viewing.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(userPassword)
+                      toast({
+                        title: "Copied",
+                        description: "Password copied to clipboard",
+                        variant: "default"
+                      })
+                    }}
+                  >
+                    Copy Password
+                  </Button>
+                  <Button onClick={() => setShowPasswordDialog(false)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

@@ -29,8 +29,8 @@ interface Patient {
   area?: string
   next_of_kin?: string
   next_of_kin_phone?: string
-  insurance_type: 'SHA' | 'PRIVATE' | 'CASH'
-  insurance_number?: string
+  payment_method: 'CASH' | 'MPESA' | 'SHA' | 'PRIVATE'
+  payment_reference?: string
   created_at: string
   updated_at: string
 }
@@ -43,7 +43,7 @@ interface ImportedPatient {
   date_of_birth?: string
   area?: string
   phone_number?: string
-  insurance_type: 'SHA' | 'PRIVATE' | 'CASH'
+  payment_method: 'CASH' | 'MPESA' | 'SHA' | 'PRIVATE'
   gender?: 'MALE' | 'FEMALE' | 'OTHER'
   errors?: string[]
   isValid: boolean
@@ -67,7 +67,7 @@ const mockPatients: Patient[] = [
     gender: "FEMALE",
     phone_number: "+254-700-123-456",
     area: "Nairobi",
-    insurance_type: "CASH",
+    payment_method: "CASH",
     created_at: "2024-01-15T10:00:00Z",
     updated_at: "2024-01-15T10:00:00Z"
   },
@@ -80,7 +80,7 @@ const mockPatients: Patient[] = [
     gender: "MALE",
     phone_number: "+254-700-234-567",
     area: "Mombasa",
-    insurance_type: "PRIVATE",
+    payment_method: "PRIVATE",
     created_at: "2024-01-20T10:00:00Z",
     updated_at: "2024-01-20T10:00:00Z"
   },
@@ -93,7 +93,7 @@ const mockPatients: Patient[] = [
     gender: "FEMALE",
     phone_number: "+254-700-345-678",
     area: "Kisumu",
-    insurance_type: "SHA",
+    payment_method: "SHA",
     created_at: "2024-01-18T10:00:00Z",
     updated_at: "2024-01-18T10:00:00Z"
   }
@@ -114,7 +114,7 @@ export default function PatientsPage() {
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
   const [isImporting, setIsImporting] = useState(false)
-  const [defaultInsuranceType, setDefaultInsuranceType] = useState<'SHA' | 'PRIVATE' | 'CASH'>('CASH')
+  const [defaultPaymentMethod, setDefaultPaymentMethod] = useState<'CASH' | 'MPESA' | 'SHA' | 'PRIVATE'>('CASH')
 
   // Fetch patients from backend
   const fetchPatients = async () => {
@@ -304,7 +304,7 @@ export default function PatientsPage() {
         date_of_birth: dateOfBirth || undefined,
         area: residence || undefined,
         phone_number: phoneNumber || undefined,
-        insurance_type: defaultInsuranceType,
+        payment_method: defaultPaymentMethod,
         errors: errors.length > 0 ? errors : undefined,
         isValid
       }
@@ -398,7 +398,7 @@ export default function PatientsPage() {
             date_of_birth: p.date_of_birth,
             area: p.area,
             phone_number: p.phone_number,
-            insurance_type: p.insurance_type
+            payment_method: p.payment_method
           }))
         })
       })
@@ -449,7 +449,10 @@ export default function PatientsPage() {
                          opNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (patient.phone_number && patient.phone_number.includes(searchTerm)) ||
                          area.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesSearch
+    
+    const matchesPaymentMethod = statusFilter === 'all' || patient.payment_method === statusFilter
+    
+    return matchesSearch && matchesPaymentMethod
   })
 
   const handleAddPatient = () => {
@@ -613,22 +616,25 @@ export default function PatientsPage() {
                         </p>
                       </div>
 
-                      {/* Default Insurance Type */}
+                      {/* Default Form of Payment */}
                       <div className="space-y-2">
-                        <Label htmlFor="insurance-type">Default Insurance Type for Registration</Label>
-                        <Select value={defaultInsuranceType} onValueChange={(value: 'SHA' | 'PRIVATE' | 'CASH') => setDefaultInsuranceType(value)}>
+                        <Label htmlFor="payment-method">Default Form of Payment for Registration</Label>
+                        <Select value={defaultPaymentMethod} onValueChange={(value: 'CASH' | 'MPESA' | 'SHA' | 'PRIVATE') => setDefaultPaymentMethod(value)}>
                           <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                            <SelectItem value="CASH" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">
-                              Cash Payment
+                          <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-2xl z-50">
+                            <SelectItem value="CASH" className="text-slate-900 dark:text-slate-100 hover:bg-blue-100 dark:hover:bg-blue-900 font-medium py-3 cursor-pointer">
+                              💵 Cash Payment
                             </SelectItem>
-                            <SelectItem value="SHA" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">
-                              SHA Insurance
+                            <SelectItem value="MPESA" className="text-slate-900 dark:text-slate-100 hover:bg-green-100 dark:hover:bg-green-900 font-medium py-3 cursor-pointer">
+                              📱 M-Pesa
                             </SelectItem>
-                            <SelectItem value="PRIVATE" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">
-                              Private Insurance
+                            <SelectItem value="SHA" className="text-slate-900 dark:text-slate-100 hover:bg-purple-100 dark:hover:bg-purple-900 font-medium py-3 cursor-pointer">
+                              🏥 SHA (Social Health Authority)
+                            </SelectItem>
+                            <SelectItem value="PRIVATE" className="text-slate-900 dark:text-slate-100 hover:bg-orange-100 dark:hover:bg-orange-900 font-medium py-3 cursor-pointer">
+                              🛡️ Private Insurance
                             </SelectItem>
                           </SelectContent>
                         </Select>
@@ -778,10 +784,11 @@ export default function PatientsPage() {
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
                 >
-                  <option value="all">All Insurance Types</option>
-                  <option value="CASH">Cash</option>
-                  <option value="SHA">SHA</option>
-                  <option value="PRIVATE">Private</option>
+                  <option value="all">All Payment Methods</option>
+                  <option value="CASH">💵 Cash</option>
+                  <option value="MPESA">📱 M-Pesa</option>
+                  <option value="SHA">🏥 SHA</option>
+                  <option value="PRIVATE">🛡️ Private</option>
                 </select>
               </div>
             </div>
@@ -803,13 +810,16 @@ export default function PatientsPage() {
                       Patient
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
+                      OP Number
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                       Contact
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                       Location
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                      Insurance
+                      Payment Method
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                       Assignments
@@ -862,6 +872,14 @@ export default function PatientsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-mono font-medium text-blue-600 dark:text-blue-400">
+                          {patient.op_number}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-slate-400">
+                          Patient ID
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-slate-100">
                           {patient.phone_number || 'No phone'}
                         </div>
@@ -876,11 +894,15 @@ export default function PatientsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          patient.insurance_type === 'CASH' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                          patient.insurance_type === 'SHA' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                          'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                          patient.payment_method === 'CASH' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                          patient.payment_method === 'MPESA' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' :
+                          patient.payment_method === 'SHA' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                          'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
                         }`}>
-                          {patient.insurance_type}
+                          {patient.payment_method === 'CASH' ? '💵 Cash' :
+                           patient.payment_method === 'MPESA' ? '📱 M-Pesa' :
+                           patient.payment_method === 'SHA' ? '🏥 SHA' :
+                           '🛡️ Private'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

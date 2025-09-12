@@ -357,7 +357,7 @@ router.post("/mpesa/callback", async (req, res) => {
 })
 
 // Get financial dashboard data
-router.get("/dashboard", authenticateToken, requireRole([UserRole.ADMIN, UserRole.CASHIER, UserRole.PHARMACIST]), async (req, res) => {
+router.get("/dashboard", authenticateToken, requireRole([UserRole.ADMIN, UserRole.PHARMACIST]), async (req, res) => {
   try {
     const today = new Date()
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())

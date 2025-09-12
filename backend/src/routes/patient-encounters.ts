@@ -13,7 +13,7 @@ const autoInvoiceService = new AutoInvoiceService()
 // Create new patient encounter
 router.post(
   "/",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.DOCTOR]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER]),
   [
     body("patientId").isUUID().withMessage("Valid patient ID is required"),
     body("visitId").isUUID().withMessage("Valid visit ID is required"),
@@ -124,7 +124,7 @@ router.post(
 // Complete encounter with services and auto-generate invoice
 router.post(
   "/:id/complete",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.DOCTOR, UserRole.PHARMACIST]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.PHARMACIST]),
   [
     body("services").optional().isArray().withMessage("Services must be an array"),
     body("medications").optional().isArray().withMessage("Medications must be an array"),
@@ -224,7 +224,7 @@ router.post(
 // Generate invoice for completed encounter (manual trigger)
 router.post(
   "/:id/generate-invoice",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.DOCTOR, UserRole.CLAIMS_MANAGER]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params
@@ -274,7 +274,7 @@ router.get(
 // Get encounter details
 router.get(
   "/:id",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.DOCTOR, UserRole.PHARMACIST, UserRole.CLAIMS_MANAGER]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.PHARMACIST, UserRole.CLAIMS_MANAGER]),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params
@@ -325,7 +325,7 @@ router.get(
 // List encounters with filtering
 router.get(
   "/",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.DOCTOR, UserRole.CLAIMS_MANAGER]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.CLAIMS_MANAGER]),
   [
     query("status").optional().isIn(['IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'INVOICE_GENERATED', 'BILLED']),
     query("encounterType").optional().isIn(['CONSULTATION', 'LAB', 'PHARMACY', 'INPATIENT', 'EMERGENCY', 'FOLLOW_UP', 'PROCEDURE']),
@@ -448,7 +448,7 @@ router.get(
 // Update encounter
 router.patch(
   "/:id",
-  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER, UserRole.DOCTOR]),
+  authorize([UserRole.ADMIN, UserRole.CLINICAL_OFFICER]),
   [
     body("chiefComplaint").optional().trim(),
     body("diagnosisCodes").optional().isArray(),

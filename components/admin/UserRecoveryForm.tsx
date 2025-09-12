@@ -203,7 +203,6 @@ export function UserRecoveryForm({ onUserUpdated }: UserRecoveryFormProps) {
   const getRoleBadge = (role: string) => {
     const roleColors: Record<string, string> = {
       ADMIN: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-      DOCTOR: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
       NURSE: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
       PHARMACIST: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
       CASHIER: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",

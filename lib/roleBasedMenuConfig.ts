@@ -49,7 +49,7 @@ export const getMenuItemsForRole = (userRole: string): MenuItem[] => {
       title: "Payments",
       href: "/payments",
       icon: "💰",
-      roles: ["ADMIN", "CLAIMS_MANAGER", "RECEPTIONIST"]
+      roles: ["ADMIN", "PHARMACIST"]
     },
     {
       id: "reports",
@@ -70,7 +70,7 @@ export const getMenuItemsForRole = (userRole: string): MenuItem[] => {
       title: "Visits & Encounters",
       href: "/visits",
       icon: "🏥",
-      roles: ["ADMIN", "DOCTOR", "NURSE", "CLINICAL_OFFICER", "RECEPTIONIST"]
+      roles: ["ADMIN", "NURSE", "CLINICAL_OFFICER", "RECEPTIONIST"]
     },
     {
       id: "record-visit",
@@ -84,14 +84,14 @@ export const getMenuItemsForRole = (userRole: string): MenuItem[] => {
       title: "Prescriptions",
       href: "/prescriptions",
       icon: "💊",
-      roles: ["ADMIN", "CLINICAL_OFFICER", "PHARMACIST", "DOCTOR", "NURSE"]
+      roles: ["ADMIN", "CLINICAL_OFFICER", "PHARMACIST", "NURSE"]
     },
     {
       id: "lab-tests",
       title: "Lab Tests",
       href: "/lab-tests",
       icon: "🧪",
-      roles: ["ADMIN", "CLINICAL_OFFICER", "LAB_TECHNICIAN", "DOCTOR", "NURSE"]
+      roles: ["ADMIN", "CLINICAL_OFFICER", "LAB_TECHNICIAN", "NURSE"]
     },
     {
       id: "lab-requests",
@@ -105,14 +105,14 @@ export const getMenuItemsForRole = (userRole: string): MenuItem[] => {
       title: "SHA Claims",
       href: "/sha",
       icon: "🏥",
-      roles: ["ADMIN", "CLINICAL_OFFICER", "CLAIMS_MANAGER", "DOCTOR", "RECEPTIONIST"]
+      roles: ["ADMIN", "CLAIMS_MANAGER", "RECEPTIONIST"]
     },
     {
       id: "financial",
       title: "Financial Management",
       href: "/financial",
       icon: "💳",
-      roles: ["ADMIN", "PHARMACIST", "RECEPTIONIST", "CLAIMS_MANAGER"]
+      roles: ["ADMIN", "PHARMACIST"]
     },
     {
       id: "sync",
@@ -152,7 +152,6 @@ export const getRoleDisplayName = (role: string): string => {
     INVENTORY_MANAGER: "Inventory Manager",
     CLAIMS_MANAGER: "Claims Manager",
     LAB_TECHNICIAN: "Lab Technician",
-    DOCTOR: "Doctor",
   }
   return roleNames[role] || role
 }
@@ -168,7 +167,6 @@ export const getRoleDescription = (role: string): string => {
     INVENTORY_MANAGER: "Stock and supply management",
     CLAIMS_MANAGER: "Insurance claims and financial processing",
     LAB_TECHNICIAN: "Laboratory testing and diagnostics",
-    DOCTOR: "Medical diagnosis and treatment",
   }
   return descriptions[role] || "System user"
 }
