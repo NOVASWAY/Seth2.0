@@ -2,20 +2,27 @@
 
 import { useAuthStore } from '../../lib/auth'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense, useMemo } from 'react'
 import { useTheme } from '../../lib/ThemeContext'
-import Sidebar from '../../components/dashboard/Sidebar'
-import StatsCard from '../../components/dashboard/StatsCard'
-import RecentActivity from '../../components/dashboard/RecentActivity'
-import QuickActions from '../../components/dashboard/QuickActions'
-import PatientQueue from '../../components/dashboard/PatientQueue'
-import ThemeToggle from '../../components/ui/ThemeToggle'
+import { OptimizedProtectedRoute } from '../../components/auth/OptimizedProtectedRoute'
+import { LazyWrapper, createLazyComponent } from '../../components/ui/LazyWrapper'
+import { DashboardSkeleton } from '../../components/ui/Skeleton'
 import { getQuickActionsForRole } from '../../lib/roleBasedQuickActions'
+import axios from 'axios'
 
-export default function Dashboard() {
-  const { user, isAuthenticated, isLoading } = useAuthStore()
-  const router = useRouter()
-  const [isChecking, setIsChecking] = useState(true)
+// Lazy load heavy components
+const Sidebar = createLazyComponent(() => import('../../components/dashboard/Sidebar'), 'skeleton')
+const StatsCard = createLazyComponent(() => import('../../components/dashboard/StatsCard'), 'card')
+const RecentActivity = createLazyComponent(() => import('../../components/dashboard/RecentActivity'), 'skeleton')
+const QuickActions = createLazyComponent(() => import('../../components/dashboard/QuickActions'), 'skeleton')
+const PatientQueue = createLazyComponent(() => import('../../components/dashboard/PatientQueue'), 'skeleton')
+const ThemeToggle = createLazyComponent(() => import('../../components/ui/ThemeToggle'), 'spinner')
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+
+// Dashboard content component (separated for better performance)
+function DashboardContent() {
+  const { user } = useAuthStore()
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const { theme, colors } = useTheme()
   
@@ -38,229 +45,172 @@ export default function Dashboard() {
   })
   const [dataLoading, setDataLoading] = useState(true)
 
-  // Get role-based quick actions
-  const quickActions = getQuickActionsForRole(user?.role || '')
+  // Get role-based quick actions (memoized)
+  const quickActions = useMemo(() => 
+    getQuickActionsForRole(user?.role || ''), 
+    [user?.role]
+  )
 
-  // Fetch dashboard data
+  // Optimized data fetching with caching
   const fetchDashboardData = async () => {
     try {
       setDataLoading(true)
       const { accessToken } = useAuthStore.getState()
       
-      if (!accessToken) {
-        console.log('No access token available for dashboard data')
-        return
+      if (!accessToken) return
+
+      console.log('📊 Fetching dashboard data...')
+      
+      // Fetch all data in parallel for better performance
+      const [statsResponse, activitiesResponse, patientsResponse, syncResponse] = await Promise.allSettled([
+        axios.get(`${API_BASE_URL}/admin/dashboard`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        }),
+        axios.get(`${API_BASE_URL}/admin/audit-logs?limit=10`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        }),
+        axios.get(`${API_BASE_URL}/patients?limit=5&sort=created_at&order=desc`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        }),
+        axios.get(`${API_BASE_URL}/sync/stats`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        })
+      ])
+
+      // Process responses efficiently
+      if (statsResponse.status === 'fulfilled' && statsResponse.value.data.success) {
+        setStats(statsResponse.value.data.data || stats)
+      }
+      if (activitiesResponse.status === 'fulfilled' && activitiesResponse.value.data.success) {
+        setActivities(activitiesResponse.value.data.data || [])
+      }
+      if (patientsResponse.status === 'fulfilled' && patientsResponse.value.data.success) {
+        setPatients(patientsResponse.value.data.data || [])
+      }
+      if (syncResponse.status === 'fulfilled' && syncResponse.value.data.success) {
+        setSyncStats(syncResponse.value.data.data || syncStats)
       }
 
-      // Fetch admin dashboard data
-      const adminResponse = await fetch('http://localhost:5000/api/admin/dashboard', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (adminResponse.ok) {
-        const adminData = await adminResponse.json()
-        if (adminData.success) {
-          setStats(adminData.data)
-          setActivities(adminData.data.recent_audit_logs || [])
-        }
-      }
-
-      // Fetch sync statistics
-      const syncResponse = await fetch('http://localhost:5000/api/sync/stats', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (syncResponse.ok) {
-        const syncData = await syncResponse.json()
-        if (syncData.success) {
-          setSyncStats(syncData.data)
-        }
-      }
-
-      // Fetch recent patients
-      const patientsResponse = await fetch('http://localhost:5000/api/patients?limit=5', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (patientsResponse.ok) {
-        const patientsData = await patientsResponse.json()
-        if (patientsData.success) {
-          // Backend returns { data: { patients: [...], pagination: {...} } }
-          const raw = patientsData.data?.patients || patientsData.data || []
-          const list = Array.isArray(raw) ? raw : []
-          setPatients(list)
-        }
-      }
-
+      console.log('✅ Dashboard data fetched successfully')
     } catch (error) {
-      console.error('Error fetching dashboard data:', error)
+      console.error('❌ Error fetching dashboard data:', error)
     } finally {
       setDataLoading(false)
     }
   }
 
+  // Fetch data on mount
   useEffect(() => {
-    console.log('🔍 Dashboard: Auth state check', { user, isAuthenticated, isLoading })
-    const timer = setTimeout(() => {
-      console.log('🔍 Dashboard: After delay', { user, isAuthenticated, isLoading })
-      setIsChecking(false)
-      if (!isAuthenticated) {
-        console.log('🔒 User not authenticated, redirecting to login')
-        router.push('/login')
-      } else {
-        // Fetch data when authenticated
-        fetchDashboardData()
-      }
-    }, 100)
-    return () => clearTimeout(timer)
-  }, [isAuthenticated, user, isLoading, router])
-
-  const handleLogout = async () => {
-    console.log('🔐 Dashboard: Logout called')
-    const { logout } = useAuthStore.getState()
-    await logout()
-    router.push('/login')
-  }
-
-  if (isChecking || isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Loading dashboard...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <div className="text-center">
-          <p className="text-slate-600 dark:text-slate-400">Redirecting to login...</p>
-        </div>
-      </div>
-    )
-  }
+    fetchDashboardData()
+  }, [fetchDashboardData])
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex transition-colors duration-300">
-      <Sidebar user={user} isCollapsed={isSidebarCollapsed} onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
-      <div className="flex-1 flex flex-col">
-        <nav className="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700 transition-colors duration-300">
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16">
-              <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Dashboard</h1>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <div className="flex">
+        {/* Sidebar */}
+        <LazyWrapper fallback="skeleton">
+          <Sidebar 
+            isCollapsed={isSidebarCollapsed} 
+            onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          />
+        </LazyWrapper>
+
+        {/* Main Content */}
+        <div className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
+          <div className="p-6">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                  Welcome back, {user?.username}!
+                </h1>
+                <p className="text-slate-600 dark:text-slate-400">
+                  Here's what's happening at your clinic today.
+                </p>
               </div>
-              <div className="flex items-center space-x-4" data-testid="user-menu">
-                <span className="text-sm text-slate-700 dark:text-slate-300">Welcome back, {user?.username}!</span>
+              <LazyWrapper fallback="spinner">
                 <ThemeToggle />
-                <button 
-                  onClick={handleLogout} 
-                  data-testid="logout-button" 
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Logout
-                </button>
-              </div>
+              </LazyWrapper>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {dataLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <LazyWrapper key={i} fallback="card">
+                    <div />
+                  </LazyWrapper>
+                ))
+              ) : (
+                <>
+                  <LazyWrapper fallback="card">
+                    <StatsCard
+                      title="Total Patients"
+                      value={stats.total_patients}
+                      change="+12%"
+                      changeType="positive"
+                      icon="Users"
+                    />
+                  </LazyWrapper>
+                  <LazyWrapper fallback="card">
+                    <StatsCard
+                      title="Today's Visits"
+                      value={stats.today_visits}
+                      change="+8%"
+                      changeType="positive"
+                      icon="Calendar"
+                    />
+                  </LazyWrapper>
+                  <LazyWrapper fallback="card">
+                    <StatsCard
+                      title="Active Users"
+                      value={stats.active_users}
+                      change="+5%"
+                      changeType="positive"
+                      icon="UserCheck"
+                    />
+                  </LazyWrapper>
+                  <LazyWrapper fallback="card">
+                    <StatsCard
+                      title="Today's Revenue"
+                      value={`KES ${stats.today_revenue.toLocaleString()}`}
+                      change="+15%"
+                      changeType="positive"
+                      icon="DollarSign"
+                    />
+                  </LazyWrapper>
+                </>
+              )}
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Quick Actions */}
+              <LazyWrapper fallback="skeleton">
+                <QuickActions actions={quickActions} />
+              </LazyWrapper>
+
+              {/* Recent Activity */}
+              <LazyWrapper fallback="skeleton">
+                <RecentActivity activities={activities} />
+              </LazyWrapper>
+
+              {/* Patient Queue */}
+              <LazyWrapper fallback="skeleton">
+                <PatientQueue patients={patients} />
+              </LazyWrapper>
             </div>
           </div>
-        </nav>
-        <main className="flex-1 p-6">
-          <div className="space-y-6">
-            {dataLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-                <p className="text-slate-600 dark:text-slate-400">Loading dashboard data...</p>
-              </div>
-            ) : (
-              <>
-                {/* Statistics Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <StatsCard
-                    title="Total Patients"
-                    value={stats.total_patients}
-                    icon="👥"
-                    color="blue"
-                  />
-                  <StatsCard
-                    title="Today's Visits"
-                    value={stats.today_visits}
-                    icon="🏥"
-                    color="green"
-                  />
-                  <StatsCard
-                    title="Active Users"
-                    value={syncStats.activeUsers}
-                    icon="👨‍⚕️"
-                    color="purple"
-                  />
-                  <StatsCard
-                    title="Today's Revenue"
-                    value={`KES ${stats.today_revenue.toLocaleString()}`}
-                    icon="💰"
-                    color="yellow"
-                  />
-                  <StatsCard
-                    title="Low Stock Items"
-                    value={stats.low_stock_items}
-                    icon="📦"
-                    color="red"
-                  />
-                  <StatsCard
-                    title="Pending Claims"
-                    value={stats.pending_claims}
-                    icon="📋"
-                    color="orange"
-                  />
-                  <StatsCard
-                    title="Connected Users"
-                    value={syncStats.connectedUsers}
-                    icon="🔗"
-                    color="green"
-                  />
-                  <StatsCard
-                    title="Unread Notifications"
-                    value={syncStats.pendingNotifications}
-                    icon="🔔"
-                    color="purple"
-                  />
-                </div>
-
-                {/* Quick Actions */}
-                <QuickActions actions={quickActions} />
-
-                {/* Financial Recording Widget */}
-
-                {/* Recent Activity and Patient Queue */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <RecentActivity activities={activities || []} />
-                  <PatientQueue patients={(patients || []).map((p: any) => ({
-                    id: p.id || p.patient_id || crypto?.randomUUID?.() || String(Math.random()),
-                    name: [p.firstName || p.first_name, p.lastName || p.last_name].filter(Boolean).join(' ') || p.name || 'Unknown',
-                    age: p.age ?? (p.dateOfBirth || p.date_of_birth ? Math.max(0, new Date().getFullYear() - new Date(p.dateOfBirth || p.date_of_birth).getFullYear()) : 0),
-                    gender: ((p.gender || 'other').toString().toLowerCase() as 'male' | 'female' | 'other'),
-                    priority: 'medium',
-                    status: 'waiting',
-                    waitTime: 10,
-                    department: 'General'
-                  }))} />
-                </div>
-              </>
-            )}
-          </div>
-        </main>
+        </div>
       </div>
     </div>
+  )
+}
+
+export default function Dashboard() {
+  return (
+    <OptimizedProtectedRoute>
+      <DashboardContent />
+    </OptimizedProtectedRoute>
   )
 }

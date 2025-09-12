@@ -3,6 +3,7 @@
 import { useAuthStore } from '../../lib/auth'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useToast } from '../../hooks/use-toast'
 import Sidebar from '../../components/dashboard/Sidebar'
 
 interface Appointment {
@@ -23,6 +24,7 @@ interface Appointment {
 export default function AppointmentsPage() {
   const { user, isAuthenticated, isLoading } = useAuthStore()
   const router = useRouter()
+  const { toast } = useToast()
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [statusFilter, setStatusFilter] = useState<string>('all')

@@ -1,0 +1,524 @@
+[
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f1f",
+    "patient_id": "b089e9f4-1f4b-47e8-9ad7-0fb6c258931a",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP-2025-001",
+      "firstName": "John",
+      "lastName": "Doe",
+      "fullName": "John Doe",
+      "age": 30,
+      "gender": "MALE",
+      "phoneNumber": "0712345678",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "CASH",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T11:03:05.051Z",
+      "original_id": "b089e9f4-1f4b-47e8-9ad7-0fb6c258931a"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T11:03:05.057Z",
+    "updated_at": "2025-09-12T11:03:05.063Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f28",
+    "patient_id": "0a5ababe-2548-4794-a292-0a8a4f46e395",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP-2025-002",
+      "firstName": "Test",
+      "lastName": "Patient",
+      "fullName": "Test Patient",
+      "age": 30,
+      "gender": "MALE",
+      "phoneNumber": "+254712345678",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "SHA",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T11:03:05.085Z",
+      "original_id": "0a5ababe-2548-4794-a292-0a8a4f46e395"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T11:03:05.086Z",
+    "updated_at": "2025-09-12T11:03:05.087Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f31",
+    "patient_id": "a80e4086-5818-4822-808b-0a84c24d0e00",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP2024001",
+      "firstName": "Imported",
+      "lastName": "Patient1",
+      "fullName": "Imported Patient1",
+      "age": 25,
+      "gender": "OTHER",
+      "phoneNumber": "+254723456789",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "PRIVATE",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T11:03:05.097Z",
+      "original_id": "a80e4086-5818-4822-808b-0a84c24d0e00"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T11:03:05.097Z",
+    "updated_at": "2025-09-12T11:03:05.098Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f39",
+    "patient_id": "c9f95aef-6bc5-444a-97d6-cfddac5fb688",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP2024002",
+      "firstName": "Imported",
+      "lastName": "Patient2",
+      "fullName": "Imported Patient2",
+      "age": 35,
+      "gender": "OTHER",
+      "phoneNumber": "+254734567890",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "CASH",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T11:03:05.108Z",
+      "original_id": "c9f95aef-6bc5-444a-97d6-cfddac5fb688"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T11:03:05.108Z",
+    "updated_at": "2025-09-12T11:03:05.109Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f40",
+    "patient_id": "7ed4b4d9-88de-4e18-a5a2-37c42e4b1946",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP-2025-003",
+      "firstName": "Test",
+      "lastName": "Patient",
+      "fullName": "Test Patient",
+      "age": 30,
+      "gender": "MALE",
+      "phoneNumber": "+254712345678",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "SHA",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T11:03:05.119Z",
+      "original_id": "7ed4b4d9-88de-4e18-a5a2-37c42e4b1946"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T11:03:05.119Z",
+    "updated_at": "2025-09-12T11:03:05.120Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f47",
+    "patient_id": "e2dfb57c-e728-48fc-aaf8-636177bf3c5e",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP-2025-004",
+      "firstName": "Payment",
+      "lastName": "Test",
+      "fullName": "Payment Test",
+      "age": 25,
+      "gender": "MALE",
+      "phoneNumber": "+254712345678",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "CASH",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T11:03:05.129Z",
+      "original_id": "e2dfb57c-e728-48fc-aaf8-636177bf3c5e"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T11:03:05.130Z",
+    "updated_at": "2025-09-12T11:03:05.131Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f4d",
+    "patient_id": "29e5a1b7-9415-4965-ab6a-2122a7586880",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP-2025-005",
+      "firstName": "Immunization",
+      "lastName": "Test",
+      "fullName": "Immunization Test",
+      "age": 2,
+      "gender": "FEMALE",
+      "phoneNumber": "+254723456789",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "CASH",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T11:03:05.139Z",
+      "original_id": "29e5a1b7-9415-4965-ab6a-2122a7586880"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T11:03:05.139Z",
+    "updated_at": "2025-09-12T11:03:05.140Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f53",
+    "patient_id": "bc467336-9f2d-4faa-a1b9-bc15118c5a8b",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP-2025-006",
+      "firstName": "Family",
+      "lastName": "Planning",
+      "fullName": "Family Planning",
+      "age": 28,
+      "gender": "FEMALE",
+      "phoneNumber": "+254734567890",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "CASH",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T11:03:05.145Z",
+      "original_id": "bc467336-9f2d-4faa-a1b9-bc15118c5a8b"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T11:03:05.145Z",
+    "updated_at": "2025-09-12T11:03:05.146Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f59",
+    "patient_id": "720a2872-aafa-4837-9ff3-e7eb024b4cb6",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP-2025-007",
+      "firstName": "MCH",
+      "lastName": "Patient",
+      "fullName": "MCH Patient",
+      "age": 25,
+      "gender": "FEMALE",
+      "phoneNumber": "+254745678901",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "CASH",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T11:03:05.152Z",
+      "original_id": "720a2872-aafa-4837-9ff3-e7eb024b4cb6"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T11:03:05.152Z",
+    "updated_at": "2025-09-12T11:03:05.153Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c41556ca18466cfe7cf6b9",
+    "patient_id": "b089e9f4-1f4b-47e8-9ad7-0fb6c258931a",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP-2025-001",
+      "firstName": "John",
+      "lastName": "Doe",
+      "fullName": "John Doe",
+      "age": 30,
+      "gender": "MALE",
+      "phoneNumber": "0712345678",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "CASH",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T12:43:02.122Z",
+      "original_id": "b089e9f4-1f4b-47e8-9ad7-0fb6c258931a"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T12:43:02.126Z",
+    "updated_at": "2025-09-12T12:43:02.135Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c41556ca18466cfe7cf6c2",
+    "patient_id": "0a5ababe-2548-4794-a292-0a8a4f46e395",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP-2025-002",
+      "firstName": "Test",
+      "lastName": "Patient",
+      "fullName": "Test Patient",
+      "age": 30,
+      "gender": "MALE",
+      "phoneNumber": "+254712345678",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "SHA",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T12:43:02.156Z",
+      "original_id": "0a5ababe-2548-4794-a292-0a8a4f46e395"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T12:43:02.156Z",
+    "updated_at": "2025-09-12T12:43:02.157Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c41556ca18466cfe7cf6cb",
+    "patient_id": "a80e4086-5818-4822-808b-0a84c24d0e00",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP2024001",
+      "firstName": "Imported",
+      "lastName": "Patient1",
+      "fullName": "Imported Patient1",
+      "age": 25,
+      "gender": "OTHER",
+      "phoneNumber": "+254723456789",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "PRIVATE",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T12:43:02.169Z",
+      "original_id": "a80e4086-5818-4822-808b-0a84c24d0e00"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T12:43:02.169Z",
+    "updated_at": "2025-09-12T12:43:02.170Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c41556ca18466cfe7cf6d2",
+    "patient_id": "c9f95aef-6bc5-444a-97d6-cfddac5fb688",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP2024002",
+      "firstName": "Imported",
+      "lastName": "Patient2",
+      "fullName": "Imported Patient2",
+      "age": 35,
+      "gender": "OTHER",
+      "phoneNumber": "+254734567890",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "CASH",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T12:43:02.176Z",
+      "original_id": "c9f95aef-6bc5-444a-97d6-cfddac5fb688"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T12:43:02.177Z",
+    "updated_at": "2025-09-12T12:43:02.177Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c41556ca18466cfe7cf6d8",
+    "patient_id": "7ed4b4d9-88de-4e18-a5a2-37c42e4b1946",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP-2025-003",
+      "firstName": "Test",
+      "lastName": "Patient",
+      "fullName": "Test Patient",
+      "age": 30,
+      "gender": "MALE",
+      "phoneNumber": "+254712345678",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "SHA",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T12:43:02.185Z",
+      "original_id": "7ed4b4d9-88de-4e18-a5a2-37c42e4b1946"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T12:43:02.185Z",
+    "updated_at": "2025-09-12T12:43:02.186Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c41556ca18466cfe7cf6de",
+    "patient_id": "e2dfb57c-e728-48fc-aaf8-636177bf3c5e",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP-2025-004",
+      "firstName": "Payment",
+      "lastName": "Test",
+      "fullName": "Payment Test",
+      "age": 25,
+      "gender": "MALE",
+      "phoneNumber": "+254712345678",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "CASH",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T12:43:02.192Z",
+      "original_id": "e2dfb57c-e728-48fc-aaf8-636177bf3c5e"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T12:43:02.193Z",
+    "updated_at": "2025-09-12T12:43:02.193Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c41556ca18466cfe7cf6e4",
+    "patient_id": "29e5a1b7-9415-4965-ab6a-2122a7586880",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP-2025-005",
+      "firstName": "Immunization",
+      "lastName": "Test",
+      "fullName": "Immunization Test",
+      "age": 2,
+      "gender": "FEMALE",
+      "phoneNumber": "+254723456789",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "CASH",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T12:43:02.201Z",
+      "original_id": "29e5a1b7-9415-4965-ab6a-2122a7586880"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T12:43:02.201Z",
+    "updated_at": "2025-09-12T12:43:02.201Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c41556ca18466cfe7cf6ea",
+    "patient_id": "bc467336-9f2d-4faa-a1b9-bc15118c5a8b",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP-2025-006",
+      "firstName": "Family",
+      "lastName": "Planning",
+      "fullName": "Family Planning",
+      "age": 28,
+      "gender": "FEMALE",
+      "phoneNumber": "+254734567890",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "CASH",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T12:43:02.207Z",
+      "original_id": "bc467336-9f2d-4faa-a1b9-bc15118c5a8b"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T12:43:02.207Z",
+    "updated_at": "2025-09-12T12:43:02.207Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c41556ca18466cfe7cf6f0",
+    "patient_id": "720a2872-aafa-4837-9ff3-e7eb024b4cb6",
+    "data_type": "vital_signs",
+    "data": {
+      "opNumber": "OP-2025-007",
+      "firstName": "MCH",
+      "lastName": "Patient",
+      "fullName": "MCH Patient",
+      "age": 25,
+      "gender": "FEMALE",
+      "phoneNumber": "+254745678901",
+      "area": null,
+      "nextOfKin": null,
+      "nextOfKinPhone": null,
+      "insuranceType": "CASH",
+      "insuranceNumber": null,
+      "dateOfBirth": null
+    },
+    "metadata": {
+      "source": "postgresql_migration",
+      "migrated_at": "2025-09-12T12:43:02.214Z",
+      "original_id": "720a2872-aafa-4837-9ff3-e7eb024b4cb6"
+    },
+    "created_by": "system_migration",
+    "created_at": "2025-09-12T12:43:02.214Z",
+    "updated_at": "2025-09-12T12:43:02.214Z",
+    "__v": 0
+  }
+]

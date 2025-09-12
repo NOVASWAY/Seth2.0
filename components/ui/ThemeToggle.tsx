@@ -9,14 +9,14 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="relative p-2 rounded-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+      className="relative p-2 rounded-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 bg-white/80 hover:bg-white/90 border border-slate-200/60 shadow-sm"
       aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
     >
       <div className="relative w-6 h-6">
         <Sun 
           className={`absolute inset-0 w-6 h-6 transition-all duration-300 ${
             theme === 'light' 
-              ? 'text-orange-500 rotate-0 opacity-100' 
+              ? 'text-orange-600 rotate-0 opacity-100' 
               : 'text-slate-400 -rotate-90 opacity-0'
           }`}
         />
@@ -32,8 +32,8 @@ export default function ThemeToggle() {
       {/* Theme indicator ring */}
       <div className={`absolute inset-0 rounded-lg transition-all duration-300 ${
         theme === 'light' 
-          ? 'ring-2 ring-orange-200 bg-orange-50' 
-          : 'ring-2 ring-purple-200 bg-purple-900/20'
+          ? 'ring-2 ring-orange-200/60 bg-orange-50/50' 
+          : 'ring-2 ring-purple-200/60 bg-purple-900/20'
       }`} />
     </button>
   )

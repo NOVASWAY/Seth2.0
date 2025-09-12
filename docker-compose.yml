@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: seth_clinic
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
     ports:
       - "5433:5432"
     volumes:
@@ -25,6 +25,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: seth-clinic-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis123}
     ports:
       - "6380:6379"
     volumes:
@@ -43,7 +44,7 @@ services:
     container_name: seth-clinic-mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-admin123}
       MONGO_INITDB_DATABASE: seth_clinic_mongo
     ports:
       - "27017:27017"
@@ -66,27 +67,37 @@ services:
       target: development
     container_name: seth-clinic-backend
     environment:
-      NODE_ENV: development
-      DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/seth_clinic
-      MONGODB_URL: mongodb://admin:admin123@mongodb:27017/seth_clinic_mongo?authSource=admin
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production
-      JWT_REFRESH_SECRET: your-super-secret-refresh-key-change-in-production
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres123}@postgres:5432/seth_clinic
+      MONGODB_URL: mongodb://admin:${MONGODB_PASSWORD:-admin123}@mongodb:27017/seth_clinic_mongo?authSource=admin
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your-super-secret-refresh-key-change-in-production}
       LOG_LEVEL: debug
       # SHA configuration
-      SHA_API_URL: https://api.sha.go.ke
-      SHA_PROVIDER_CODE: CLINIC001
-      SHA_FACILITY_LEVEL: 2
-      SHA_SUBMISSION_TIMEOUT_MS: 30000
-      SHA_REQUIRE_INVOICE_BEFORE_SUBMISSION: true
-      SHA_AUTO_SUBMIT_CLAIMS: false
-      SHA_PAYMENT_CHECK_INTERVAL_HOURS: 24
-      SHA_EXPORT_RETENTION_DAYS: 90
-      SHA_DOCUMENT_MAX_SIZE_MB: 10
-      SHA_BATCH_SIZE_LIMIT: 100
+      SHA_API_URL: ${SHA_API_URL:-https://api.sha.go.ke}
+      SHA_PROVIDER_CODE: ${SHA_PROVIDER_CODE:-CLINIC001}
+      SHA_FACILITY_LEVEL: ${SHA_FACILITY_LEVEL:-2}
+      SHA_SUBMISSION_TIMEOUT_MS: ${SHA_SUBMISSION_TIMEOUT_MS:-30000}
+      SHA_REQUIRE_INVOICE_BEFORE_SUBMISSION: ${SHA_REQUIRE_INVOICE_BEFORE_SUBMISSION:-true}
+      SHA_AUTO_SUBMIT_CLAIMS: ${SHA_AUTO_SUBMIT_CLAIMS:-false}
+      SHA_PAYMENT_CHECK_INTERVAL_HOURS: ${SHA_PAYMENT_CHECK_INTERVAL_HOURS:-24}
+      SHA_EXPORT_RETENTION_DAYS: ${SHA_EXPORT_RETENTION_DAYS:-90}
+      SHA_DOCUMENT_MAX_SIZE_MB: ${SHA_DOCUMENT_MAX_SIZE_MB:-10}
+      SHA_BATCH_SIZE_LIMIT: ${SHA_BATCH_SIZE_LIMIT:-100}
+      # M-Pesa configuration
+      MPESA_CONSUMER_KEY: ${MPESA_CONSUMER_KEY:-}
+      MPESA_CONSUMER_SECRET: ${MPESA_CONSUMER_SECRET:-}
+      MPESA_SHORTCODE: ${MPESA_SHORTCODE:-}
+      MPESA_PASSKEY: ${MPESA_PASSKEY:-}
+      MPESA_BASE_URL: ${MPESA_BASE_URL:-https://sandbox.safaricom.co.ke}
+      MPESA_CALLBACK_URL: ${MPESA_CALLBACK_URL:-}
+      # Email configuration
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@sethclinic.com}
       # File storage
-      STORAGE_TYPE: local
-      STORAGE_PATH: ./uploads
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
+      STORAGE_PATH: ${STORAGE_PATH:-./uploads}
     ports:
       - "5000:5000"
     depends_on:
@@ -118,22 +129,22 @@ services:
       target: development
     container_name: seth-clinic-worker
     environment:
-      NODE_ENV: development
-      DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/seth_clinic
-      MONGODB_URL: mongodb://admin:admin123@mongodb:27017/seth_clinic_mongo?authSource=admin
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres123}@postgres:5432/seth_clinic
+      MONGODB_URL: mongodb://admin:${MONGODB_PASSWORD:-admin123}@mongodb:27017/seth_clinic_mongo?authSource=admin
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       LOG_LEVEL: debug
       # SHA configuration for worker
-      SHA_API_URL: https://api.sha.go.ke
-      SHA_PROVIDER_CODE: CLINIC001
-      SHA_PAYMENT_CHECK_INTERVAL_HOURS: 24
-      STORAGE_TYPE: local
-      STORAGE_PATH: ./uploads
+      SHA_API_URL: ${SHA_API_URL:-https://api.sha.go.ke}
+      SHA_PROVIDER_CODE: ${SHA_PROVIDER_CODE:-CLINIC001}
+      SHA_PAYMENT_CHECK_INTERVAL_HOURS: ${SHA_PAYMENT_CHECK_INTERVAL_HOURS:-24}
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
+      STORAGE_PATH: ${STORAGE_PATH:-./uploads}
       # Currency configuration
-      DEFAULT_CURRENCY: KES
-      CURRENCY_LOCALE: en-KE
-      CURRENCY_SYMBOL: KES
+      DEFAULT_CURRENCY: ${DEFAULT_CURRENCY:-KES}
+      CURRENCY_LOCALE: ${CURRENCY_LOCALE:-en-KE}
+      CURRENCY_SYMBOL: ${CURRENCY_SYMBOL:-KES}
     command: npm run worker
     depends_on:
       postgres:
@@ -158,13 +169,13 @@ services:
       target: development
     container_name: seth-clinic-frontend
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:5000/api
-      NEXT_PUBLIC_APP_VERSION: 1.0.0
-      NEXT_PUBLIC_ENVIRONMENT: development
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000/api}
+      NEXT_PUBLIC_APP_VERSION: ${NEXT_PUBLIC_APP_VERSION:-1.0.0}
+      NEXT_PUBLIC_ENVIRONMENT: ${NODE_ENV:-development}
       # Currency configuration
-      NEXT_PUBLIC_DEFAULT_CURRENCY: KES
-      NEXT_PUBLIC_CURRENCY_LOCALE: en-KE
-      NEXT_PUBLIC_CURRENCY_SYMBOL: KES
+      NEXT_PUBLIC_DEFAULT_CURRENCY: ${DEFAULT_CURRENCY:-KES}
+      NEXT_PUBLIC_CURRENCY_LOCALE: ${CURRENCY_LOCALE:-en-KE}
+      NEXT_PUBLIC_CURRENCY_SYMBOL: ${CURRENCY_SYMBOL:-KES}
     ports:
       - "3000:3000"
     depends_on:

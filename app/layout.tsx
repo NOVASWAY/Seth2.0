@@ -18,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} transition-colors duration-300 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white`}>
+      <body className={`${inter.className} transition-colors duration-300 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 antialiased`}>
         <ThemeProvider>
           <AuthProvider>
             {children}

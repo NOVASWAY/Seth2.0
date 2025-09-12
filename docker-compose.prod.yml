@@ -1,95 +1,203 @@
+# ===========================================
+# SETH CLINIC CMS - PRODUCTION OVERRIDE
+# ===========================================
+# This file overrides docker-compose.yml for production deployment
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+
 version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database - Production Configuration
   postgres:
     image: postgres:15-alpine
     container_name: seth-clinic-db-prod
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-seth_clinic}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-seth_clinic_prod}
+      POSTGRES_USER: ${POSTGRES_USER:-seth_clinic_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "5432:5432"  # Expose on standard port for production
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_prod:/var/lib/postgresql/data
       - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
     networks:
       - seth-clinic-network
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-seth_clinic_user}"]
       interval: 30s
       timeout: 10s
       retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
 
-  # Redis for job queue and caching
+  # Redis - Production Configuration
   redis:
     image: redis:7-alpine
     container_name: seth-clinic-redis-prod
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "6379:6379"  # Expose on standard port for production
     volumes:
-      - redis_data:/data
+      - redis_data_prod:/data
     networks:
       - seth-clinic-network
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
-  # Backend API
+  # MongoDB - Production Configuration
+  mongodb:
+    image: mongo:7.0
+    container_name: seth-clinic-mongodb-prod
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-seth_clinic_mongo_prod}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data_prod:/data/db
+      - ./database/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - seth-clinic-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # Backend API - Production Configuration
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: production
+      target: production  # Use production target
     container_name: seth-clinic-backend-prod
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-seth_clinic}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-seth_clinic_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-seth_clinic_prod}
+      MONGODB_URL: mongodb://${MONGODB_USERNAME:-admin}:${MONGODB_PASSWORD}@mongodb:27017/${MONGODB_DATABASE:-seth_clinic_mongo_prod}?authSource=admin
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-      PORT: 5000
-      CORS_ORIGIN: ${FRONTEND_URL}
-      # Prescription system specific variables
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      ENABLE_AUDIT_LOGGING: ${ENABLE_AUDIT_LOGGING:-true}
-      # Currency configuration
-      DEFAULT_CURRENCY: ${DEFAULT_CURRENCY:-KES}
-      CURRENCY_LOCALE: ${CURRENCY_LOCALE:-en-KE}
-      CURRENCY_SYMBOL: ${CURRENCY_SYMBOL:-KES}
-      AUTO_SAVE_INTERVAL: ${AUTO_SAVE_INTERVAL:-30000}
-      # M-Pesa Integration
+      LOG_LEVEL: info
+      
+      # SHA configuration
+      SHA_API_URL: ${SHA_API_URL}
+      SHA_PROVIDER_CODE: ${SHA_PROVIDER_CODE}
+      SHA_FACILITY_LEVEL: ${SHA_FACILITY_LEVEL:-2}
+      SHA_SUBMISSION_TIMEOUT_MS: ${SHA_SUBMISSION_TIMEOUT_MS:-30000}
+      SHA_REQUIRE_INVOICE_BEFORE_SUBMISSION: ${SHA_REQUIRE_INVOICE_BEFORE_SUBMISSION:-true}
+      SHA_AUTO_SUBMIT_CLAIMS: ${SHA_AUTO_SUBMIT_CLAIMS:-false}
+      SHA_PAYMENT_CHECK_INTERVAL_HOURS: ${SHA_PAYMENT_CHECK_INTERVAL_HOURS:-24}
+      SHA_EXPORT_RETENTION_DAYS: ${SHA_EXPORT_RETENTION_DAYS:-90}
+      SHA_DOCUMENT_MAX_SIZE_MB: ${SHA_DOCUMENT_MAX_SIZE_MB:-10}
+      SHA_BATCH_SIZE_LIMIT: ${SHA_BATCH_SIZE_LIMIT:-100}
+      
+      # M-Pesa configuration
       MPESA_CONSUMER_KEY: ${MPESA_CONSUMER_KEY}
       MPESA_CONSUMER_SECRET: ${MPESA_CONSUMER_SECRET}
       MPESA_SHORTCODE: ${MPESA_SHORTCODE}
       MPESA_PASSKEY: ${MPESA_PASSKEY}
+      MPESA_BASE_URL: ${MPESA_BASE_URL:-https://api.safaricom.co.ke}
       MPESA_CALLBACK_URL: ${MPESA_CALLBACK_URL}
-      # SHA Insurance Integration
-      SHA_API_URL: ${SHA_API_URL}
-      SHA_API_KEY: ${SHA_API_KEY}
+      
+      # Email configuration
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      
+      # SMS configuration
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER}
+      
+      # Security configuration
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      CORS_CREDENTIALS: ${CORS_CREDENTIALS:-true}
+      HELMET_ENABLED: ${HELMET_ENABLED:-true}
+      CSP_ENABLED: ${CSP_ENABLED:-true}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+      
+      # File storage
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
+      STORAGE_PATH: ${STORAGE_PATH:-/app/uploads}
+      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-10}
+      
+      # Currency configuration
+      DEFAULT_CURRENCY: ${DEFAULT_CURRENCY:-KES}
+      CURRENCY_LOCALE: ${CURRENCY_LOCALE:-en-KE}
+      CURRENCY_SYMBOL: ${CURRENCY_SYMBOL:-KES}
+      
+      # Data sync configuration
+      DATA_SYNC_ENABLED: ${DATA_SYNC_ENABLED:-true}
+      DATA_SYNC_INTERVAL_MS: ${DATA_SYNC_INTERVAL_MS:-5000}
+      DATA_SYNC_MAX_QUEUE_SIZE: ${DATA_SYNC_MAX_QUEUE_SIZE:-1000}
+      
+      # Backup configuration
+      BACKUP_ENABLED: ${BACKUP_ENABLED:-true}
+      BACKUP_PATH: ${BACKUP_PATH:-/app/backups}
+      MAX_BACKUPS: ${MAX_BACKUPS:-30}
+      BACKUP_COMPRESSION: ${BACKUP_COMPRESSION:-true}
+      BACKUP_SCHEDULE: ${BACKUP_SCHEDULE:-0 2 * * *}
+      
+      # Performance monitoring
+      PERFORMANCE_MONITORING_ENABLED: ${PERFORMANCE_MONITORING_ENABLED:-true}
+      PERFORMANCE_MONITORING_INTERVAL_MS: ${PERFORMANCE_MONITORING_INTERVAL_MS:-30000}
+      PERFORMANCE_MONITORING_MAX_HISTORY: ${PERFORMANCE_MONITORING_MAX_HISTORY:-1000}
+      
     ports:
-      - "${BACKEND_PORT:-5000}:5000"
+      - "5000:5000"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    volumes:
+      - uploads_data_prod:/app/uploads
+      - exports_data_prod:/app/exports
+      - backups_data_prod:/app/backups
     networks:
       - seth-clinic-network
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
 
-  # Background Worker
+  # Background Worker - Production Configuration
   worker:
     build:
       context: ./backend
@@ -98,31 +206,58 @@ services:
     container_name: seth-clinic-worker-prod
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-seth_clinic}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-seth_clinic_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-seth_clinic_prod}
+      MONGODB_URL: mongodb://${MONGODB_USERNAME:-admin}:${MONGODB_PASSWORD}@mongodb:27017/${MONGODB_DATABASE:-seth_clinic_mongo_prod}?authSource=admin
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       JWT_SECRET: ${JWT_SECRET}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      # SHA Insurance Integration
+      LOG_LEVEL: info
+      
+      # SHA configuration for worker
       SHA_API_URL: ${SHA_API_URL}
-      SHA_API_KEY: ${SHA_API_KEY}
+      SHA_PROVIDER_CODE: ${SHA_PROVIDER_CODE}
+      SHA_PAYMENT_CHECK_INTERVAL_HOURS: ${SHA_PAYMENT_CHECK_INTERVAL_HOURS:-24}
+      
+      # Email configuration
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      
+      # SMS configuration
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER}
+      
+      # File storage
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
+      STORAGE_PATH: ${STORAGE_PATH:-/app/uploads}
+      
       # Currency configuration
       DEFAULT_CURRENCY: ${DEFAULT_CURRENCY:-KES}
       CURRENCY_LOCALE: ${CURRENCY_LOCALE:-en-KE}
       CURRENCY_SYMBOL: ${CURRENCY_SYMBOL:-KES}
-      # M-Pesa Integration
-      MPESA_CONSUMER_KEY: ${MPESA_CONSUMER_KEY}
-      MPESA_CONSUMER_SECRET: ${MPESA_CONSUMER_SECRET}
+      
     command: npm run worker
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    volumes:
+      - uploads_data_prod:/app/uploads
+      - exports_data_prod:/app/exports
+      - backups_data_prod:/app/backups
     networks:
       - seth-clinic-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
 
-  # Frontend (Next.js)
+  # Frontend - Production Configuration
   frontend:
     build:
       context: .
@@ -130,48 +265,42 @@ services:
       target: production
     container_name: seth-clinic-frontend-prod
     environment:
-      NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-      NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-1.0.0}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.yourdomain.com/api}
+      NEXT_PUBLIC_APP_VERSION: ${NEXT_PUBLIC_APP_VERSION:-1.0.0}
       NEXT_PUBLIC_ENVIRONMENT: production
-      # Currency configuration
       NEXT_PUBLIC_DEFAULT_CURRENCY: ${DEFAULT_CURRENCY:-KES}
       NEXT_PUBLIC_CURRENCY_LOCALE: ${CURRENCY_LOCALE:-en-KE}
       NEXT_PUBLIC_CURRENCY_SYMBOL: ${CURRENCY_SYMBOL:-KES}
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "3000:3000"
     depends_on:
       backend:
         condition: service_healthy
+    volumes:
+      - frontend_data_prod:/app/.next
     networks:
       - seth-clinic-network
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # Nginx Reverse Proxy
-  nginx:
-    image: nginx:alpine
-    container_name: seth-clinic-nginx-prod
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - seth-clinic-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
 
 volumes:
-  postgres_data:
-  redis_data:
+  postgres_data_prod:
+  redis_data_prod:
+  mongodb_data_prod:
+  uploads_data_prod:
+  exports_data_prod:
+  backups_data_prod:
+  frontend_data_prod:
 
 networks:
   seth-clinic-network:

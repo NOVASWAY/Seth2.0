@@ -23,25 +23,33 @@ RUN npm run build
 FROM base AS production
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
+ENV PORT=5000
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S backend -u 1001
+
+# Create necessary directories
+RUN mkdir -p /app/uploads /app/exports /app/backups /app/logs
+RUN chown -R backend:nodejs /app
 
 # Copy built application
 COPY --from=builder --chown=backend:nodejs /app/dist ./dist
 COPY --from=builder --chown=backend:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=backend:nodejs /app/package*.json ./
 
+# Switch to non-root user
 USER backend
 
+# Expose port
 EXPOSE 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
+# Start the application
 CMD ["npm", "start"]
 
 # Development image

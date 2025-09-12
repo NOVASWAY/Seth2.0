@@ -1,0 +1,560 @@
+[
+  {
+    "_id": "68c3fccba6fa0c7c5fc57c9c",
+    "event_type": "patient_visit",
+    "data": {
+      "patientId": "test-patient-123",
+      "visitType": "consultation",
+      "duration": 30
+    },
+    "timestamp": "2025-09-12T10:58:19.710Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fccba6fa0c7c5fc57c9e",
+    "event_type": "system_event",
+    "data": {
+      "action": "database_test",
+      "component": "analytics_service"
+    },
+    "timestamp": "2025-09-12T10:58:19.715Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fd95ffc3e7be786f9b80",
+    "event_type": "patient_visit",
+    "data": {
+      "patientId": "test-patient-123",
+      "visitType": "consultation",
+      "duration": 30
+    },
+    "timestamp": "2025-09-12T11:01:41.760Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fd95ffc3e7be786f9b84",
+    "event_type": "system_event",
+    "data": {
+      "action": "database_test",
+      "component": "analytics_service"
+    },
+    "timestamp": "2025-09-12T11:01:41.765Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f24",
+    "event_type": "patient_migration",
+    "data": {
+      "patientId": "b089e9f4-1f4b-47e8-9ad7-0fb6c258931a",
+      "migrationType": "postgresql_to_mongodb",
+      "recordType": "patient_profile"
+    },
+    "timestamp": "2025-09-12T11:03:05.077Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f2c",
+    "event_type": "patient_migration",
+    "data": {
+      "patientId": "0a5ababe-2548-4794-a292-0a8a4f46e395",
+      "migrationType": "postgresql_to_mongodb",
+      "recordType": "patient_profile"
+    },
+    "timestamp": "2025-09-12T11:03:05.092Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f35",
+    "event_type": "patient_migration",
+    "data": {
+      "patientId": "a80e4086-5818-4822-808b-0a84c24d0e00",
+      "migrationType": "postgresql_to_mongodb",
+      "recordType": "patient_profile"
+    },
+    "timestamp": "2025-09-12T11:03:05.104Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f3c",
+    "event_type": "patient_migration",
+    "data": {
+      "patientId": "c9f95aef-6bc5-444a-97d6-cfddac5fb688",
+      "migrationType": "postgresql_to_mongodb",
+      "recordType": "patient_profile"
+    },
+    "timestamp": "2025-09-12T11:03:05.113Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f43",
+    "event_type": "patient_migration",
+    "data": {
+      "patientId": "7ed4b4d9-88de-4e18-a5a2-37c42e4b1946",
+      "migrationType": "postgresql_to_mongodb",
+      "recordType": "patient_profile"
+    },
+    "timestamp": "2025-09-12T11:03:05.125Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f4a",
+    "event_type": "patient_migration",
+    "data": {
+      "patientId": "e2dfb57c-e728-48fc-aaf8-636177bf3c5e",
+      "migrationType": "postgresql_to_mongodb",
+      "recordType": "patient_profile"
+    },
+    "timestamp": "2025-09-12T11:03:05.135Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f50",
+    "event_type": "patient_migration",
+    "data": {
+      "patientId": "29e5a1b7-9415-4965-ab6a-2122a7586880",
+      "migrationType": "postgresql_to_mongodb",
+      "recordType": "patient_profile"
+    },
+    "timestamp": "2025-09-12T11:03:05.142Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f56",
+    "event_type": "patient_migration",
+    "data": {
+      "patientId": "bc467336-9f2d-4faa-a1b9-bc15118c5a8b",
+      "migrationType": "postgresql_to_mongodb",
+      "recordType": "patient_profile"
+    },
+    "timestamp": "2025-09-12T11:03:05.149Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f5c",
+    "event_type": "patient_migration",
+    "data": {
+      "patientId": "720a2872-aafa-4837-9ff3-e7eb024b4cb6",
+      "migrationType": "postgresql_to_mongodb",
+      "recordType": "patient_profile"
+    },
+    "timestamp": "2025-09-12T11:03:05.155Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f60",
+    "event_type": "patient_visit",
+    "data": {
+      "patientId": "test-patient-123",
+      "visitType": "consultation",
+      "duration": 30
+    },
+    "timestamp": "2025-09-12T11:03:05.160Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c3fde9ed37ccfd6cac6f62",
+    "event_type": "system_event",
+    "data": {
+      "action": "database_test",
+      "component": "analytics_service"
+    },
+    "timestamp": "2025-09-12T11:03:05.163Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4025aa23127a8c3722e44",
+    "event_type": "performance_metrics",
+    "data": {
+      "system": {
+        "memory": {
+          "used": 10013540352,
+          "free": 6563799040,
+          "total": 16577339392,
+          "percentage": 60
+        },
+        "cpu": {
+          "usage": 20,
+          "loadAverage": [
+            1.42,
+            1.97,
+            2.35
+          ]
+        },
+        "uptime": 3.876154523
+      },
+      "databases": {
+        "postgresql": {
+          "activeConnections": 1,
+          "maxConnections": 100,
+          "queryTime": 50,
+          "slowQueries": 0
+        },
+        "mongodb": {
+          "connections": 1,
+          "operations": 24,
+          "queryTime": 50,
+          "slowOperations": 0
+        }
+      },
+      "api": {
+        "requestsPerMinute": 0,
+        "averageResponseTime": 0,
+        "errorRate": 0,
+        "activeConnections": 0
+      },
+      "custom": {
+        "customMetric1": 78.44778998254367,
+        "customMetric2": 853
+      }
+    },
+    "timestamp": "2025-09-12T11:22:02.801Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4054aefa8d5f6eefa6300",
+    "event_type": "performance_metrics",
+    "data": {
+      "system": {
+        "memory": {
+          "used": 9025884160,
+          "free": 7551455232,
+          "total": 16577339392,
+          "percentage": 54
+        },
+        "cpu": {
+          "usage": 20,
+          "loadAverage": [
+            1.42,
+            2.18,
+            2.35
+          ]
+        },
+        "uptime": 2.208062171
+      },
+      "databases": {
+        "postgresql": {
+          "activeConnections": 1,
+          "maxConnections": 100,
+          "queryTime": 33,
+          "slowQueries": 0
+        },
+        "mongodb": {
+          "connections": 1,
+          "operations": 25,
+          "queryTime": 33,
+          "slowOperations": 0
+        }
+      },
+      "api": {
+        "requestsPerMinute": 0,
+        "averageResponseTime": 0,
+        "errorRate": 0,
+        "activeConnections": 0
+      },
+      "custom": {
+        "customMetric1": 53.8356112578714,
+        "customMetric2": 770
+      }
+    },
+    "timestamp": "2025-09-12T11:34:34.735Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4054aefa8d5f6eefa630a",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 2,
+      "timestamp": "2025-09-12T11:34:34.929Z"
+    },
+    "timestamp": "2025-09-12T11:34:34.929Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4054aefa8d5f6eefa6308",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 0,
+      "timestamp": "2025-09-12T11:34:34.927Z"
+    },
+    "timestamp": "2025-09-12T11:34:34.927Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4054aefa8d5f6eefa6309",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 1,
+      "timestamp": "2025-09-12T11:34:34.928Z"
+    },
+    "timestamp": "2025-09-12T11:34:34.928Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4054aefa8d5f6eefa630c",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 4,
+      "timestamp": "2025-09-12T11:34:34.930Z"
+    },
+    "timestamp": "2025-09-12T11:34:34.930Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4054aefa8d5f6eefa630b",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 3,
+      "timestamp": "2025-09-12T11:34:34.930Z"
+    },
+    "timestamp": "2025-09-12T11:34:34.930Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4054aefa8d5f6eefa630f",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 7,
+      "timestamp": "2025-09-12T11:34:34.931Z"
+    },
+    "timestamp": "2025-09-12T11:34:34.931Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4054aefa8d5f6eefa6310",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 8,
+      "timestamp": "2025-09-12T11:34:34.931Z"
+    },
+    "timestamp": "2025-09-12T11:34:34.931Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4054aefa8d5f6eefa6311",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 9,
+      "timestamp": "2025-09-12T11:34:34.932Z"
+    },
+    "timestamp": "2025-09-12T11:34:34.932Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4054aefa8d5f6eefa630d",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 5,
+      "timestamp": "2025-09-12T11:34:34.930Z"
+    },
+    "timestamp": "2025-09-12T11:34:34.930Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4054aefa8d5f6eefa630e",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 6,
+      "timestamp": "2025-09-12T11:34:34.931Z"
+    },
+    "timestamp": "2025-09-12T11:34:34.931Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4063d73aa4a26954733d5",
+    "event_type": "performance_metrics",
+    "data": {
+      "system": {
+        "memory": {
+          "used": 9041346560,
+          "free": 7535992832,
+          "total": 16577339392,
+          "percentage": 55
+        },
+        "cpu": {
+          "usage": 20,
+          "loadAverage": [
+            2.93,
+            2.44,
+            2.43
+          ]
+        },
+        "uptime": 2.376429155
+      },
+      "databases": {
+        "postgresql": {
+          "activeConnections": 1,
+          "maxConnections": 100,
+          "queryTime": 27,
+          "slowQueries": 0
+        },
+        "mongodb": {
+          "connections": 1,
+          "operations": 36,
+          "queryTime": 27,
+          "slowOperations": 0
+        }
+      },
+      "api": {
+        "requestsPerMinute": 0,
+        "averageResponseTime": 0,
+        "errorRate": 0,
+        "activeConnections": 0
+      },
+      "custom": {
+        "customMetric1": 21.05207123431134,
+        "customMetric2": 958
+      }
+    },
+    "timestamp": "2025-09-12T11:38:37.929Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4063e73aa4a26954733dd",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 0,
+      "timestamp": "2025-09-12T11:38:38.106Z"
+    },
+    "timestamp": "2025-09-12T11:38:38.106Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4063e73aa4a26954733df",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 2,
+      "timestamp": "2025-09-12T11:38:38.109Z"
+    },
+    "timestamp": "2025-09-12T11:38:38.109Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4063e73aa4a26954733de",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 1,
+      "timestamp": "2025-09-12T11:38:38.107Z"
+    },
+    "timestamp": "2025-09-12T11:38:38.107Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4063e73aa4a26954733e0",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 3,
+      "timestamp": "2025-09-12T11:38:38.109Z"
+    },
+    "timestamp": "2025-09-12T11:38:38.109Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4063e73aa4a26954733e1",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 4,
+      "timestamp": "2025-09-12T11:38:38.109Z"
+    },
+    "timestamp": "2025-09-12T11:38:38.109Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4063e73aa4a26954733e4",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 7,
+      "timestamp": "2025-09-12T11:38:38.110Z"
+    },
+    "timestamp": "2025-09-12T11:38:38.110Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4063e73aa4a26954733e5",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 8,
+      "timestamp": "2025-09-12T11:38:38.111Z"
+    },
+    "timestamp": "2025-09-12T11:38:38.111Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4063e73aa4a26954733e6",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 9,
+      "timestamp": "2025-09-12T11:38:38.111Z"
+    },
+    "timestamp": "2025-09-12T11:38:38.111Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4063e73aa4a26954733e2",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 5,
+      "timestamp": "2025-09-12T11:38:38.110Z"
+    },
+    "timestamp": "2025-09-12T11:38:38.110Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4063e73aa4a26954733e3",
+    "event_type": "resilience_test",
+    "data": {
+      "testId": 6,
+      "timestamp": "2025-09-12T11:38:38.110Z"
+    },
+    "timestamp": "2025-09-12T11:38:38.110Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c4150104b836bc029c4d72",
+    "event_type": "performance_metrics",
+    "data": {
+      "system": {
+        "memory": {
+          "used": 10731085824,
+          "free": 5846253568,
+          "total": 16577339392,
+          "percentage": 65
+        },
+        "cpu": {
+          "usage": 19,
+          "loadAverage": [
+            1.72,
+            2.56,
+            2.11
+          ]
+        },
+        "uptime": 2.741219062
+      },
+      "databases": {
+        "postgresql": {
+          "activeConnections": 1,
+          "maxConnections": 100,
+          "queryTime": 59,
+          "slowQueries": 0
+        },
+        "mongodb": {
+          "connections": 1,
+          "operations": 47,
+          "queryTime": 59,
+          "slowOperations": 0
+        }
+      },
+      "api": {
+        "requestsPerMinute": 0,
+        "averageResponseTime": 0,
+        "errorRate": 0,
+        "activeConnections": 0
+      },
+      "custom": {
+        "customMetric1": 75.8494680949443,
+        "customMetric2": 606
+      }
+    },
+    "timestamp": "2025-09-12T12:41:37.545Z",
+    "__v": 0
+  }
+]

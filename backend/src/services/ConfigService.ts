@@ -147,20 +147,20 @@ export class ConfigService {
       },
       security: {
         jwt: {
-          secret: process.env.JWT_SECRET || 'your-secret-key',
-          expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+          secret: process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'your-secret-key'),
+          expiresIn: process.env.JWT_EXPIRES_IN || (process.env.NODE_ENV === 'production' ? '15m' : '24h'),
           refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
         },
         bcrypt: {
-          saltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '12')
+          saltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || (process.env.NODE_ENV === 'production' ? '14' : '12'))
         },
         cors: {
-          origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000'],
+          origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : (process.env.NODE_ENV === 'production' ? [] : ['http://localhost:3000']),
           credentials: process.env.CORS_CREDENTIALS === 'true'
         },
         helmet: {
           enabled: process.env.HELMET_ENABLED !== 'false',
-          contentSecurityPolicy: process.env.CSP_ENABLED === 'true'
+          contentSecurityPolicy: process.env.CSP_ENABLED === 'true' || process.env.NODE_ENV === 'production'
         }
       }
     }
@@ -238,8 +238,27 @@ export class ConfigService {
     // Validate security configuration
     const securityConfig = this.config.security
     
-    if (securityConfig.jwt.secret === 'your-secret-key') {
-      errors.push('JWT secret must be changed from default value')
+    if (securityConfig.jwt.secret === 'your-secret-key' || securityConfig.jwt.secret === '') {
+      errors.push('JWT secret must be set to a secure value in production')
+    }
+    
+    if (process.env.NODE_ENV === 'production') {
+      // Production-specific validations
+      if (!process.env.MPESA_CONSUMER_KEY || process.env.MPESA_CONSUMER_KEY === 'your_actual_consumer_key_here') {
+        errors.push('M-Pesa consumer key must be configured for production')
+      }
+      
+      if (!process.env.MPESA_CONSUMER_SECRET || process.env.MPESA_CONSUMER_SECRET === 'your_actual_consumer_secret_here') {
+        errors.push('M-Pesa consumer secret must be configured for production')
+      }
+      
+      if (!process.env.ADMIN_EMAIL || process.env.ADMIN_EMAIL === 'admin@yourdomain.com') {
+        errors.push('Admin email must be configured for production')
+      }
+      
+      if (securityConfig.cors.origin.length === 0) {
+        errors.push('CORS origins must be configured for production')
+      }
     }
     
     if (securityConfig.bcrypt.saltRounds < 10) {
