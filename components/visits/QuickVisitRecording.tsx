@@ -12,7 +12,8 @@ import { Textarea } from "../ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
 import { Alert, AlertDescription } from "../ui/alert"
 import { Badge } from "../ui/badge"
-import { Loader2, Search, UserPlus, Clock, CheckCircle, AlertTriangle, Calendar, Phone, MapPin, Stethoscope } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
+import { Loader2, Search, UserPlus, Clock, CheckCircle, AlertTriangle, Calendar, Phone, MapPin, Stethoscope, Pill, Plus, Trash2 } from "lucide-react"
 import { useToast } from "../../hooks/use-toast"
 import { useAuthStore } from "../../lib/auth"
 import type { Patient } from "../../types"
@@ -24,7 +25,19 @@ const visitSchema = z.object({
   visitType: z.enum(["CONSULTATION", "FOLLOW_UP", "EMERGENCY", "ROUTINE"]),
   department: z.string().optional(),
   notes: z.string().optional(),
+  diagnosis: z.string().optional(),
+  treatmentPlan: z.string().optional(),
 })
+
+interface Prescription {
+  id: string
+  medicationName: string
+  dosage: string
+  frequency: string
+  duration: string
+  instructions: string
+  quantity: number
+}
 
 type VisitData = z.infer<typeof visitSchema>
 
@@ -54,6 +67,8 @@ export function QuickVisitRecording({
   const [searchResults, setSearchResults] = useState<SearchResult>({ patients: [], total: 0 })
   const [isSearching, setIsSearching] = useState(false)
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(preSelectedPatient)
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
+  const [activeTab, setActiveTab] = useState('visit')
 
   const {
     register,
@@ -184,7 +199,20 @@ export function QuickVisitRecording({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="visit" className="flex items-center gap-2">
+              <Stethoscope className="h-4 w-4" />
+              Visit Details
+            </TabsTrigger>
+            <TabsTrigger value="prescriptions" className="flex items-center gap-2">
+              <Pill className="h-4 w-4" />
+              Prescriptions
+            </TabsTrigger>
+          </TabsList>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <TabsContent value="visit" className="space-y-6">
           {error && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
@@ -222,16 +250,16 @@ export function QuickVisitRecording({
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="font-medium text-gray-900 dark:text-slate-100">
-                            {patient.first_name} {patient.last_name}
+                            {patient.firstName} {patient.lastName}
                           </h4>
                           <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-slate-400">
                             <span className="flex items-center gap-1">
-                              <span className="font-mono">#{patient.op_number}</span>
+                              <span className="font-mono">#{patient.opNumber}</span>
                             </span>
-                            {patient.phone_number && (
+                            {patient.phoneNumber && (
                               <span className="flex items-center gap-1">
                                 <Phone className="h-3 w-3" />
-                                {patient.phone_number}
+                                {patient.phoneNumber}
                               </span>
                             )}
                             {patient.area && (
@@ -243,7 +271,7 @@ export function QuickVisitRecording({
                           </div>
                         </div>
                         <Badge variant="outline">
-                          {patient.insurance_type}
+                          {patient.insuranceType}
                         </Badge>
                       </div>
                     </div>
@@ -261,10 +289,10 @@ export function QuickVisitRecording({
                     </span>
                   </div>
                   <div className="text-sm text-green-700 dark:text-green-300">
-                    <p><strong>{selectedPatient.first_name} {selectedPatient.last_name}</strong></p>
-                    <p>OP Number: {selectedPatient.op_number}</p>
-                    {selectedPatient.phone_number && <p>Phone: {selectedPatient.phone_number}</p>}
-                    <p>Insurance: {selectedPatient.insurance_type}</p>
+                    <p><strong>{selectedPatient.firstName} {selectedPatient.lastName}</strong></p>
+                    <p>OP Number: {selectedPatient.opNumber}</p>
+                    {selectedPatient.phoneNumber && <p>Phone: {selectedPatient.phoneNumber}</p>}
+                    <p>Insurance: {selectedPatient.insuranceType}</p>
                   </div>
                 </div>
               )}
@@ -362,6 +390,156 @@ export function QuickVisitRecording({
               />
             </div>
           </div>
+            </TabsContent>
+
+            <TabsContent value="prescriptions" className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium flex items-center gap-2">
+                    <Pill className="h-5 w-5" />
+                    Prescriptions
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const newPrescription: Prescription = {
+                        id: Date.now().toString(),
+                        medicationName: '',
+                        dosage: '',
+                        frequency: '',
+                        duration: '',
+                        instructions: '',
+                        quantity: 1
+                      }
+                      setPrescriptions(prev => [...prev, newPrescription])
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Prescription
+                  </Button>
+                </div>
+
+                {prescriptions.length === 0 ? (
+                  <div className="text-center py-8 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <Pill className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+                    <p className="text-slate-600 dark:text-slate-400">No prescriptions added yet</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-500">Click "Add Prescription" to start</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {prescriptions.map((prescription, index) => (
+                      <Card key={prescription.id} className="border border-slate-200 dark:border-slate-700">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-medium">Prescription #{index + 1}</h4>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setPrescriptions(prev => prev.filter(p => p.id !== prescription.id))
+                              }}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label>Medication Name *</Label>
+                              <Input
+                                value={prescription.medicationName}
+                                onChange={(e) => {
+                                  setPrescriptions(prev => prev.map(p => 
+                                    p.id === prescription.id 
+                                      ? { ...p, medicationName: e.target.value }
+                                      : p
+                                  ))
+                                }}
+                                placeholder="e.g., Paracetamol"
+                              />
+                            </div>
+                            
+                            <div>
+                              <Label>Dosage *</Label>
+                              <Input
+                                value={prescription.dosage}
+                                onChange={(e) => {
+                                  setPrescriptions(prev => prev.map(p => 
+                                    p.id === prescription.id 
+                                      ? { ...p, dosage: e.target.value }
+                                      : p
+                                  ))
+                                }}
+                                placeholder="e.g., 500mg"
+                              />
+                            </div>
+                            
+                            <div>
+                              <Label>Frequency *</Label>
+                              <Select
+                                value={prescription.frequency}
+                                onValueChange={(value) => {
+                                  setPrescriptions(prev => prev.map(p => 
+                                    p.id === prescription.id 
+                                      ? { ...p, frequency: value }
+                                      : p
+                                  ))
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select frequency" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Once daily">Once daily</SelectItem>
+                                  <SelectItem value="Twice daily">Twice daily</SelectItem>
+                                  <SelectItem value="Three times daily">Three times daily</SelectItem>
+                                  <SelectItem value="Four times daily">Four times daily</SelectItem>
+                                  <SelectItem value="As needed">As needed</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div>
+                              <Label>Duration *</Label>
+                              <Input
+                                value={prescription.duration}
+                                onChange={(e) => {
+                                  setPrescriptions(prev => prev.map(p => 
+                                    p.id === prescription.id 
+                                      ? { ...p, duration: e.target.value }
+                                      : p
+                                  ))
+                                }}
+                                placeholder="e.g., 7 days"
+                              />
+                            </div>
+                            
+                            <div className="md:col-span-2">
+                              <Label>Instructions</Label>
+                              <Textarea
+                                value={prescription.instructions}
+                                onChange={(e) => {
+                                  setPrescriptions(prev => prev.map(p => 
+                                    p.id === prescription.id 
+                                      ? { ...p, instructions: e.target.value }
+                                      : p
+                                  ))
+                                }}
+                                placeholder="e.g., Take after meals, Avoid alcohol"
+                                rows={2}
+                              />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
 
           {/* Form Actions */}
           <div className="flex justify-end space-x-4 pt-6 border-t">
@@ -388,7 +566,8 @@ export function QuickVisitRecording({
               )}
             </Button>
           </div>
-        </form>
+          </form>
+        </Tabs>
       </CardContent>
     </Card>
   )

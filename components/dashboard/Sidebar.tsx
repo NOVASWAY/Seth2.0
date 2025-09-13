@@ -3,7 +3,8 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from '../../lib/ThemeContext'
 import { useAuthStore } from '../../lib/auth'
 import { getMenuItemsForRole, getRoleDisplayName, type MenuItem } from '../../lib/roleBasedMenuConfig'
-import { ChevronLeft, ChevronRight, User, LogOut, Heart, Activity } from 'lucide-react'
+import { ChevronLeft, ChevronRight, User, LogOut } from 'lucide-react'
+import Logo from '../ui/Logo'
 
 interface SidebarProps {
   user?: any
@@ -42,19 +43,15 @@ export default function Sidebar({ user, isCollapsed = false, onToggle }: Sidebar
   }
 
   return (
-    <div className={`bg-white dark:bg-slate-800 shadow-lg transition-all duration-300 border-r border-slate-200 dark:border-slate-700 ${
+    <div className={`bg-gradient-to-b from-white to-purple-50/30 dark:from-slate-800 dark:to-purple-900/20 shadow-lg transition-all duration-300 border-r border-purple-200/50 dark:border-purple-700/50 ${
       isCollapsed ? 'w-16' : 'w-64'
     }`}>
       {/* Header */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-slate-200 dark:border-slate-700">
-        {!isCollapsed && (
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center relative">
-              <Heart className="w-4 h-4 text-white fill-current" />
-              <Activity className="w-3 h-3 text-white absolute -top-1 -right-1" />
-            </div>
-            <span className="text-lg font-semibold text-slate-900 dark:text-slate-100">Seth Clinic</span>
-          </div>
+      <div className="flex items-center justify-between h-16 px-4 border-b border-purple-200/50 dark:border-purple-700/50">
+        {!isCollapsed ? (
+          <Logo size="lg" variant="full" showText={true} />
+        ) : (
+          <Logo size="md" variant="icon" showText={false} />
         )}
         <button
           onClick={onToggle}
@@ -65,7 +62,7 @@ export default function Sidebar({ user, isCollapsed = false, onToggle }: Sidebar
       </div>
 
       {/* User Profile */}
-      <div className="px-4 py-4 border-b border-slate-200 dark:border-slate-700">
+      <div className="px-4 py-4 border-b border-purple-200/50 dark:border-purple-700/50">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-purple-600 rounded-full flex items-center justify-center">
             <User className="w-5 h-5 text-white" />
@@ -89,10 +86,10 @@ export default function Sidebar({ user, isCollapsed = false, onToggle }: Sidebar
           <button
             key={item.id}
             onClick={() => handleNavigation(item.href)}
-            className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+            className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
               isActiveRoute(item.href)
-                ? 'bg-gradient-to-r from-orange-50 to-purple-50 dark:from-orange-900/20 dark:to-purple-900/20 text-orange-700 dark:text-orange-300 border-r-2 border-orange-500'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700'
+                ? 'bg-gradient-to-r from-purple-100 to-orange-100 dark:from-purple-900/30 dark:to-orange-900/30 text-purple-700 dark:text-purple-300 border-r-2 border-purple-500 shadow-sm'
+                : 'text-slate-600 dark:text-slate-300 hover:text-purple-700 dark:hover:text-purple-300 hover:bg-gradient-to-r hover:from-purple-50 hover:to-orange-50 dark:hover:from-purple-900/20 dark:hover:to-orange-900/20'
             }`}
           >
             <span className="text-lg mr-3">{item.icon}</span>
@@ -100,7 +97,7 @@ export default function Sidebar({ user, isCollapsed = false, onToggle }: Sidebar
               <>
                 <span className="flex-1 text-left">{item.title}</span>
                 {item.badge && (
-                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200">
+                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-orange-100 dark:from-purple-900/30 dark:to-orange-900/30 text-purple-800 dark:text-purple-200">
                     {item.badge}
                   </span>
                 )}
@@ -111,7 +108,7 @@ export default function Sidebar({ user, isCollapsed = false, onToggle }: Sidebar
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t border-slate-200 dark:border-slate-700">
+      <div className="px-4 py-4 border-t border-purple-200/50 dark:border-purple-700/50">
         <button
           onClick={handleLogout}
           className="flex items-center space-x-3 w-full p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group"

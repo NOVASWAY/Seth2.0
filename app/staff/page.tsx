@@ -76,6 +76,7 @@ export default function StaffManagementPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [userPassword, setUserPassword] = useState<string>('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showAddStaff, setShowAddStaff] = useState(false)
 
   // Check if user is admin
   useEffect(() => {
@@ -413,14 +414,39 @@ export default function StaffManagementPage() {
                   Manage staff accounts, unlock users, and control access
                 </p>
               </div>
-              <Button 
-                onClick={fetchStaff}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Refresh
-              </Button>
+              <div className="flex items-center space-x-3">
+                <Button 
+                  onClick={fetchStaff}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh
+                </Button>
+                
+                {user?.role === 'ADMIN' && (
+                  <Dialog open={showAddStaff} onOpenChange={setShowAddStaff}>
+                    <DialogTrigger asChild>
+                      <Button className="bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-700 hover:to-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+                        <Users className="h-4 w-4 mr-2" />
+                        Add New Staff
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Add New Staff Member</DialogTitle>
+                        <DialogDescription>
+                          Create a new staff account for the clinic system
+                        </DialogDescription>
+                      </DialogHeader>
+                      <AddStaffForm onSuccess={() => {
+                        setShowAddStaff(false)
+                        fetchStaff()
+                      }} />
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
             </div>
           </div>
 
@@ -733,5 +759,187 @@ export default function StaffManagementPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Add Staff Form Component
+function AddStaffForm({ onSuccess }: { onSuccess: () => void }) {
+  const { toast } = useToast()
+  const { accessToken } = useAuthStore()
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    firstName: '',
+    lastName: '',
+    role: 'RECEPTIONIST',
+    password: ''
+  })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!formData.username || !formData.firstName || !formData.lastName || !formData.password) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      
+      const response = await fetch('http://localhost:5000/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          role: formData.role,
+          password: formData.password
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          toast({
+            title: "Success",
+            description: "Staff member added successfully",
+          })
+          onSuccess()
+        } else {
+          throw new Error(result.message || 'Failed to create staff member')
+        }
+      } else {
+        throw new Error('Failed to create staff member')
+      }
+    } catch (error: any) {
+      console.error('Error creating staff member:', error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create staff member",
+        variant: "destructive"
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 gap-4">
+        <div>
+          <Label htmlFor="username">Username *</Label>
+          <Input
+            id="username"
+            value={formData.username}
+            onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+            placeholder="Enter username"
+            required
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+            placeholder="Enter email address"
+          />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="firstName">First Name *</Label>
+            <Input
+              id="firstName"
+              value={formData.firstName}
+              onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+              placeholder="First name"
+              required
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="lastName">Last Name *</Label>
+            <Input
+              id="lastName"
+              value={formData.lastName}
+              onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+              placeholder="Last name"
+              required
+            />
+          </div>
+        </div>
+        
+        <div>
+          <Label htmlFor="role">Role *</Label>
+          <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="RECEPTIONIST">Receptionist</SelectItem>
+              <SelectItem value="NURSE">Nurse</SelectItem>
+              <SelectItem value="CLINICAL_OFFICER">Clinical Officer</SelectItem>
+              <SelectItem value="PHARMACIST">Pharmacist</SelectItem>
+              <SelectItem value="LAB_TECHNICIAN">Lab Technician</SelectItem>
+              <SelectItem value="INVENTORY_MANAGER">Inventory Manager</SelectItem>
+              <SelectItem value="CLAIMS_MANAGER">Claims Manager</SelectItem>
+              <SelectItem value="ADMIN">Administrator</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div>
+          <Label htmlFor="password">Password *</Label>
+          <Input
+            id="password"
+            type="password"
+            value={formData.password}
+            onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+            placeholder="Enter password"
+            required
+          />
+        </div>
+      </div>
+      
+      <div className="flex justify-end space-x-2 pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onSuccess}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-700 hover:to-orange-600"
+        >
+          {isSubmitting ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Creating...
+            </>
+          ) : (
+            <>
+              <Users className="h-4 w-4 mr-2" />
+              Add Staff Member
+            </>
+          )}
+        </Button>
+      </div>
+    </form>
   )
 }

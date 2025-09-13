@@ -27,7 +27,7 @@ export const getQuickActionsForRole = (userRole: string): QuickAction[] => {
       description: "Book a new appointment",
       icon: "📅",
       href: "/appointments",
-      color: "blue",
+      color: "purple",
       roles: ["ADMIN", "RECEPTIONIST", "NURSE", "CLINICAL_OFFICER"]
     },
     {
@@ -54,7 +54,7 @@ export const getQuickActionsForRole = (userRole: string): QuickAction[] => {
       description: "Record a new visit for existing patients",
       icon: "📝",
       href: "/visits/record",
-      color: "blue",
+      color: "purple",
       roles: ["ADMIN", "RECEPTIONIST", "CLINICAL_OFFICER", "NURSE"]
     },
     {
@@ -99,7 +99,7 @@ export const getQuickActionsForRole = (userRole: string): QuickAction[] => {
       description: "Order or view lab tests",
       icon: "🧪",
       href: "/diagnostics",
-      color: "blue",
+      color: "purple",
       roles: ["ADMIN", "CLINICAL_OFFICER", "LAB_TECHNICIAN"]
     },
     {

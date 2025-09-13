@@ -2,11 +2,11 @@
 
 import { useAuthStore } from '../../lib/auth'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, Suspense, useMemo } from 'react'
+import { useEffect, useState, Suspense, useMemo, useCallback, memo } from 'react'
 import { useTheme } from '../../lib/ThemeContext'
 import { OptimizedProtectedRoute } from '../../components/auth/OptimizedProtectedRoute'
 import { LazyWrapper, createLazyComponent } from '../../components/ui/LazyWrapper'
-import { DashboardSkeleton } from '../../components/ui/Skeleton'
+import { DashboardSkeleton } from '../../components/ui/skeleton'
 import { getQuickActionsForRole } from '../../lib/roleBasedQuickActions'
 import axios from 'axios'
 
@@ -20,8 +20,74 @@ const ThemeToggle = createLazyComponent(() => import('../../components/ui/ThemeT
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
 
-// Dashboard content component (separated for better performance)
-function DashboardContent() {
+// Memoized Stats Cards Component
+const StatsCards = memo(({ stats, loading }: { stats: any; loading: boolean }) => {
+  if (loading) {
+    return (
+      <>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <LazyWrapper key={i} fallback="card">
+            <div />
+          </LazyWrapper>
+        ))}
+      </>
+    )
+  }
+
+  const statsData = [
+    {
+      title: 'Total Patients',
+      value: (stats.total_patients || 0).toLocaleString(),
+      change: '+12%',
+      changeType: 'increase' as const,
+      color: 'purple' as const,
+      icon: 'Users',
+      description: 'from last month'
+    },
+    {
+      title: 'Today\'s Visits',
+      value: (stats.today_visits || 0).toLocaleString(),
+      change: '+8%',
+      changeType: 'increase' as const,
+      color: 'orange' as const,
+      icon: 'Calendar',
+      description: 'from last month'
+    },
+    {
+      title: 'Active Users',
+      value: (stats.active_users || 0).toLocaleString(),
+      change: '+5%',
+      changeType: 'increase' as const,
+      color: 'green' as const,
+      icon: 'UserCheck',
+      description: 'from last month'
+    },
+    {
+      title: 'Today\'s Revenue',
+      value: `KSh ${(stats.today_revenue || 0).toLocaleString()}`,
+      change: '+15%',
+      changeType: 'increase' as const,
+      color: 'heartbeat' as const,
+      icon: 'Banknote',
+      description: 'from last month'
+    }
+  ]
+
+  return (
+    <>
+      {statsData.map((stat, index) => (
+        <LazyWrapper key={index} fallback="card">
+          <StatsCard {...stat} />
+        </LazyWrapper>
+      ))}
+    </>
+  )
+})
+
+StatsCards.displayName = 'StatsCards'
+
+// Simplified Dashboard Content Component
+const DashboardContent = memo(() => {
   const { user } = useAuthStore()
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const { theme, colors } = useTheme()
@@ -36,7 +102,7 @@ function DashboardContent() {
     pending_claims: 0
   })
   const [activities, setActivities] = useState([])
-  const [patients, setPatients] = useState([])
+  const [patients, setPatients] = useState<any[]>([])
   const [syncStats, setSyncStats] = useState({
     connectedUsers: 0,
     activeUsers: 0,
@@ -51,8 +117,8 @@ function DashboardContent() {
     [user?.role]
   )
 
-  // Optimized data fetching with caching
-  const fetchDashboardData = async () => {
+  // Simplified data fetching
+  const fetchDashboardData = useCallback(async () => {
     try {
       setDataLoading(true)
       const { accessToken } = useAuthStore.getState()
@@ -85,7 +151,14 @@ function DashboardContent() {
         setActivities(activitiesResponse.value.data.data || [])
       }
       if (patientsResponse.status === 'fulfilled' && patientsResponse.value.data.success) {
-        setPatients(patientsResponse.value.data.data || [])
+        const patientsData = patientsResponse.value.data.data
+        if (Array.isArray(patientsData)) {
+          setPatients(patientsData)
+        } else if (patientsData && Array.isArray(patientsData.patients)) {
+          setPatients(patientsData.patients)
+        } else {
+          setPatients([])
+        }
       }
       if (syncResponse.status === 'fulfilled' && syncResponse.value.data.success) {
         setSyncStats(syncResponse.value.data.data || syncStats)
@@ -97,7 +170,7 @@ function DashboardContent() {
     } finally {
       setDataLoading(false)
     }
-  }
+  }, [])
 
   // Fetch data on mount
   useEffect(() => {
@@ -134,83 +207,101 @@ function DashboardContent() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {dataLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <LazyWrapper key={i} fallback="card">
-                    <div />
-                  </LazyWrapper>
-                ))
-              ) : (
-                <>
-                  <LazyWrapper fallback="card">
-                    <StatsCard
-                      title="Total Patients"
-                      value={stats.total_patients}
-                      change="+12%"
-                      changeType="positive"
-                      icon="Users"
-                    />
-                  </LazyWrapper>
-                  <LazyWrapper fallback="card">
-                    <StatsCard
-                      title="Today's Visits"
-                      value={stats.today_visits}
-                      change="+8%"
-                      changeType="positive"
-                      icon="Calendar"
-                    />
-                  </LazyWrapper>
-                  <LazyWrapper fallback="card">
-                    <StatsCard
-                      title="Active Users"
-                      value={stats.active_users}
-                      change="+5%"
-                      changeType="positive"
-                      icon="UserCheck"
-                    />
-                  </LazyWrapper>
-                  <LazyWrapper fallback="card">
-                    <StatsCard
-                      title="Today's Revenue"
-                      value={`KES ${stats.today_revenue.toLocaleString()}`}
-                      change="+15%"
-                      changeType="positive"
-                      icon="DollarSign"
-                    />
-                  </LazyWrapper>
-                </>
-              )}
+            <div className="mb-8">
+              <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">
+                Clinic Overview
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatsCards stats={stats} loading={dataLoading} />
+              </div>
             </div>
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               {/* Quick Actions */}
-              <LazyWrapper fallback="skeleton">
-                <QuickActions actions={quickActions} />
-              </LazyWrapper>
+              <div className="lg:col-span-1">
+                <LazyWrapper fallback="skeleton">
+                  <QuickActions 
+                    actions={quickActions}
+                  />
+                </LazyWrapper>
+              </div>
 
               {/* Recent Activity */}
-              <LazyWrapper fallback="skeleton">
-                <RecentActivity activities={activities} />
-              </LazyWrapper>
+              <div className="lg:col-span-2">
+                <LazyWrapper fallback="skeleton">
+                  <RecentActivity 
+                    activities={activities}
+                  />
+                </LazyWrapper>
+              </div>
+            </div>
 
-              {/* Patient Queue */}
+            {/* Patient Queue */}
+            <div className="mb-8">
               <LazyWrapper fallback="skeleton">
-                <PatientQueue patients={patients} />
+                <PatientQueue 
+                  patients={patients}
+                />
               </LazyWrapper>
+            </div>
+
+            {/* Sync Status */}
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">
+                System Status
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    {syncStats.connectedUsers}
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">
+                    Connected Users
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                    {syncStats.activeUsers}
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">
+                    Active Users
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {syncStats.recentSyncEvents}
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">
+                    Recent Syncs
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                    {syncStats.pendingNotifications}
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">
+                    Pending Notifications
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
   )
-}
+})
 
+DashboardContent.displayName = 'DashboardContent'
+
+// Main Dashboard Component
 export default function Dashboard() {
   return (
     <OptimizedProtectedRoute>
-      <DashboardContent />
+      <Suspense fallback={<DashboardSkeleton />}>
+        <DashboardContent />
+      </Suspense>
     </OptimizedProtectedRoute>
   )
 }

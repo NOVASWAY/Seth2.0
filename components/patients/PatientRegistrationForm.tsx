@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "../ui/alert"
 import { Loader2, UserPlus } from "lucide-react"
 
 const patientSchema = z.object({
+  opNumber: z.string().optional(), // Auto-generated if not provided
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   dateOfBirth: z.string().optional(),
@@ -24,6 +25,7 @@ const patientSchema = z.object({
   nextOfKinPhone: z.string().optional(),
   insuranceType: z.enum(["SHA", "PRIVATE", "CASH"]),
   insuranceNumber: z.string().optional(),
+  shaNumber: z.string().optional(), // SHA-specific number
   chiefComplaint: z.string().optional(),
   triageCategory: z.enum(["EMERGENCY", "URGENT", "NORMAL"]),
 })
@@ -156,7 +158,19 @@ export function PatientRegistrationForm({ onSuccess, onCancel }: PatientRegistra
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Personal Information</h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="opNumber">OP Number</Label>
+                <Input 
+                  id="opNumber" 
+                  {...register("opNumber")} 
+                  placeholder="Auto-generated if empty" 
+                  disabled={isLoading}
+                  className="font-mono"
+                />
+                <p className="text-xs text-slate-500">Leave empty to auto-generate</p>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name *</Label>
                 <Input id="firstName" {...register("firstName")} placeholder="Enter first name" disabled={isLoading} />
@@ -258,13 +272,30 @@ export function PatientRegistrationForm({ onSuccess, onCancel }: PatientRegistra
 
               {insuranceType !== "CASH" && (
                 <div className="space-y-2">
-                  <Label htmlFor="insuranceNumber">Insurance Number</Label>
+                  <Label htmlFor="insuranceNumber">
+                    {insuranceType === "SHA" ? "SHA Number" : "Insurance Number"}
+                  </Label>
                   <Input
                     id="insuranceNumber"
                     {...register("insuranceNumber")}
-                    placeholder="Enter insurance number"
+                    placeholder={insuranceType === "SHA" ? "Enter SHA number" : "Enter insurance number"}
                     disabled={isLoading}
+                    className="font-mono"
                   />
+                </div>
+              )}
+              
+              {insuranceType === "SHA" && (
+                <div className="space-y-2">
+                  <Label htmlFor="shaNumber">SHA Specific Number</Label>
+                  <Input
+                    id="shaNumber"
+                    {...register("shaNumber")}
+                    placeholder="Additional SHA identifier"
+                    disabled={isLoading}
+                    className="font-mono"
+                  />
+                  <p className="text-xs text-slate-500">For SHA invoice generation</p>
                 </div>
               )}
             </div>

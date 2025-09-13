@@ -38,7 +38,7 @@ export default function RecordVisitPage() {
               <div className="flex justify-between h-16">
                 <div className="flex items-center">
                   <h1 className="text-xl font-semibold text-gray-900 dark:text-slate-100">
-                    Record New Visit
+                    Start New Visit
                   </h1>
                 </div>
               </div>

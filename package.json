@@ -47,7 +47,20 @@
     "system:integrity": "chmod +x scripts/system-integrity-check.sh && ./scripts/system-integrity-check.sh",
     "backup:db": "./scripts/database-migration.sh backup",
     "update:rolling": "./scripts/production-update.sh rolling",
-    "update:maintenance": "./scripts/production-update.sh maintenance"
+    "update:maintenance": "./scripts/production-update.sh maintenance",
+    "sorting:setup": "chmod +x scripts/setup-sorting-system.sh && ./scripts/setup-sorting-system.sh",
+    "sorting:test": "chmod +x scripts/test-sorting-system.sh && ./scripts/test-sorting-system.sh",
+    "sorting:health": "chmod +x scripts/health-check.sh && ./scripts/health-check.sh",
+    "sorting:performance": "chmod +x scripts/performance-monitor.sh && ./scripts/performance-monitor.sh",
+    "sorting:backup": "chmod +x scripts/backup-system.sh && ./scripts/backup-system.sh",
+    "sorting:maintenance": "chmod +x scripts/maintenance.sh && ./scripts/maintenance.sh",
+    "deploy:sorting": "chmod +x scripts/deploy-production.sh && ./scripts/deploy-production.sh",
+    "monitor:sorting": "chmod +x scripts/monitor-sorting-system.sh && ./scripts/monitor-sorting-system.sh",
+    "backup:full": "chmod +x scripts/backup-restore-system.sh && ./scripts/backup-restore-system.sh backup",
+    "backup:restore": "chmod +x scripts/backup-restore-system.sh && ./scripts/backup-restore-system.sh restore",
+    "backup:list": "chmod +x scripts/backup-restore-system.sh && ./scripts/backup-restore-system.sh list",
+    "backup:info": "chmod +x scripts/backup-restore-system.sh && ./scripts/backup-restore-system.sh info",
+    "backup:clean": "chmod +x scripts/backup-restore-system.sh && ./scripts/backup-restore-system.sh clean"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",

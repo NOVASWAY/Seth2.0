@@ -225,16 +225,16 @@ export default function DiagnosticsPage() {
                             <div className="flex items-center justify-between">
                               <div>
                                 <h4 className="font-medium text-gray-900 dark:text-slate-100">
-                                  {patient.first_name} {patient.last_name}
+                                  {patient.firstName} {patient.lastName}
                                 </h4>
                                 <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-slate-400">
                                   <span className="flex items-center gap-1">
-                                    <span className="font-mono">#{patient.op_number}</span>
+                                    <span className="font-mono">#{patient.opNumber}</span>
                                   </span>
-                                  {patient.phone_number && (
+                                  {patient.phoneNumber && (
                                     <span className="flex items-center gap-1">
                                       <Phone className="h-3 w-3" />
-                                      {patient.phone_number}
+                                      {patient.phoneNumber}
                                     </span>
                                   )}
                                   {patient.area && (
@@ -246,7 +246,7 @@ export default function DiagnosticsPage() {
                                 </div>
                               </div>
                               <Badge variant="outline">
-                                {patient.insurance_type}
+                                {patient.insuranceType}
                               </Badge>
                             </div>
                           </div>

@@ -7,7 +7,7 @@ import { UserRole } from "../types"
 
 const router = express.Router()
 
-// Get all patients with pagination and search
+// Get all patients with pagination, search, and advanced sorting
 router.get(
   "/",
   authorize([UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.NURSE, UserRole.CLINICAL_OFFICER]),
@@ -15,6 +15,11 @@ router.get(
     query("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
     query("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100"),
     query("search").optional().isString().withMessage("Search must be a string"),
+    query("sortBy").optional().isString().withMessage("SortBy must be a string"),
+    query("sortDirection").optional().isIn(['asc', 'desc']).withMessage("SortDirection must be 'asc' or 'desc'"),
+    query("insuranceType").optional().isString().withMessage("InsuranceType must be a string"),
+    query("gender").optional().isString().withMessage("Gender must be a string"),
+    query("area").optional().isString().withMessage("Area must be a string"),
   ],
   async (req: AuthenticatedRequest, res) => {
     try {
@@ -30,14 +35,27 @@ router.get(
       const page = Number.parseInt(req.query.page as string) || 1
       const limit = Number.parseInt(req.query.limit as string) || 20
       const search = req.query.search as string
+      const sortBy = req.query.sortBy as string || 'created_at'
+      const sortDirection = req.query.sortDirection as 'asc' | 'desc' || 'desc'
+      const insuranceType = req.query.insuranceType as string
+      const gender = req.query.gender as string
+      const area = req.query.area as string
       const offset = (page - 1) * limit
 
       let result
       if (search) {
-        const patients = await PatientModel.search(search, limit)
+        const patients = await PatientModel.search(search, limit, offset, sortBy, sortDirection, {
+          insuranceType,
+          gender,
+          area
+        })
         result = { patients, total: patients.length }
       } else {
-        result = await PatientModel.findAll(limit, offset)
+        result = await PatientModel.findAll(limit, offset, sortBy, sortDirection, {
+          insuranceType,
+          gender,
+          area
+        })
       }
 
       res.json({
@@ -50,9 +68,19 @@ router.get(
             total: result.total,
             totalPages: Math.ceil(result.total / limit),
           },
+          sorting: {
+            sortBy,
+            sortDirection
+          },
+          filters: {
+            insuranceType,
+            gender,
+            area
+          }
         },
       })
     } catch (error) {
+      console.error("Error fetching patients:", error)
       res.status(500).json({
         success: false,
         message: "Failed to fetch patients",

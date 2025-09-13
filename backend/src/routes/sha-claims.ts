@@ -18,6 +18,9 @@ router.get(
     query("startDate").optional().isISO8601().withMessage("Start date must be valid"),
     query("endDate").optional().isISO8601().withMessage("End date must be valid"),
     query("search").optional().isString().withMessage("Search must be a string"),
+    query("sortBy").optional().isString().withMessage("SortBy must be a string"),
+    query("sortDirection").optional().isIn(['asc', 'desc']).withMessage("SortDirection must be 'asc' or 'desc'"),
+    query("claimType").optional().isString().withMessage("ClaimType must be a string"),
   ],
   async (req: AuthenticatedRequest, res) => {
     try {
@@ -35,7 +38,10 @@ router.get(
         status, 
         startDate, 
         endDate, 
-        search 
+        search,
+        sortBy = 'created_at',
+        sortDirection = 'desc',
+        claimType
       } = req.query
 
       const offset = (Number(page) - 1) * Number(limit)
@@ -68,6 +74,27 @@ router.get(
         whereClause += ` AND (p.op_number ILIKE $${paramCount} OR p.first_name ILIKE $${paramCount} OR p.last_name ILIKE $${paramCount} OR c.claim_number ILIKE $${paramCount})`
         params.push(`%${search}%`)
       }
+
+      if (claimType) {
+        paramCount++
+        whereClause += ` AND c.claim_type = $${paramCount}`
+        params.push(claimType)
+      }
+
+      // Validate and map sortBy to actual column names
+      const validSortColumns: { [key: string]: string } = {
+        'createdAt': 'c.created_at',
+        'claimNumber': 'c.claim_number',
+        'amount': 'c.total_amount',
+        'status': 'c.status',
+        'claimType': 'c.claim_type',
+        'submissionDeadline': 'c.submission_deadline',
+        'patientName': 'p.first_name',
+        'opNumber': 'p.op_number'
+      }
+
+      const actualSortColumn = validSortColumns[sortBy as string] || 'c.created_at'
+      const orderDirection = (sortDirection as string).toUpperCase() as 'ASC' | 'DESC'
 
       // Get total count
       const countResult = await pool.query(
@@ -102,7 +129,7 @@ router.get(
          JOIN users u ON c.created_by = u.id
          LEFT JOIN sha_invoices i ON c.id = i.claim_id
          ${whereClause}
-         ORDER BY c.created_at DESC
+         ORDER BY ${actualSortColumn} ${orderDirection}
          LIMIT $${paramCount - 1} OFFSET $${paramCount}`,
         params
       )
@@ -116,6 +143,16 @@ router.get(
             limit: Number(limit),
             total,
             pages: Math.ceil(total / Number(limit))
+          },
+          sorting: {
+            sortBy,
+            sortDirection
+          },
+          filters: {
+            status,
+            claimType,
+            startDate,
+            endDate
           }
         }
       })

@@ -288,13 +288,13 @@ export function SHADocumentManager({
       if (response.ok) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
-        const a = document.createElement("a")
+        const a = window.document.createElement("a")
         a.href = url
         a.download = document.originalFileName
-        document.body.appendChild(a)
+        window.document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
-        document.body.removeChild(a)
+        window.document.body.removeChild(a)
       } else if (response.status === 401) {
         toast({
           title: "Authentication Error",

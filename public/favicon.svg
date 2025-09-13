@@ -1,0 +1,80 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer Circle with Purple-Orange Gradient -->
+  <circle
+    cx="50"
+    cy="50"
+    r="48"
+    fill="url(#heartbeatGradient1)"
+    opacity="0.1"
+  />
+  
+  <!-- Inner Circle -->
+  <circle
+    cx="50"
+    cy="50"
+    r="42"
+    fill="url(#heartbeatGradient2)"
+  />
+  
+  <!-- Heartbeat Line - Main Path -->
+  <path
+    d="M15 50 L25 50 L30 35 L35 65 L40 25 L45 75 L50 30 L55 70 L60 40 L65 60 L70 50 L85 50"
+    stroke="white"
+    stroke-width="4"
+    fill="none"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  
+  <!-- Heartbeat Pulse Dots -->
+  <circle cx="30" cy="35" r="3" fill="url(#heartbeatGradient3)" />
+  <circle cx="40" cy="25" r="2.5" fill="url(#heartbeatGradient3)" />
+  <circle cx="50" cy="30" r="2" fill="url(#heartbeatGradient3)" />
+  <circle cx="60" cy="40" r="2.5" fill="url(#heartbeatGradient3)" />
+  
+  <!-- Heart Symbol -->
+  <path
+    d="M50 20 C45 15, 35 15, 35 25 C35 15, 25 15, 25 25 C25 35, 50 50, 50 50 C50 50, 75 35, 75 25 C75 15, 65 15, 65 25 C65 15, 55 15, 50 20 Z"
+    fill="url(#heartbeatGradient3)"
+    opacity="0.8"
+  />
+  
+  <!-- Medical Cross in Corner -->
+  <rect
+    x="70"
+    y="70"
+    width="6"
+    height="20"
+    fill="white"
+    rx="1"
+    opacity="0.9"
+  />
+  <rect
+    x="65"
+    y="80"
+    width="16"
+    height="6"
+    fill="white"
+    rx="1"
+    opacity="0.9"
+  />
+  
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="heartbeatGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="50%" stop-color="#F97316" />
+      <stop offset="100%" stop-color="#DC2626" />
+    </linearGradient>
+    <linearGradient id="heartbeatGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7C3AED" />
+      <stop offset="30%" stop-color="#A855F7" />
+      <stop offset="70%" stop-color="#F97316" />
+      <stop offset="100%" stop-color="#EA580C" />
+    </linearGradient>
+    <linearGradient id="heartbeatGradient3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F97316" />
+      <stop offset="100%" stop-color="#DC2626" />
+    </linearGradient>
+  </defs>
+</svg>

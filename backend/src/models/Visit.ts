@@ -217,4 +217,82 @@ export class VisitModel {
       completed: Number.parseInt(stats.completed),
     }
   }
+
+  static async findAll(
+    limit = 50, 
+    offset = 0, 
+    status?: string, 
+    date?: string,
+    sortBy = 'created_at',
+    sortDirection: 'asc' | 'desc' = 'desc',
+    filters: { triageCategory?: string } = {}
+  ): Promise<{ visits: Visit[]; total: number }> {
+    // Build WHERE clause for filters
+    let whereClause = "WHERE 1=1"
+    const params: any[] = []
+    let paramCount = 0
+
+    if (status) {
+      paramCount++
+      whereClause += ` AND v.status = $${paramCount}`
+      params.push(status)
+    }
+
+    if (date) {
+      paramCount++
+      whereClause += ` AND v.visit_date = $${paramCount}`
+      params.push(date)
+    }
+
+    if (filters.triageCategory) {
+      paramCount++
+      whereClause += ` AND v.triage_category = $${paramCount}`
+      params.push(filters.triageCategory)
+    }
+
+    // Validate and map sortBy to actual column names
+    const validSortColumns: { [key: string]: string } = {
+      'visitDate': 'v.visit_date',
+      'createdAt': 'v.created_at',
+      'triageCategory': 'v.triage_category',
+      'status': 'v.status',
+      'patientName': 'p.first_name',
+      'opNumber': 'v.op_number'
+    }
+
+    const actualSortColumn = validSortColumns[sortBy] || 'v.created_at'
+    const orderDirection = sortDirection.toUpperCase() as 'ASC' | 'DESC'
+
+    const countQuery = `
+      SELECT COUNT(*) 
+      FROM visits v
+      JOIN patients p ON v.patient_id = p.id
+      ${whereClause}
+    `
+    const countResult = await pool.query(countQuery, params)
+    const total = Number.parseInt(countResult.rows[0].count)
+
+    const query = `
+      SELECT 
+        v.id, v.patient_id as "patientId", v.op_number as "opNumber",
+        v.visit_date as "visitDate", v.status, v.chief_complaint as "chiefComplaint",
+        v.triage_category as "triageCategory", v.payment_type as "paymentType",
+        v.payment_reference as "paymentReference", v.created_at as "createdAt",
+        v.updated_at as "updatedAt",
+        p.first_name as "patientFirstName", p.last_name as "patientLastName",
+        p.phone_number as "patientPhoneNumber"
+      FROM visits v
+      JOIN patients p ON v.patient_id = p.id
+      ${whereClause}
+      ORDER BY ${actualSortColumn} ${orderDirection}
+      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
+    `
+
+    const result = await pool.query(query, [...params, limit, offset])
+
+    return {
+      visits: result.rows,
+      total,
+    }
+  }
 }

@@ -1,5 +1,5 @@
 import express from "express"
-import { body, validationResult } from "express-validator"
+import { body, query, validationResult } from "express-validator"
 import { VisitModel } from "../models/Visit"
 import { PatientModel } from "../models/Patient"
 import { authorize, type AuthenticatedRequest } from "../middleware/auth"
@@ -27,6 +27,74 @@ router.get(
       res.status(500).json({
         success: false,
         message: "Failed to fetch queue",
+      })
+    }
+  },
+)
+
+// Get all visits with pagination and advanced sorting
+router.get(
+  "/",
+  authorize([UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.NURSE, UserRole.CLINICAL_OFFICER]),
+  [
+    query("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
+    query("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100"),
+    query("status").optional().isString().withMessage("Status must be a string"),
+    query("date").optional().isISO8601().withMessage("Date must be a valid ISO date"),
+    query("sortBy").optional().isString().withMessage("SortBy must be a string"),
+    query("sortDirection").optional().isIn(['asc', 'desc']).withMessage("SortDirection must be 'asc' or 'desc'"),
+    query("triageCategory").optional().isString().withMessage("TriageCategory must be a string"),
+  ],
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation failed",
+          errors: errors.array(),
+        })
+      }
+
+      const page = Number.parseInt(req.query.page as string) || 1
+      const limit = Number.parseInt(req.query.limit as string) || 20
+      const status = req.query.status as string
+      const date = req.query.date as string
+      const sortBy = req.query.sortBy as string || 'created_at'
+      const sortDirection = req.query.sortDirection as 'asc' | 'desc' || 'desc'
+      const triageCategory = req.query.triageCategory as string
+      const offset = (page - 1) * limit
+
+      const result = await VisitModel.findAll(limit, offset, status, date, sortBy, sortDirection, {
+        triageCategory
+      })
+
+      res.json({
+        success: true,
+        data: {
+          visits: result.visits,
+          pagination: {
+            page,
+            limit,
+            total: result.total,
+            totalPages: Math.ceil(result.total / limit),
+          },
+          sorting: {
+            sortBy,
+            sortDirection
+          },
+          filters: {
+            status,
+            date,
+            triageCategory
+          }
+        },
+      })
+    } catch (error) {
+      console.error("Error fetching visits:", error)
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch visits",
       })
     }
   },

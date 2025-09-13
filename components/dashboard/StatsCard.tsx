@@ -4,7 +4,8 @@ interface StatsCardProps {
   change?: string
   changeType?: 'increase' | 'decrease' | 'neutral'
   icon?: React.ReactNode
-  color?: 'orange' | 'purple' | 'green' | 'red' | 'yellow' | 'blue'
+  color?: 'orange' | 'purple' | 'green' | 'red' | 'yellow' | 'blue' | 'heartbeat'
+  description?: string
 }
 
 export default function StatsCard({ 
@@ -13,7 +14,8 @@ export default function StatsCard({
   change, 
   changeType = 'neutral', 
   icon, 
-  color = 'orange' 
+  color = 'orange',
+  description
 }: StatsCardProps) {
   const colorClasses = {
     orange: 'bg-gradient-to-br from-orange-500 to-orange-600',
@@ -21,7 +23,8 @@ export default function StatsCard({
     green: 'bg-gradient-to-br from-green-500 to-green-600',
     red: 'bg-gradient-to-br from-red-500 to-red-600',
     yellow: 'bg-gradient-to-br from-yellow-500 to-yellow-600',
-    blue: 'bg-gradient-to-br from-blue-500 to-blue-600'
+    blue: 'bg-gradient-to-br from-blue-500 to-blue-600',
+    heartbeat: 'bg-gradient-to-br from-purple-600 via-pink-500 to-orange-500'
   }
 
   const changeColorClasses = {
@@ -37,7 +40,7 @@ export default function StatsCard({
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800 overflow-hidden shadow-lg rounded-lg border border-slate-200 dark:border-slate-700 transition-all duration-300 hover:shadow-xl hover:scale-105">
+    <div className="bg-white dark:bg-slate-800 overflow-hidden shadow-lg rounded-lg border border-purple-200/50 dark:border-purple-700/50 transition-all duration-300 hover:shadow-xl hover:scale-105 hover:border-purple-300 dark:hover:border-purple-600">
       <div className="p-5">
         <div className="flex items-center">
           {icon && (
@@ -54,12 +57,14 @@ export default function StatsCard({
         </div>
       </div>
       {change && (
-        <div className="bg-slate-50 dark:bg-slate-700 px-5 py-3 border-t border-slate-200 dark:border-slate-600">
+        <div className="bg-gradient-to-r from-slate-50 to-purple-50/30 dark:from-slate-700 dark:to-purple-900/20 px-5 py-3 border-t border-purple-200/50 dark:border-purple-700/50">
           <div className="text-sm">
             <span className={`font-medium ${changeColorClasses[changeType]}`}>
               {changeIcon[changeType]} {change}
             </span>
-            <span className="text-slate-500 dark:text-slate-400 ml-1">from last month</span>
+            <span className="text-slate-500 dark:text-slate-400 ml-1">
+              {description || 'from last month'}
+            </span>
           </div>
         </div>
       )}

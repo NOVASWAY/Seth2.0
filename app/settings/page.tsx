@@ -92,14 +92,10 @@ export default function SettingsPage() {
         </div>
 
         <Tabs defaultValue="clinic" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+          <TabsList className="grid w-full grid-cols-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
             <TabsTrigger value="clinic" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 hover:text-slate-900 dark:hover:text-slate-100">
               <Globe className="h-4 w-4" />
               Clinic
-            </TabsTrigger>
-            <TabsTrigger value="user" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 hover:text-slate-900 dark:hover:text-slate-100">
-              <User className="h-4 w-4" />
-              User
             </TabsTrigger>
             <TabsTrigger value="notifications" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 hover:text-slate-900 dark:hover:text-slate-100">
               <Bell className="h-4 w-4" />
@@ -198,53 +194,6 @@ export default function SettingsPage() {
             </Card>
           </TabsContent>
 
-          {/* User Settings */}
-          <TabsContent value="user" className="space-y-4">
-            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                  <User className="h-5 w-5" />
-                  User Preferences
-                </CardTitle>
-                <CardDescription className="text-slate-600 dark:text-slate-400">
-                  Customize your personal settings and preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-slate-700 dark:text-slate-300">Dark Mode</Label>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        Switch between light and dark themes
-                      </p>
-                    </div>
-                    <Switch
-                      checked={userSettings.darkMode}
-                      onCheckedChange={(checked) => setUserSettings(prev => ({ ...prev, darkMode: checked }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="language" className="text-slate-700 dark:text-slate-300">Language</Label>
-                    <Select value={userSettings.language} onValueChange={(value) => setUserSettings(prev => ({ ...prev, language: value }))}>
-                      <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
-                        <SelectValue className="text-slate-900 dark:text-slate-100" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                        <SelectItem value="en" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">English</SelectItem>
-                        <SelectItem value="sw" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700">Kiswahili</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <Separator />
-                <Button onClick={() => handleSave("User")} disabled={isLoading} className="flex items-center gap-2">
-                  {isLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Save User Settings
-                </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* Notifications */}
         <TabsContent value="notifications" className="space-y-4">

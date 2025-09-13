@@ -10,8 +10,28 @@ interface Patient {
   doctor?: string
 }
 
+interface ApiPatient {
+  id?: string
+  patient_id?: string
+  firstName?: string
+  first_name?: string
+  lastName?: string
+  last_name?: string
+  age?: number
+  gender?: string
+  priority?: string
+  status?: string
+  waitTime?: number
+  wait_time?: number
+  department?: string
+  area?: string
+  doctor?: string
+  assigned_doctor?: string
+  [key: string]: any
+}
+
 interface PatientQueueProps {
-  patients: Patient[]
+  patients: ApiPatient[] | Patient[]
   title?: string
   maxPatients?: number
 }
@@ -21,21 +41,52 @@ export default function PatientQueue({
   title = "Patient Queue", 
   maxPatients = 10 
 }: PatientQueueProps) {
+  // Ensure patients is always an array and transform data to match expected format
+  const safePatients: Patient[] = Array.isArray(patients) ? patients.map((patient: ApiPatient | Patient): Patient => {
+    // Check if it's already in the correct format
+    if ('name' in patient && typeof patient.name === 'string') {
+      return patient as Patient
+    }
+    
+    // Transform API data to expected format
+    const apiPatient = patient as ApiPatient
+    const firstName = apiPatient.firstName || apiPatient.first_name || ''
+    const lastName = apiPatient.lastName || apiPatient.last_name || ''
+    const fullName = `${firstName} ${lastName}`.trim() || 'Unknown Patient'
+    
+    return {
+      id: apiPatient.id || apiPatient.patient_id || Math.random().toString(36).substr(2, 9),
+      name: fullName,
+      age: apiPatient.age || 0,
+      gender: (apiPatient.gender?.toLowerCase() === 'male' || apiPatient.gender?.toLowerCase() === 'female') 
+        ? apiPatient.gender.toLowerCase() as 'male' | 'female' 
+        : 'other',
+      priority: (apiPatient.priority?.toLowerCase() === 'high' || apiPatient.priority?.toLowerCase() === 'low') 
+        ? apiPatient.priority.toLowerCase() as 'high' | 'low' 
+        : 'medium',
+      status: (apiPatient.status?.toLowerCase() === 'in-progress' || apiPatient.status?.toLowerCase() === 'completed' || apiPatient.status?.toLowerCase() === 'cancelled') 
+        ? apiPatient.status.toLowerCase() as 'in-progress' | 'completed' | 'cancelled' 
+        : 'waiting',
+      waitTime: apiPatient.waitTime || apiPatient.wait_time || 0,
+      department: apiPatient.department || apiPatient.area || 'General',
+      doctor: apiPatient.doctor || apiPatient.assigned_doctor || undefined
+    }
+  }) : []
   const getPriorityColor = (priority: Patient['priority']) => {
     const colors = {
-      high: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
-      medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
-      low: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+      high: 'bg-gradient-to-r from-red-100 to-pink-100 text-red-800 dark:from-red-900/30 dark:to-pink-900/30 dark:text-red-400',
+      medium: 'bg-gradient-to-r from-orange-100 to-yellow-100 text-orange-800 dark:from-orange-900/30 dark:to-yellow-900/30 dark:text-orange-400',
+      low: 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 dark:from-green-900/30 dark:to-emerald-900/30 dark:text-green-400'
     }
     return colors[priority]
   }
 
   const getStatusColor = (status: Patient['status']) => {
     const colors = {
-      waiting: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
-      'in-progress': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
-      completed: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
-      cancelled: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
+      waiting: 'bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 dark:from-purple-900/30 dark:to-blue-900/30 dark:text-purple-400',
+      'in-progress': 'bg-gradient-to-r from-orange-100 to-yellow-100 text-orange-800 dark:from-orange-900/30 dark:to-yellow-900/30 dark:text-orange-400',
+      completed: 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 dark:from-green-900/30 dark:to-emerald-900/30 dark:text-green-400',
+      cancelled: 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 dark:from-gray-800 dark:to-slate-800 dark:text-gray-400'
     }
     return colors[status]
   }
@@ -57,35 +108,36 @@ export default function PatientQueue({
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
   }
 
-  const sortedPatients = [...patients]
+  const sortedPatients = [...safePatients]
+    .filter(patient => patient && patient.id && patient.name) // Filter out invalid patients
     .sort((a, b) => {
       // Sort by priority first, then by wait time
       const priorityOrder = { high: 3, medium: 2, low: 1 }
       const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority]
       if (priorityDiff !== 0) return priorityDiff
-      return b.waitTime - a.waitTime
+      return (b.waitTime || 0) - (a.waitTime || 0)
     })
     .slice(0, maxPatients)
 
   return (
-    <div className="bg-white dark:bg-slate-800 shadow rounded-lg border border-slate-200 dark:border-slate-700">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+    <div className="bg-white dark:bg-slate-800 shadow rounded-lg border border-purple-200/50 dark:border-purple-700/50 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300">
+      <div className="px-6 py-4 border-b border-purple-200/50 dark:border-purple-700/50">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100">{title}</h3>
           <span className="text-sm text-gray-500 dark:text-slate-400">
-            {patients.filter(p => p.status === 'waiting').length} waiting
+            {safePatients.filter(p => p.status === 'waiting').length} waiting
           </span>
         </div>
       </div>
-      <div className="divide-y divide-gray-200 dark:divide-slate-700">
+      <div className="divide-y divide-purple-200/30 dark:divide-purple-700/30">
         {sortedPatients.map((patient) => (
-          <div key={patient.id} className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+          <div key={patient.id} className="px-6 py-4 hover:bg-gradient-to-r hover:from-purple-50 hover:to-orange-50 dark:hover:from-purple-900/20 dark:hover:to-orange-900/20 transition-all duration-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-gray-300 dark:bg-slate-600 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
-                      {patient.name.split(' ').map(n => n[0]).join('')}
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-orange-400 dark:from-purple-600 dark:to-orange-600 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium text-white">
+                      {patient.name.split(' ').map(n => n?.[0] || '').join('').toUpperCase() || '??'}
                     </span>
                   </div>
                 </div>

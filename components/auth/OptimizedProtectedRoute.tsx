@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/lib/auth'
-import { UserRole } from '@/lib/types'
-import { PageLoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { DashboardSkeleton } from '@/components/ui/Skeleton'
+import { useAuthStore } from '../../lib/auth'
+import { UserRole } from '../../types'
+import { PageLoadingSpinner } from '../ui/LoadingSpinner'
+import { DashboardSkeleton } from '../ui/skeleton'
 
 interface OptimizedProtectedRouteProps {
   children: React.ReactNode

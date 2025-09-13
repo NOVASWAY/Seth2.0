@@ -3,6 +3,8 @@
 import { ProtectedRoute } from "../../components/auth/ProtectedRoute"
 import { InventoryDashboard } from "../../components/inventory/InventoryDashboard"
 import { PharmacyPricingDisplay } from "../../components/pharmacy/PharmacyPricingDisplay"
+import { DrugDispensingForm } from "../../components/inventory/DrugDispensingForm"
+import { InventoryReports } from "../../components/inventory/InventoryReports"
 import { UserRole } from "../../types"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
 
@@ -16,17 +18,27 @@ export default function InventoryPage() {
         </div>
 
         <Tabs defaultValue="inventory" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="inventory">Inventory Management</TabsTrigger>
-            <TabsTrigger value="pharmacy">Pharmacy Pricing</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="inventory">Stock Management</TabsTrigger>
+            <TabsTrigger value="dispensing">Drug Dispensing</TabsTrigger>
+            <TabsTrigger value="pricing">Price Management</TabsTrigger>
+            <TabsTrigger value="reports">Reports & Analytics</TabsTrigger>
           </TabsList>
           
           <TabsContent value="inventory" className="mt-6">
             <InventoryDashboard />
           </TabsContent>
           
-          <TabsContent value="pharmacy" className="mt-6">
+          <TabsContent value="dispensing" className="mt-6">
+            <DrugDispensingForm />
+          </TabsContent>
+          
+          <TabsContent value="pricing" className="mt-6">
             <PharmacyPricingDisplay />
+          </TabsContent>
+          
+          <TabsContent value="reports" className="mt-6">
+            <InventoryReports />
           </TabsContent>
         </Tabs>
       </div>

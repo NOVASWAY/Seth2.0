@@ -21,6 +21,8 @@ router.get(
     query("startDate").optional().isISO8601().withMessage("Start date must be valid"),
     query("endDate").optional().isISO8601().withMessage("End date must be valid"),
     query("search").optional().isString().withMessage("Search must be a string"),
+    query("sortBy").optional().isString().withMessage("SortBy must be a string"),
+    query("sortDirection").optional().isIn(['asc', 'desc']).withMessage("SortDirection must be 'asc' or 'desc'"),
   ],
   async (req: AuthenticatedRequest, res) => {
     try {
@@ -35,7 +37,7 @@ router.get(
       const page = parseInt(req.query.page as string) || 1
       const limit = parseInt(req.query.limit as string) || 20
       const offset = (page - 1) * limit
-      const { status, startDate, endDate, search } = req.query
+      const { status, startDate, endDate, search, sortBy = 'created_at', sortDirection = 'desc' } = req.query
 
       let whereClause = "WHERE 1=1"
       const params: any[] = []
@@ -65,6 +67,20 @@ router.get(
         params.push(`%${search}%`)
       }
 
+      // Validate and map sortBy to actual column names
+      const validSortColumns: { [key: string]: string } = {
+        'invoiceDate': 'i.invoice_date',
+        'createdAt': 'i.created_at',
+        'invoiceNumber': 'i.invoice_number',
+        'totalAmount': 'i.total_amount',
+        'status': 'i.status',
+        'patientName': 'p.first_name',
+        'opNumber': 'p.op_number'
+      }
+
+      const actualSortColumn = validSortColumns[sortBy as string] || 'i.created_at'
+      const orderDirection = (sortDirection as string).toUpperCase() as 'ASC' | 'DESC'
+
       const result = await pool.query(
         `SELECT 
           i.*,
@@ -79,7 +95,7 @@ router.get(
          JOIN patients p ON i.patient_id = p.id
          JOIN users u ON i.generated_by = u.id
          ${whereClause}
-         ORDER BY i.created_at DESC
+         ORDER BY ${actualSortColumn} ${orderDirection}
          LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`,
         [...params, limit, offset]
       )
@@ -104,6 +120,15 @@ router.get(
             limit,
             total,
             totalPages: Math.ceil(total / limit)
+          },
+          sorting: {
+            sortBy,
+            sortDirection
+          },
+          filters: {
+            status,
+            startDate,
+            endDate
           }
         }
       })

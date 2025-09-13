@@ -46,6 +46,7 @@ import backupRoutes from "./routes/backup"
 import performanceRoutes from "./routes/performance"
 import dataSyncRoutes from "./routes/sync"
 import healthRoutes from "./routes/health"
+import paymentsRoutes from "./routes/payments"
 
 // Import middleware
 import { errorHandler } from "./middleware/errorHandler"
@@ -176,6 +177,7 @@ app.use("/api/backup", authenticate, backupRoutes)
 app.use("/api/performance", authenticate, performanceRoutes)
 app.use("/api/sync", authenticate, dataSyncRoutes)
 app.use("/api/health", healthRoutes)
+app.use("/api/payments", paymentsRoutes)
 
 // Audit logging middleware (after routes)
 app.use(auditLogger)

@@ -2,7 +2,7 @@
 
 import { Suspense, lazy, ComponentType } from 'react'
 import { PageLoadingSpinner, LoadingSpinner } from './LoadingSpinner'
-import { DashboardSkeleton, CardSkeleton } from './Skeleton'
+import { DashboardSkeleton, CardSkeleton } from './skeleton'
 
 interface LazyWrapperProps {
   fallback?: 'spinner' | 'skeleton' | 'card' | 'page'

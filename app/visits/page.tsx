@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/dialog"
 import { Textarea } from "../../components/ui/textarea"
 import { useToast } from "../../hooks/use-toast"
+import { SortingControls, QuickSortButton } from "../../components/ui/SortingControls"
+import { useAdvancedSorting, COMMON_SORT_OPTIONS, COMMON_FILTER_OPTIONS } from "../../hooks/useAdvancedSorting"
 import { 
   Calendar, 
   Clock, 
@@ -44,6 +46,9 @@ interface Visit {
   visitDate: string
   status: string
   chiefComplaint?: string
+  diagnosis?: string
+  treatmentPlan?: string
+  notes?: string
   triageCategory?: string
   createdAt: string
   updatedAt: string
@@ -83,6 +88,19 @@ export default function VisitsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Advanced sorting
+  const {
+    data: sortedVisits,
+    handleSortChange,
+    handleFiltersChange,
+    handleClearFilters,
+    getSortInfo,
+    getFilterInfo
+  } = useAdvancedSorting(visits, {
+    defaultSort: { key: 'createdAt', direction: 'desc' },
+    defaultFilters: { status: filterStatus !== 'all' ? filterStatus : undefined }
+  })
 
   // Form states
   const [formData, setFormData] = useState({
@@ -364,16 +382,14 @@ Visit Details:
     }
   }
 
-  const filteredVisits = visits.filter(visit => {
+  const filteredVisits = sortedVisits.filter(visit => {
     const matchesSearch = 
       visit.patient?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       visit.patient?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       visit.chiefComplaint?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       visit.triageCategory?.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesStatus = filterStatus === "all" || visit.status.toLowerCase() === filterStatus.toLowerCase()
-
-    return matchesSearch && matchesStatus
+    return matchesSearch
   })
 
   const getStatusColor = (status: string) => {
@@ -428,9 +444,9 @@ Visit Details:
                 
                 {/* Quick Visit Recording Button */}
                 <Link href="/visits/record">
-                  <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
-                    <ClipboardList className="h-4 w-4" />
-                    Record Visit
+                  <Button className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-700 hover:to-orange-600 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+                    <Activity className="h-4 w-4" />
+                    Start Visit
                   </Button>
                 </Link>
 
@@ -534,8 +550,9 @@ Visit Details:
           </div>
 
           <div className="flex-1 overflow-auto p-6">
-            {/* Filters */}
-            <div className="mb-6 flex flex-col sm:flex-row gap-4">
+            {/* Advanced Sorting and Search */}
+            <div className="mb-6 space-y-4">
+              {/* Search Bar */}
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
@@ -548,25 +565,29 @@ Visit Details:
                 </div>
               </div>
               
-              <div className="flex gap-2">
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-[180px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600">
-                    <SelectItem value="all" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">All Status</SelectItem>
-                    {visitStatuses.map((status) => (
-                      <SelectItem 
-                        key={status} 
-                        value={status.toLowerCase().replace(" ", "_")}
-                        className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600"
-                      >
-                        {status}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
+              {/* Sorting Controls */}
+              <SortingControls
+                sortOptions={COMMON_SORT_OPTIONS.visits}
+                filterOptions={COMMON_FILTER_OPTIONS.visits}
+                onSortChange={handleSortChange}
+                onFilterChange={(filters) => {
+                  handleFiltersChange(filters)
+                  // Update status filter to match status filter
+                  if (filters.status) {
+                    setFilterStatus(filters.status)
+                  } else {
+                    setFilterStatus('all')
+                  }
+                }}
+                onClearFilters={() => {
+                  handleClearFilters()
+                  setFilterStatus('all')
+                }}
+                className="flex-wrap"
+              />
+              
+              {/* Refresh Button */}
+              <div className="flex justify-end">
                 <Button
                   variant="outline"
                   onClick={fetchVisits}
@@ -667,10 +688,10 @@ Visit Details:
                             </div>
                           )}
                           
-                          {visit.treatment_plan && (
+                          {visit.treatmentPlan && (
                             <div>
                               <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Treatment Plan</Label>
-                              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{visit.treatment_plan}</p>
+                              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{visit.treatmentPlan}</p>
                             </div>
                           )}
 

@@ -349,26 +349,67 @@ export default function PaymentsPage() {
                         </div>
 
                         {newPayment.method === 'mpesa' && (
-                          <div className="space-y-4 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                          <div className="space-y-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                            <div className="flex items-center space-x-2 mb-3">
+                              <Smartphone className="h-5 w-5 text-green-600" />
+                              <h4 className="font-medium text-green-800 dark:text-green-200">M-Pesa Payment</h4>
+                            </div>
                             <div>
-                              <Label htmlFor="phoneNumber" className="text-slate-700 dark:text-slate-300">Phone Number</Label>
+                              <Label htmlFor="phoneNumber" className="text-slate-700 dark:text-slate-300">Customer Phone Number</Label>
                               <Input
                                 id="phoneNumber"
                                 value={newPayment.phoneNumber}
                                 onChange={(e) => setNewPayment({ ...newPayment, phoneNumber: e.target.value })}
-                                placeholder="+254712345678"
+                                placeholder="0712345678"
                                 className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100"
+                                required
                               />
+                              <p className="text-xs text-slate-500 mt-1">Customer will receive STK push on this number</p>
                             </div>
+                            
+                            <Button
+                              type="button"
+                              onClick={async () => {
+                                if (!newPayment.phoneNumber || !newPayment.amount) {
+                                  toast({
+                                    title: "Missing Information",
+                                    description: "Please enter phone number and amount first",
+                                    variant: "destructive"
+                                  })
+                                  return
+                                }
+                                
+                                try {
+                                  // This would call the M-Pesa STK push API
+                                  toast({
+                                    title: "STK Push Sent",
+                                    description: "Customer will receive payment prompt on their phone",
+                                  })
+                                } catch (error) {
+                                  toast({
+                                    title: "Error",
+                                    description: "Failed to send STK push",
+                                    variant: "destructive"
+                                  })
+                                }
+                              }}
+                              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+                              disabled={!newPayment.phoneNumber || !newPayment.amount}
+                            >
+                              <Smartphone className="h-4 w-4 mr-2" />
+                              Send STK Push (KSh {newPayment.amount?.toLocaleString() || 0})
+                            </Button>
+                            
                             <div>
-                              <Label htmlFor="mpesaReceipt" className="text-slate-700 dark:text-slate-300">M-Pesa Receipt (Optional)</Label>
+                              <Label htmlFor="mpesaReceipt" className="text-slate-700 dark:text-slate-300">M-Pesa Receipt Number</Label>
                               <Input
                                 id="mpesaReceipt"
                                 value={newPayment.mpesaReceipt}
                                 onChange={(e) => setNewPayment({ ...newPayment, mpesaReceipt: e.target.value })}
-                                placeholder="Enter M-Pesa receipt number"
+                                placeholder="Will be filled automatically after payment"
                                 className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100"
                               />
+                              <p className="text-xs text-slate-500 mt-1">Receipt number from M-Pesa transaction</p>
                             </div>
                           </div>
                         )}

@@ -73,7 +73,7 @@ export function FinancialRecordingWidget({ className }: FinancialRecordingWidget
           today_revenue: dashboardData.data.today_revenue || 0,
           today_payments: dashboardData.data.recent_transactions?.length || 0,
           today_sales: 0, // This would need to be calculated separately
-          pending_receivables: Object.values(dashboardData.data.receivables || {}).reduce((sum: number, val: any) => sum + (val || 0), 0)
+          pending_receivables: Number(Object.values(dashboardData.data.receivables || {}).reduce((sum: number, val: unknown) => sum + (Number(val) || 0), 0))
         })
         setRecentTransactions(dashboardData.data.recent_transactions?.slice(0, 5) || [])
       }

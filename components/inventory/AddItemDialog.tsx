@@ -11,10 +11,17 @@ import { Alert, AlertDescription } from "../ui/alert"
 import { Loader2 } from "lucide-react"
 
 const itemSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, "Item name is required"),
+  itemCode: z.string().min(1, "Item code/ID is required"),
   genericName: z.string().optional(),
   category: z.string().min(1, "Category is required"),
-  unit: z.string().min(1, "Unit is required"),
+  unit: z.string().min(1, "Unit of measure is required"),
+  quantityAvailable: z.number().min(0, "Quantity must be non-negative"),
+  costPricePerUnit: z.number().min(0, "Cost price must be non-negative"),
+  sellingPricePerUnit: z.number().min(0, "Selling price must be non-negative"),
+  supplierDetails: z.string().min(1, "Supplier details are required"),
+  expiryDate: z.string().min(1, "Expiry date is required"),
+  batchNumber: z.string().optional(),
   reorderLevel: z.number().min(0, "Reorder level must be non-negative"),
   maxLevel: z.number().min(1, "Max level must be positive"),
 })

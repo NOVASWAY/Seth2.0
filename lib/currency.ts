@@ -4,7 +4,7 @@
 
 export const CURRENCY_CONFIG = {
   code: 'KES',
-  symbol: 'KES',
+  symbol: 'KSh',
   locale: 'en-KE',
   decimalPlaces: 2,
 } as const
@@ -31,22 +31,21 @@ export function formatCurrency(
     maximumFractionDigits = CURRENCY_CONFIG.decimalPlaces,
   } = options
 
+  // Format as number first
   const formatter = new Intl.NumberFormat(CURRENCY_CONFIG.locale, {
-    style: 'currency',
-    currency: CURRENCY_CONFIG.code,
     minimumFractionDigits,
     maximumFractionDigits,
   })
 
   let formatted = formatter.format(amount)
 
-  // Customize the output based on options
-  if (!showSymbol && !showCode) {
-    // Remove currency symbol and code, keep only the number
-    formatted = formatted.replace(/[^\d.,]/g, '')
-  } else if (showCode && !showSymbol) {
-    // Replace symbol with code
-    formatted = formatted.replace(/KES\s*/, `${CURRENCY_CONFIG.code} `)
+  // Add KSh prefix for Kenyan Shillings
+  if (showSymbol) {
+    formatted = `${CURRENCY_CONFIG.symbol} ${formatted}`
+  }
+
+  if (showCode && !showSymbol) {
+    formatted = `${CURRENCY_CONFIG.code} ${formatted}`
   }
 
   return formatted

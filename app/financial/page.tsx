@@ -14,13 +14,12 @@ import { QuickPaymentRecording } from "../../components/financial/QuickPaymentRe
 import { PharmacySales } from "../../components/financial/PharmacySales"
 import { BillingForm } from "../../components/financial/BillingForm"
 import { 
-  DollarSign, 
+  Banknote, 
   TrendingUp, 
   Users, 
   ShoppingCart, 
   CreditCard, 
   Smartphone,
-  Banknote,
   Receipt,
   Activity,
   Search,
@@ -31,7 +30,8 @@ import {
   Clock,
   FileText,
   BarChart3,
-  Calculator
+  Calculator,
+  Coins
 } from "lucide-react"
 import { formatCurrencyDisplay } from "../../lib/currency"
 import Sidebar from "../../components/dashboard/Sidebar"
@@ -110,6 +110,7 @@ export default function FinancialPage() {
           today_payments: dashboardData.data.recent_transactions?.length || 0,
           today_sales: 0, // This would need to be calculated separately
           pending_receivables: (Object.values(dashboardData.data.receivables || {}) as number[]).reduce((sum: number, val: number) => sum + val, 0),
+          
           total_transactions: dashboardData.data.recent_transactions?.length || 0,
           receivables: dashboardData.data.receivables || {
             current: 0,
@@ -202,7 +203,7 @@ export default function FinancialPage() {
                     <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">
                       Today's Revenue
                     </CardTitle>
-                    <DollarSign className="h-4 w-4 text-green-600" />
+                    <Coins className="h-4 w-4 text-green-600" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
@@ -268,10 +269,14 @@ export default function FinancialPage() {
 
               {/* Main Financial Management Tabs */}
               <Tabs defaultValue="recording" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-6">
                   <TabsTrigger value="recording" className="flex items-center gap-2">
                     <Calculator className="h-4 w-4" />
                     Quick Recording
+                  </TabsTrigger>
+                  <TabsTrigger value="payments" className="flex items-center gap-2">
+                    <Smartphone className="h-4 w-4" />
+                    Payments & M-Pesa
                   </TabsTrigger>
                   <TabsTrigger value="billing" className="flex items-center gap-2">
                     <FileText className="h-4 w-4" />
@@ -324,6 +329,114 @@ export default function FinancialPage() {
                       </CardContent>
                     </Card>
                   </div>
+                </TabsContent>
+
+                {/* Payments & M-Pesa Tab */}
+                <TabsContent value="payments" className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* M-Pesa Payments */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Smartphone className="h-5 w-5 text-green-600" />
+                          M-Pesa Payments
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                            <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">M-Pesa STK Push</h4>
+                            <p className="text-sm text-green-700 dark:text-green-300 mb-3">
+                              Send payment request directly to customer's phone
+                            </p>
+                            <div className="space-y-3">
+                              <div>
+                                <Label>Customer Phone Number</Label>
+                                <Input placeholder="0712345678" className="font-mono" />
+                              </div>
+                              <div>
+                                <Label>Amount (KSh)</Label>
+                                <Input type="number" placeholder="1000" />
+                              </div>
+                              <Button className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800">
+                                <Smartphone className="h-4 w-4 mr-2" />
+                                Send STK Push
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Cash Payments */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Banknote className="h-5 w-5 text-blue-600" />
+                          Cash Payments
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">Record Cash Payment</h4>
+                            <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
+                              Record cash payments received from patients
+                            </p>
+                            <div className="space-y-3">
+                              <div>
+                                <Label>Patient Name</Label>
+                                <Input placeholder="Enter patient name" />
+                              </div>
+                              <div>
+                                <Label>Amount (KSh)</Label>
+                                <Input type="number" placeholder="1000" />
+                              </div>
+                              <div>
+                                <Label>Service Description</Label>
+                                <Input placeholder="Consultation, Lab test, etc." />
+                              </div>
+                              <Button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
+                                <Banknote className="h-4 w-4 mr-2" />
+                                Record Cash Payment
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Payment Statistics */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Today's Payment Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                          <Smartphone className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                          <p className="text-2xl font-bold text-green-600">KSh 15,000</p>
+                          <p className="text-sm text-green-700 dark:text-green-300">M-Pesa Payments</p>
+                        </div>
+                        <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                          <Banknote className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                          <p className="text-2xl font-bold text-blue-600">KSh 8,500</p>
+                          <p className="text-sm text-blue-700 dark:text-blue-300">Cash Payments</p>
+                        </div>
+                        <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                          <FileText className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                          <p className="text-2xl font-bold text-purple-600">KSh 12,000</p>
+                          <p className="text-sm text-purple-700 dark:text-purple-300">SHA Claims</p>
+                        </div>
+                        <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                          <Coins className="h-8 w-8 text-orange-600 mx-auto mb-2" />
+                          <p className="text-2xl font-bold text-orange-600">KSh 35,500</p>
+                          <p className="text-sm text-orange-700 dark:text-orange-300">Total Today</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </TabsContent>
 
                 {/* Billing Tab */}

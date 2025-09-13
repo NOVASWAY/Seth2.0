@@ -31,9 +31,9 @@ export interface ThemeColors {
 
 export const lightTheme: ThemeColors = {
   primary: {
-    orange: '#ea580c', // orange-600 - softer, more readable
-    purple: '#7c3aed', // violet-600 - better contrast
-    accent: '#db2777', // pink-600 - more professional
+    orange: '#f97316', // orange-500 - matches logo
+    purple: '#7c3aed', // violet-600 - matches logo
+    accent: '#dc2626', // red-600 - heartbeat accent
   },
   background: {
     primary: '#fefefe', // off-white - less harsh than pure white
@@ -60,9 +60,9 @@ export const lightTheme: ThemeColors = {
 
 export const darkTheme: ThemeColors = {
   primary: {
-    orange: '#fb923c', // orange-400
-    purple: '#a78bfa', // violet-400
-    accent: '#f472b6', // pink-400
+    orange: '#fb923c', // orange-400 - brighter for dark mode
+    purple: '#a78bfa', // violet-400 - brighter for dark mode
+    accent: '#f87171', // red-400 - heartbeat accent for dark mode
   },
   background: {
     primary: '#0f172a', // slate-900
@@ -103,9 +103,9 @@ export const themeClasses = {
     border: 'border-slate-200/60', // Softer borders
     borderSecondary: 'border-slate-300/60', // Medium contrast
     card: 'bg-white/90 backdrop-blur-sm border border-slate-200/60 shadow-sm', // Eye-friendly cards
-    input: 'bg-white/80 border-slate-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100', // Better form inputs
+    input: 'bg-white/80 border-slate-200 focus:border-purple-400 focus:ring-2 focus:ring-purple-100', // Heartbeat theme inputs
     button: 'transition-all duration-200 ease-in-out', // Smooth transitions
-    link: 'text-orange-600 hover:text-orange-700 transition-colors duration-200', // Better links
+    link: 'text-purple-600 hover:text-orange-600 transition-colors duration-200', // Heartbeat gradient links
   },
   dark: {
     bg: 'bg-slate-900',
@@ -117,8 +117,8 @@ export const themeClasses = {
     border: 'border-slate-600',
     borderSecondary: 'border-slate-500',
     card: 'bg-slate-800/90 backdrop-blur-sm border border-slate-600/60 shadow-lg', // Dark mode cards
-    input: 'bg-slate-800/80 border-slate-600 focus:border-orange-400 focus:ring-2 focus:ring-orange-900/20', // Dark form inputs
+    input: 'bg-slate-800/80 border-slate-600 focus:border-purple-400 focus:ring-2 focus:ring-purple-900/20', // Heartbeat theme dark inputs
     button: 'transition-all duration-200 ease-in-out', // Smooth transitions
-    link: 'text-orange-400 hover:text-orange-300 transition-colors duration-200', // Dark mode links
+    link: 'text-purple-400 hover:text-orange-400 transition-colors duration-200', // Heartbeat gradient dark links
   }
 }

@@ -16,6 +16,8 @@ import { Badge } from '../../components/ui/badge'
 import { Upload, FileText, CheckCircle, AlertCircle, X, Eye, Download, UserPlus, Database } from 'lucide-react'
 import PatientAssignmentButton from '../../components/patients/PatientAssignmentButton'
 import PatientAssignmentStatus from '../../components/patients/PatientAssignmentStatus'
+import { SortingControls, QuickSortButton } from '../../components/ui/SortingControls'
+import { useAdvancedSorting, COMMON_SORT_OPTIONS, COMMON_FILTER_OPTIONS } from '../../hooks/useAdvancedSorting'
 
 interface Patient {
   id: string
@@ -68,6 +70,19 @@ export default function PatientsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [showAddPatient, setShowAddPatient] = useState(false)
+  
+  // Advanced sorting
+  const {
+    data: sortedPatients,
+    handleSortChange,
+    handleFiltersChange,
+    handleClearFilters,
+    getSortInfo,
+    getFilterInfo
+  } = useAdvancedSorting(patients, {
+    defaultSort: { key: 'createdAt', direction: 'desc' },
+    defaultFilters: { insuranceType: statusFilter !== 'all' ? statusFilter : undefined }
+  })
   
   // Import states
   const [showImportDialog, setShowImportDialog] = useState(false)
@@ -397,7 +412,7 @@ export default function PatientsPage() {
     }
   }
 
-  const filteredPatients = (patients || []).filter(patient => {
+  const filteredPatients = (sortedPatients || []).filter(patient => {
     const firstName = patient.first_name || ""
     const lastName = patient.last_name || ""
     const opNumber = patient.op_number || ""
@@ -409,9 +424,7 @@ export default function PatientsPage() {
                          (patient.phone_number && patient.phone_number.includes(searchTerm)) ||
                          area.toLowerCase().includes(searchTerm.toLowerCase())
     
-    const matchesPaymentMethod = statusFilter === 'all' || patient.payment_method === statusFilter
-    
-    return matchesSearch && matchesPaymentMethod
+    return matchesSearch
   })
 
   const handleAddPatient = () => {
@@ -725,31 +738,40 @@ export default function PatientsPage() {
 
         {/* Main Content */}
         <main className="flex-1 p-6">
-          {/* Filters and Search */}
+          {/* Advanced Sorting and Search */}
           <div className="mb-6 bg-white dark:bg-slate-800 shadow rounded-lg p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="space-y-4">
+              {/* Search Bar */}
               <div className="flex-1">
                 <input
                   type="text"
                   placeholder="Search patients by name, OP number, phone, or area..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
                 />
               </div>
-              <div className="flex gap-2">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
-                >
-                  <option value="all">All Payment Methods</option>
-                  <option value="CASH">💵 Cash</option>
-                  <option value="MPESA">📱 M-Pesa</option>
-                  <option value="SHA">🏥 SHA</option>
-                  <option value="PRIVATE">🛡️ Private</option>
-                </select>
-              </div>
+              
+              {/* Sorting Controls */}
+              <SortingControls
+                sortOptions={COMMON_SORT_OPTIONS.patients}
+                filterOptions={COMMON_FILTER_OPTIONS.patients}
+                onSortChange={handleSortChange}
+                onFilterChange={(filters) => {
+                  handleFiltersChange(filters)
+                  // Update status filter to match insurance type filter
+                  if (filters.insuranceType) {
+                    setStatusFilter(filters.insuranceType)
+                  } else {
+                    setStatusFilter('all')
+                  }
+                }}
+                onClearFilters={() => {
+                  handleClearFilters()
+                  setStatusFilter('all')
+                }}
+                className="flex-wrap"
+              />
             </div>
           </div>
 
@@ -766,19 +788,47 @@ export default function PatientsPage() {
                 <thead className="bg-gray-50 dark:bg-slate-700">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                      Patient
+                      <QuickSortButton
+                        sortBy="firstName"
+                        currentSort={getSortInfo().sortBy}
+                        currentDirection={getSortInfo().sortDirection}
+                        onSort={handleSortChange}
+                      >
+                        Patient
+                      </QuickSortButton>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                      OP Number
+                      <QuickSortButton
+                        sortBy="opNumber"
+                        currentSort={getSortInfo().sortBy}
+                        currentDirection={getSortInfo().sortDirection}
+                        onSort={handleSortChange}
+                      >
+                        OP Number
+                      </QuickSortButton>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                       Contact
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                      Location
+                      <QuickSortButton
+                        sortBy="area"
+                        currentSort={getSortInfo().sortBy}
+                        currentDirection={getSortInfo().sortDirection}
+                        onSort={handleSortChange}
+                      >
+                        Location
+                      </QuickSortButton>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                      Payment Method
+                      <QuickSortButton
+                        sortBy="insuranceType"
+                        currentSort={getSortInfo().sortBy}
+                        currentDirection={getSortInfo().sortDirection}
+                        onSort={handleSortChange}
+                      >
+                        Payment Method
+                      </QuickSortButton>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                       Assignments

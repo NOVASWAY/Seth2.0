@@ -15,9 +15,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "../../components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
 import { useToast } from "../../hooks/use-toast"
+import { SortingControls, QuickSortButton } from "../../components/ui/SortingControls"
+import { useAdvancedSorting, COMMON_SORT_OPTIONS, COMMON_FILTER_OPTIONS } from "../../hooks/useAdvancedSorting"
 import { SHADocumentManager } from "../../components/sha/SHADocumentManager"
 import { SHAExportSystem } from "../../components/sha/SHAExportSystem"
 import { PatientClinicalData } from "../../components/sha/PatientClinicalData"
+import { SHAInvoiceRecording } from "../../components/sha/SHAInvoiceRecording"
 import { 
   Shield, 
   Plus, 
@@ -87,6 +90,19 @@ export default function SHAPage() {
   const [isMetaDialogOpen, setIsMetaDialogOpen] = useState(false)
   const [metaClaimId, setMetaClaimId] = useState<string | null>(null)
   const [metaForm, setMetaForm] = useState({ sha_reference: "", status: "" })
+
+  // Advanced sorting for claims
+  const {
+    data: sortedClaims,
+    handleSortChange: handleClaimsSortChange,
+    handleFiltersChange: handleClaimsFiltersChange,
+    handleClearFilters: handleClaimsClearFilters,
+    getSortInfo: getClaimsSortInfo,
+    getFilterInfo: getClaimsFilterInfo
+  } = useAdvancedSorting(claims, {
+    defaultSort: { key: 'createdAt', direction: 'desc' },
+    defaultFilters: { status: filterStatus !== 'all' ? filterStatus : undefined }
+  })
 
   // Form states
   const [formData, setFormData] = useState({
@@ -478,16 +494,14 @@ export default function SHAPage() {
     }
   }
 
-  const filteredClaims = claims.filter(claim => {
+  const filteredClaims = sortedClaims.filter(claim => {
     const matchesSearch = 
       claim.patient?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       claim.patient?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       claim.claim_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       claim.claim_type?.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesStatus = filterStatus === "all" || claim.status.toLowerCase() === filterStatus.toLowerCase()
-
-    return matchesSearch && matchesStatus
+    return matchesSearch
   })
 
   const getStatusColor = (status: string) => {
@@ -738,8 +752,9 @@ export default function SHAPage() {
           </div>
 
           <div className="flex-1 p-6">
-            {/* Filters */}
-            <div className="mb-6 flex flex-col sm:flex-row gap-4">
+            {/* Advanced Sorting and Search */}
+            <div className="mb-6 space-y-4">
+              {/* Search Bar */}
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
@@ -752,25 +767,29 @@ export default function SHAPage() {
                 </div>
               </div>
               
-              <div className="flex gap-2">
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-[180px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600">
-                    <SelectItem value="all" className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600">All Status</SelectItem>
-                    {claimStatuses.map((status) => (
-                      <SelectItem 
-                        key={status} 
-                        value={status.toLowerCase().replace(" ", "_")}
-                        className="text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-600"
-                      >
-                        {status}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
+              {/* Sorting Controls */}
+              <SortingControls
+                sortOptions={COMMON_SORT_OPTIONS.claims}
+                filterOptions={COMMON_FILTER_OPTIONS.claims}
+                onSortChange={handleClaimsSortChange}
+                onFilterChange={(filters) => {
+                  handleClaimsFiltersChange(filters)
+                  // Update status filter to match status filter
+                  if (filters.status) {
+                    setFilterStatus(filters.status)
+                  } else {
+                    setFilterStatus('all')
+                  }
+                }}
+                onClearFilters={() => {
+                  handleClaimsClearFilters()
+                  setFilterStatus('all')
+                }}
+                className="flex-wrap"
+              />
+              
+              {/* Refresh Button */}
+              <div className="flex justify-end">
                 <Button
                   variant="outline"
                   onClick={fetchClaims}
@@ -1029,6 +1048,30 @@ export default function SHAPage() {
               </div>
             </div>
           )}
+
+          {/* SHA Invoice Recording Section */}
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="p-3 bg-gradient-to-br from-purple-500 to-orange-600 rounded-xl">
+                  <FileText className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">SHA Invoice Recording</h2>
+                  <p className="text-slate-600 dark:text-slate-400">Record SHA insurance invoices for receptionist tracking</p>
+                </div>
+              </div>
+              
+              {!accessToken ? (
+                <div className="text-center py-8">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">Authentication Required</h3>
+                  <p className="text-slate-600 dark:text-slate-400">Please log in to record SHA invoices.</p>
+                </div>
+              ) : (
+                <SHAInvoiceRecording />
+              )}
+            </div>
+          </div>
 
           {/* Document Management Section */}
           <div className="space-y-6">

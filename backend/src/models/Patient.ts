@@ -83,7 +83,52 @@ export class PatientModel {
     return result.rows[0] || null
   }
 
-  static async search(searchTerm: string, limit = 20): Promise<Patient[]> {
+  static async search(
+    searchTerm: string, 
+    limit = 20, 
+    offset = 0,
+    sortBy = 'created_at',
+    sortDirection: 'asc' | 'desc' = 'desc',
+    filters: { insuranceType?: string; gender?: string; area?: string } = {}
+  ): Promise<Patient[]> {
+    // Build WHERE clause for search and filters
+    let whereClause = "WHERE (op_number ILIKE $1 OR first_name ILIKE $1 OR last_name ILIKE $1 OR phone_number ILIKE $1 OR CONCAT(first_name, ' ', last_name) ILIKE $1)"
+    const params: any[] = [`%${searchTerm}%`]
+    let paramCount = 1
+
+    if (filters.insuranceType) {
+      paramCount++
+      whereClause += ` AND insurance_type = $${paramCount}`
+      params.push(filters.insuranceType)
+    }
+
+    if (filters.gender) {
+      paramCount++
+      whereClause += ` AND gender = $${paramCount}`
+      params.push(filters.gender)
+    }
+
+    if (filters.area) {
+      paramCount++
+      whereClause += ` AND area ILIKE $${paramCount}`
+      params.push(`%${filters.area}%`)
+    }
+
+    // Validate and map sortBy to actual column names
+    const validSortColumns: { [key: string]: string } = {
+      'firstName': 'first_name',
+      'lastName': 'last_name',
+      'opNumber': 'op_number',
+      'createdAt': 'created_at',
+      'age': 'age',
+      'insuranceType': 'insurance_type',
+      'gender': 'gender',
+      'area': 'area'
+    }
+
+    const actualSortColumn = validSortColumns[sortBy] || 'created_at'
+    const orderDirection = sortDirection.toUpperCase() as 'ASC' | 'DESC'
+
     const query = `
       SELECT id, op_number as "opNumber", first_name as "firstName", 
              last_name as "lastName", date_of_birth as "dateOfBirth", 
@@ -92,16 +137,12 @@ export class PatientModel {
              insurance_type as "insuranceType", insurance_number as "insuranceNumber",
              created_at as "createdAt", updated_at as "updatedAt"
       FROM patients 
-      WHERE op_number ILIKE $1 
-         OR first_name ILIKE $1 
-         OR last_name ILIKE $1 
-         OR phone_number ILIKE $1
-         OR CONCAT(first_name, ' ', last_name) ILIKE $1
-      ORDER BY created_at DESC
-      LIMIT $2
+      ${whereClause}
+      ORDER BY ${actualSortColumn} ${orderDirection}
+      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
     `
-    const searchPattern = `%${searchTerm}%`
-    const result = await pool.query(query, [searchPattern, limit])
+
+    const result = await pool.query(query, [...params, limit, offset])
     return result.rows
   }
 
@@ -177,9 +218,53 @@ export class PatientModel {
     return result.rows[0] || null
   }
 
-  static async findAll(limit = 50, offset = 0): Promise<{ patients: Patient[]; total: number }> {
-    const countQuery = "SELECT COUNT(*) FROM patients"
-    const countResult = await pool.query(countQuery)
+  static async findAll(
+    limit = 50, 
+    offset = 0, 
+    sortBy = 'created_at', 
+    sortDirection: 'asc' | 'desc' = 'desc',
+    filters: { insuranceType?: string; gender?: string; area?: string } = {}
+  ): Promise<{ patients: Patient[]; total: number }> {
+    // Build WHERE clause for filters
+    let whereClause = "WHERE 1=1"
+    const params: any[] = []
+    let paramCount = 0
+
+    if (filters.insuranceType) {
+      paramCount++
+      whereClause += ` AND insurance_type = $${paramCount}`
+      params.push(filters.insuranceType)
+    }
+
+    if (filters.gender) {
+      paramCount++
+      whereClause += ` AND gender = $${paramCount}`
+      params.push(filters.gender)
+    }
+
+    if (filters.area) {
+      paramCount++
+      whereClause += ` AND area ILIKE $${paramCount}`
+      params.push(`%${filters.area}%`)
+    }
+
+    // Validate and map sortBy to actual column names
+    const validSortColumns: { [key: string]: string } = {
+      'firstName': 'first_name',
+      'lastName': 'last_name',
+      'opNumber': 'op_number',
+      'createdAt': 'created_at',
+      'age': 'age',
+      'insuranceType': 'insurance_type',
+      'gender': 'gender',
+      'area': 'area'
+    }
+
+    const actualSortColumn = validSortColumns[sortBy] || 'created_at'
+    const orderDirection = sortDirection.toUpperCase() as 'ASC' | 'DESC'
+
+    const countQuery = `SELECT COUNT(*) FROM patients ${whereClause}`
+    const countResult = await pool.query(countQuery, params)
     const total = Number.parseInt(countResult.rows[0].count)
 
     const query = `
@@ -190,11 +275,12 @@ export class PatientModel {
              insurance_type as "insuranceType", insurance_number as "insuranceNumber",
              created_at as "createdAt", updated_at as "updatedAt"
       FROM patients 
-      ORDER BY created_at DESC
-      LIMIT $1 OFFSET $2
+      ${whereClause}
+      ORDER BY ${actualSortColumn} ${orderDirection}
+      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
     `
 
-    const result = await pool.query(query, [limit, offset])
+    const result = await pool.query(query, [...params, limit, offset])
 
     return {
       patients: result.rows,

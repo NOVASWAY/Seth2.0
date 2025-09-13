@@ -12,6 +12,7 @@ import {
 } from "../ui/dropdown-menu"
 import { User, LogOut, Settings } from "lucide-react"
 import { useRouter } from "next/navigation"
+import Logo from "../ui/Logo"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -29,12 +30,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card">
+      <header className="border-b border-purple-200/50 dark:border-purple-700/50 bg-gradient-to-r from-white to-purple-50/30 dark:from-slate-800 dark:to-purple-900/20">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold">Seth Medical Clinic</h1>
-            </div>
+            <Logo size="lg" variant="full" showText={true} />
             
             {/* User Menu */}
             <DropdownMenu>

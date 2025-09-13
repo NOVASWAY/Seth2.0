@@ -24,6 +24,7 @@ interface Notification {
   data?: any
   priority: 'low' | 'medium' | 'high' | 'urgent'
   timestamp: string
+  isRead?: boolean
 }
 
 interface UserPresence {
@@ -291,6 +292,6 @@ export const useSync = () => {
     
     // Stats
     connectedUsersCount: connectedUsers.length,
-    unreadNotificationsCount: notifications.filter(n => !n.read).length
+    unreadNotificationsCount: notifications.filter(n => !n.isRead).length
   }
 }

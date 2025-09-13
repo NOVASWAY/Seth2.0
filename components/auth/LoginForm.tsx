@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useAuthStore } from '../../lib/auth'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '../../lib/ThemeContext'
+import Logo from '../ui/Logo'
 
 export default function LoginForm() {
   const [username, setUsername] = useState('')
@@ -33,11 +34,11 @@ export default function LoginForm() {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-gradient-to-br from-orange-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
-            <span className="text-white text-2xl font-bold">S</span>
+          <div className="flex justify-center mb-6">
+            <Logo size="xl" variant="full" showText={true} />
           </div>
           <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-            Welcome to Seth Clinic
+            Welcome Back
           </h2>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             Sign in to your account to continue
